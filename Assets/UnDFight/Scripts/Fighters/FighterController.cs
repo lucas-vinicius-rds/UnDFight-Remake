@@ -249,7 +249,7 @@ namespace UnDFight
                 return;
             }
 
-            float modelScale = fighterData.ModelScale;
+            float modelScale = fighterData.VisualScale;
             if (visualRoot != null)
             {
                 float signX = _facingSign >= 0 ? 1f : -1f;
@@ -709,7 +709,7 @@ namespace UnDFight
 
             if (visualRoot != null)
             {
-                float modelScale = fighterData.ModelScale;
+                float modelScale = fighterData.VisualScale;
                 float yScale = (squashVisualOnCrouch && IsCrouching)
                     ? modelScale * fighterData.crouchHeightRatio
                     : modelScale;

@@ -18,6 +18,7 @@ MonoBehaviour:
   portrait: {fileID: 0}
   heightMeters: 1.79
   weightKg: 87
+  fbxHeightPrebaked: 1
   maxHealth: 1000
   walkForwardSpeed: 4.2
   walkBackwardSpeed: 3.2

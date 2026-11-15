@@ -972,7 +972,7 @@ namespace UnDFight
                 instance.name = $"Preview_P{slotIndex + 1}_{data.fighterName}";
                 instance.transform.localPosition = Vector3.zero;
                 instance.transform.localRotation = Quaternion.Euler(0f, faceRight ? 90f : -90f, 0f);
-                instance.transform.localScale = Vector3.one * data.ModelScale;
+                instance.transform.localScale = Vector3.one * data.VisualScale;
 
                 var fc = instance.GetComponent<FighterController>();
                 if (fc != null) fc.enabled = false;

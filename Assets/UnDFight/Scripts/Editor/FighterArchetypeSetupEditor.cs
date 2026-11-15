@@ -33,14 +33,27 @@ namespace UnDFight.Editor
         }
 
         private const string BaseControllerPath = "Assets/UnDFight/Art/Animations/AC_Fighter.controller";
+        private const string FighterRosterPath = "Assets/UnDFight/Data/FighterRoster.asset";
         private const string LucasFbxPath = "Assets/UnDFight/Art/Models/Lucas/Lucas.fbx";
         private const string TiagoFbxPath = "Assets/UnDFight/Art/Models/Tiago/Tiago.fbx";
+        private const string JompesFbxPath = "Assets/UnDFight/Art/Models/Jompes/Jompes.fbx";
+        private const string RochardFbxPath = "Assets/UnDFight/Art/Models/Rochard/Rochard.fbx";
         private const string LucasOverridePath = "Assets/UnDFight/Art/Animations/AOC_Lucas.overrideController";
         private const string TiagoOverridePath = "Assets/UnDFight/Art/Animations/AOC_Tiago.overrideController";
+        private const string JompesOverridePath = "Assets/UnDFight/Art/Animations/AOC_Jompes.overrideController";
+        private const string RochardOverridePath = "Assets/UnDFight/Art/Animations/AOC_Rochard.overrideController";
+        private const string JompesMatPath = "Assets/UnDFight/Art/Materials/Jompes_Mat.mat";
+        private const string RochardMatPath = "Assets/UnDFight/Art/Materials/Rochard_Mat.mat";
+        private const string JompesTextureFolder = "Assets/UnDFight/Art/Source/Jompes";
+        private const string RochardTextureFolder = "Assets/UnDFight/Art/Source/Rochard";
         private const string LucasPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Lucas.prefab";
         private const string TiagoPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Tiago.prefab";
+        private const string JompesPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Jompes.prefab";
+        private const string RochardPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Rochard.prefab";
         private const string LucasDataPath = "Assets/UnDFight/Data/FighterData_Lucas.asset";
         private const string TiagoDataPath = "Assets/UnDFight/Data/FighterData_Tiago.asset";
+        private const string JompesDataPath = "Assets/UnDFight/Data/FighterData_Jompes.asset";
+        private const string RochardDataPath = "Assets/UnDFight/Data/FighterData_Rochard.asset";
 
         private static readonly HashSet<string> LoopClipNames = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -123,6 +136,8 @@ namespace UnDFight.Editor
 
             CreateOrUpdateFighterMoveset("Lucas", FightingArchetype.HeavyBrawler, LucasDataPath, lucasSpecs);
             CreateOrUpdateFighterMoveset("Tiago", FightingArchetype.StreetScrappy, TiagoDataPath, tiagoSpecs);
+            SetPrebakedHeightFlag(LucasDataPath, true);
+            SetPrebakedHeightFlag(TiagoDataPath, true);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -130,6 +145,59 @@ namespace UnDFight.Editor
             int lucasBones = CountMappedHumanBones(LucasFbxPath);
             int tiagoBones = CountMappedHumanBones(TiagoFbxPath);
             return $"Phase 9.1 Unity setup complete: Lucas ({lucasBones}/52 human bones, Heavy/HeavyBrawler) & Tiago ({tiagoBones}/52 human bones, Medium/StreetScrappy) updated cleanly.";
+        }
+
+        [MenuItem("UnDFight/Setup Fase 10 - Jompes & Rochard")]
+        public static void ApplyPhase10SetupMenu()
+        {
+            string summary = ApplyPhase10Setup();
+            Debug.Log("[FighterArchetypeSetupEditor] " + summary);
+        }
+
+        public static string ApplyPhase10Setup()
+        {
+            ApplyPhase9Setup();
+
+            SetupCompleteFighter(
+                fighterName: "Jompes",
+                archetype: FightingArchetype.TechnicalStriker,
+                heightMeters: 1.65f,
+                weightKg: 70.0f,
+                walkForwardSpeed: 4.35f,
+                walkBackwardSpeed: 3.35f,
+                jumpForce: 12.6f,
+                fbxPath: JompesFbxPath,
+                expectedTakePrefix: "Jompes_Armature|",
+                overridePath: JompesOverridePath,
+                materialPath: JompesMatPath,
+                textureFolder: JompesTextureFolder,
+                prefabPath: JompesPrefabPath,
+                fighterDataPath: JompesDataPath);
+
+            SetupCompleteFighter(
+                fighterName: "Rochard",
+                archetype: FightingArchetype.AgileStriker,
+                heightMeters: 1.75f,
+                weightKg: 67.0f,
+                walkForwardSpeed: 4.55f,
+                walkBackwardSpeed: 3.55f,
+                jumpForce: 13.0f,
+                fbxPath: RochardFbxPath,
+                expectedTakePrefix: "Rochard_Armature|",
+                overridePath: RochardOverridePath,
+                materialPath: RochardMatPath,
+                textureFolder: RochardTextureFolder,
+                prefabPath: RochardPrefabPath,
+                fighterDataPath: RochardDataPath);
+
+            UpdateFighterRoster(LucasDataPath, TiagoDataPath, JompesDataPath, RochardDataPath);
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            int jompesBones = CountMappedHumanBones(JompesFbxPath);
+            int rochardBones = CountMappedHumanBones(RochardFbxPath);
+            return $"Phase 10 Unity setup complete: Jompes ({jompesBones}/52 bones, 1.65m/70kg, Light/TechnicalStriker) & Rochard ({rochardBones}/52 bones, 1.75m/67kg, Light/AgileStriker) added to Roster (4 fighters).";
         }
 
         public static int CountMappedHumanBones(string fbxPath)
@@ -223,6 +291,7 @@ namespace UnDFight.Editor
             }
 
             // Reset humanDescription once so Unity regenerates the pure T-Pose bind skeleton
+            importer.materialImportMode = ModelImporterMaterialImportMode.None;
             importer.humanDescription = new HumanDescription();
             importer.animationType = ModelImporterAnimationType.Human;
             importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
@@ -526,6 +595,312 @@ namespace UnDFight.Editor
             CreateOrUpdateFighterMoveset(fighterName, archetype, fighterDataPath, specs);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+        }
+
+        private static void SetupCompleteFighter(
+            string fighterName,
+            FightingArchetype archetype,
+            float heightMeters,
+            float weightKg,
+            float walkForwardSpeed,
+            float walkBackwardSpeed,
+            float jumpForce,
+            string fbxPath,
+            string expectedTakePrefix,
+            string overridePath,
+            string materialPath,
+            string textureFolder,
+            string prefabPath,
+            string fighterDataPath)
+        {
+            Material mat = CreateOrUpdateUrpMaterial(materialPath, textureFolder);
+            ReimportAndConfigureFbxClips(fbxPath, expectedTakePrefix);
+            EnsureAttackExitTransitions(BaseControllerPath);
+            AnimatorOverrideController aoc = CreateOrUpdateOverrideController(overridePath, BaseControllerPath, fbxPath);
+
+            FighterData data = CreateOrUpdateFighterData(
+                fighterDataPath,
+                fighterName,
+                archetype,
+                heightMeters,
+                weightKg,
+                walkForwardSpeed,
+                walkBackwardSpeed,
+                jumpForce);
+
+            MoveSpec[] specs = BuildArchetypeMoveSpecs(data.WeightCategory, archetype);
+            CreateOrUpdateFighterMoveset(fighterName, archetype, fighterDataPath, specs);
+
+            GameObject prefab = CreateOrUpdateFighterPrefab(prefabPath, fighterName, fbxPath, mat, aoc, data);
+            data.prefab = prefab;
+            EditorUtility.SetDirty(data);
+        }
+
+        private static MoveSpec[] BuildArchetypeMoveSpecs(WeightClass weightClass, FightingArchetype archetype)
+        {
+            MoveSpec[] specs = GetWeightClassPresetSpecs(weightClass);
+            if (archetype == FightingArchetype.TechnicalStriker)
+            {
+                // Tight, disciplined boxing/low-kick precision within exact Light ticks (13/21/16/27)
+                for (int i = 0; i < specs.Length; i++)
+                {
+                    if (specs[i].Type == AttackType.LightPunch)
+                    {
+                        specs[i].Damage = 44;
+                        specs[i].HitboxOffset = new Vector2(0.64f, 1.12f);
+                    }
+                    else if (specs[i].Type == AttackType.LightKick)
+                    {
+                        specs[i].Damage = 54;
+                        specs[i].HitboxOffset = new Vector2(0.72f, 0.48f);
+                    }
+                }
+            }
+            else if (archetype == FightingArchetype.AgileStriker)
+            {
+                // Extended kick reach & snappy aerial finish within exact Light ticks (13/21/16/27)
+                for (int i = 0; i < specs.Length; i++)
+                {
+                    if (specs[i].Type == AttackType.LightKick)
+                    {
+                        specs[i].HitboxOffset = new Vector2(0.78f, 0.54f);
+                        specs[i].HitboxSize = new Vector2(0.92f, 0.44f);
+                    }
+                    else if (specs[i].Type == AttackType.HeavyKick)
+                    {
+                        specs[i].Knockback = 3.0f;
+                        specs[i].HitboxOffset = new Vector2(0.88f, 1.24f);
+                        specs[i].HitboxSize = new Vector2(1.08f, 0.56f);
+                    }
+                }
+            }
+
+            return specs;
+        }
+
+        private static void SetPrebakedHeightFlag(string fighterDataPath, bool prebaked)
+        {
+            FighterData data = AssetDatabase.LoadAssetAtPath<FighterData>(fighterDataPath);
+            if (data != null && data.fbxHeightPrebaked != prebaked)
+            {
+                data.fbxHeightPrebaked = prebaked;
+                EditorUtility.SetDirty(data);
+            }
+        }
+
+        public static Material CreateOrUpdateUrpMaterial(string materialPath, string textureFolder)
+        {
+            EnsureFolderExists(Path.GetDirectoryName(materialPath)?.Replace('\\', '/'));
+
+            string baseColorPath = $"{textureFolder}/meshy_basecolor.png";
+            string metallicPath = $"{textureFolder}/meshy_metallic_smoothness.png";
+            string normalPath = $"{textureFolder}/meshy_normal.png";
+
+            var normalImporter = AssetImporter.GetAtPath(normalPath) as TextureImporter;
+            if (normalImporter != null && normalImporter.textureType != TextureImporterType.NormalMap)
+            {
+                normalImporter.textureType = TextureImporterType.NormalMap;
+                normalImporter.SaveAndReimport();
+            }
+
+            Texture2D baseTex = AssetDatabase.LoadAssetAtPath<Texture2D>(baseColorPath);
+            Texture2D metallicTex = AssetDatabase.LoadAssetAtPath<Texture2D>(metallicPath);
+            Texture2D normalTex = AssetDatabase.LoadAssetAtPath<Texture2D>(normalPath);
+            if (baseTex == null)
+            {
+                throw new InvalidOperationException($"Missing basecolor texture at {baseColorPath}");
+            }
+
+            Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
+            if (urpLit == null)
+            {
+                throw new InvalidOperationException("Universal Render Pipeline/Lit shader not found.");
+            }
+
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+            if (mat == null)
+            {
+                mat = new Material(urpLit);
+                AssetDatabase.CreateAsset(mat, materialPath);
+            }
+            else if (mat.shader != urpLit)
+            {
+                mat.shader = urpLit;
+            }
+
+            mat.SetColor("_BaseColor", Color.white);
+            mat.SetColor("_Color", Color.white);
+            mat.SetTexture("_BaseMap", baseTex);
+            mat.SetTexture("_MainTex", baseTex);
+
+            if (metallicTex != null)
+            {
+                mat.SetTexture("_MetallicGlossMap", metallicTex);
+                mat.EnableKeyword("_METALLICSPECGLOSSMAP");
+            }
+
+            if (normalTex != null)
+            {
+                mat.SetTexture("_BumpMap", normalTex);
+                mat.SetFloat("_BumpScale", 1.0f);
+                mat.EnableKeyword("_NORMALMAP");
+            }
+
+            mat.SetFloat("_Metallic", 0f);
+            mat.SetFloat("_Smoothness", 0.35f);
+            mat.SetFloat("_GlossMapScale", 0f);
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static FighterData CreateOrUpdateFighterData(
+            string fighterDataPath,
+            string fighterName,
+            FightingArchetype archetype,
+            float heightMeters,
+            float weightKg,
+            float walkForwardSpeed,
+            float walkBackwardSpeed,
+            float jumpForce)
+        {
+            EnsureFolderExists(Path.GetDirectoryName(fighterDataPath)?.Replace('\\', '/'));
+
+            FighterData data = AssetDatabase.LoadAssetAtPath<FighterData>(fighterDataPath);
+            if (data == null)
+            {
+                data = ScriptableObject.CreateInstance<FighterData>();
+                AssetDatabase.CreateAsset(data, fighterDataPath);
+            }
+
+            data.fighterName = fighterName;
+            data.archetype = archetype;
+            data.heightMeters = heightMeters;
+            data.weightKg = weightKg;
+            data.fbxHeightPrebaked = true;
+            data.maxHealth = 1000;
+            data.walkForwardSpeed = walkForwardSpeed;
+            data.walkBackwardSpeed = walkBackwardSpeed;
+            data.jumpForce = jumpForce;
+            data.baseGravity = 34.0f;
+            data.crouchHeightRatio = 0.62f;
+            data.pushboxRadius = 0.36f;
+            EditorUtility.SetDirty(data);
+            return data;
+        }
+
+        public static GameObject CreateOrUpdateFighterPrefab(
+            string prefabPath,
+            string fighterName,
+            string fbxPath,
+            Material material,
+            RuntimeAnimatorController controller,
+            FighterData fighterData)
+        {
+            EnsureFolderExists(Path.GetDirectoryName(prefabPath)?.Replace('\\', '/'));
+
+            GameObject fbxRoot = AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath);
+            if (fbxRoot == null)
+            {
+                throw new InvalidOperationException($"FBX asset not found at {fbxPath}");
+            }
+
+            Avatar fbxAvatar = null;
+            foreach (UnityEngine.Object subAsset in AssetDatabase.LoadAllAssetsAtPath(fbxPath))
+            {
+                if (subAsset is Avatar av)
+                {
+                    fbxAvatar = av;
+                    break;
+                }
+            }
+
+            GameObject root = new GameObject($"Fighter_{fighterName}");
+            try
+            {
+                CapsuleCollider hurtbox = root.AddComponent<CapsuleCollider>();
+                hurtbox.isTrigger = true;
+                hurtbox.radius = fighterData.pushboxRadius;
+                hurtbox.height = fighterData.heightMeters;
+                hurtbox.center = new Vector3(0f, fighterData.heightMeters * 0.5f, 0f);
+
+                PlayerInputHandler inputHandler = root.AddComponent<PlayerInputHandler>();
+                FighterController controllerComp = root.AddComponent<FighterController>();
+
+                GameObject visual = PrefabUtility.InstantiatePrefab(fbxRoot, root.transform) as GameObject;
+                if (visual == null)
+                {
+                    throw new InvalidOperationException($"Failed to instantiate {fbxPath} into prefab.");
+                }
+
+                visual.name = "Visual";
+                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                visual.transform.localScale = Vector3.one;
+
+                foreach (SkinnedMeshRenderer smr in visual.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    smr.sharedMaterial = material;
+                }
+
+                Animator anim = visual.GetComponent<Animator>();
+                if (anim == null)
+                {
+                    anim = visual.AddComponent<Animator>();
+                }
+                if (fbxAvatar != null)
+                {
+                    anim.avatar = fbxAvatar;
+                }
+                anim.runtimeAnimatorController = controller;
+                anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                anim.applyRootMotion = false;
+
+                var so = new SerializedObject(controllerComp);
+                so.FindProperty("fighterData").objectReferenceValue = fighterData;
+                so.FindProperty("visualRoot").objectReferenceValue = visual.transform;
+                so.FindProperty("hurtboxCollider").objectReferenceValue = hurtbox;
+                so.FindProperty("fighterAnimator").objectReferenceValue = anim;
+                so.FindProperty("squashVisualOnCrouch").boolValue = false;
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                _ = inputHandler;
+                return PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        public static void UpdateFighterRoster(params string[] orderedDataPaths)
+        {
+            FighterRoster roster = AssetDatabase.LoadAssetAtPath<FighterRoster>(FighterRosterPath);
+            if (roster == null)
+            {
+                throw new InvalidOperationException($"FighterRoster not found at {FighterRosterPath}");
+            }
+
+            var fighters = new List<FighterData>();
+            foreach (string path in orderedDataPaths)
+            {
+                FighterData data = AssetDatabase.LoadAssetAtPath<FighterData>(path);
+                if (data == null)
+                {
+                    throw new InvalidOperationException($"FighterData missing for roster at {path}");
+                }
+                fighters.Add(data);
+            }
+
+            var so = new SerializedObject(roster);
+            SerializedProperty listProp = so.FindProperty("fighters");
+            listProp.ClearArray();
+            listProp.arraySize = fighters.Count;
+            for (int i = 0; i < fighters.Count; i++)
+            {
+                listProp.GetArrayElementAtIndex(i).objectReferenceValue = fighters[i];
+            }
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(roster);
         }
 
         private static void EnsureFolderExists(string assetFolderPath)

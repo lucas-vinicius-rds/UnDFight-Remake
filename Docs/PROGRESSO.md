@@ -7,7 +7,7 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 ## Decisoes
 - Unity (C#, URP, Input System novo), 2.5D lateral, simulacao em 60 Hz
 - Versus local + CPU simples; teclado e gamepad
-- Lutadores: Lucas (man_in_black) 1,81 m / 92 kg | Tiago 1,79 m / 87 kg
+- Lutadores: Lucas (man_in_black) 1,81 m / 92 kg | Tiago 1,79 m / 87 kg | Jompes 1,65 m / 70 kg | Rochard 1,75 m / 67 kg
 - Golpes: soco fraco/forte, chute fraco/forte, agachar, pular, bloquear (sem especial por ora)
 - Modelos originais: D:\Tralhas\Models (copiar, nao mover)
 - Mapa: favela carioca ao por do sol (referencia enviada)
@@ -24,5 +24,6 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 - [x] Fase 8 - CPU e polimento
 - [x] Fase 9 - Faixas de peso, arquetipos e animacoes exclusivas (Lucas e Tiago)
 - [x] Fase 9.1 - Rig de dedos 52 ossos Humanoid e punhos fechados (Lucas e Tiago)
+- [x] Fase 10 - Lutadores leves Jompes (1,65 m / 70 kg, TechnicalStriker) e Rochard (1,75 m / 67 kg, AgileStriker) com 52 ossos e 60 fps
 
 - Decisao: animacoes em 60 fps (1 frame anim = 1 tick de simulacao)

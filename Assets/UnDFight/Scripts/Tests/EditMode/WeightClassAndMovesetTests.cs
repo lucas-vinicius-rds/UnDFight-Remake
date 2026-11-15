@@ -46,6 +46,68 @@ namespace UnDFight.Tests
             Assert.AreEqual("BRUTAMONTES", FighterScaling.GetArchetypeLabel(FightingArchetype.HeavyBrawler));
             Assert.AreEqual("BRIGUENTO DE RUA", FighterScaling.GetArchetypeLabel(FightingArchetype.StreetScrappy));
             Assert.AreEqual("ÁGIL", FighterScaling.GetArchetypeLabel(FightingArchetype.AgileStriker));
+            Assert.AreEqual("TÉCNICO", FighterScaling.GetArchetypeLabel(FightingArchetype.TechnicalStriker));
+        }
+
+        [Test]
+        public void FighterRoster_ContainsFourPlayableFightersInExpectedOrder()
+        {
+            var roster = AssetDatabase.LoadAssetAtPath<FighterRoster>("Assets/UnDFight/Data/FighterRoster.asset");
+            Assert.IsNotNull(roster);
+            Assert.AreEqual(4, roster.Count);
+            Assert.AreEqual("Lucas", roster.GetFighter(0).fighterName);
+            Assert.AreEqual("Tiago", roster.GetFighter(1).fighterName);
+            Assert.AreEqual("Jompes", roster.GetFighter(2).fighterName);
+            Assert.AreEqual("Rochard", roster.GetFighter(3).fighterName);
+        }
+
+        [Test]
+        public void FighterAssets_JompesAndRochard_HaveLightMovesets52BonesAndExactScaling()
+        {
+            var jompes = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Jompes.asset");
+            var rochard = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Rochard.asset");
+            Assert.IsNotNull(jompes);
+            Assert.IsNotNull(rochard);
+
+            Assert.AreEqual(1.65f, jompes.heightMeters, 0.001f);
+            Assert.AreEqual(70f, jompes.weightKg, 0.01f);
+            Assert.AreEqual(WeightClass.Light, jompes.WeightCategory);
+            Assert.AreEqual(FightingArchetype.TechnicalStriker, jompes.archetype);
+            Assert.AreEqual(1.65f / 1.81f, jompes.ModelScale, 1e-5f);
+            Assert.AreEqual(1.65f / 1.81f, jompes.HurtboxScale, 1e-5f);
+            Assert.AreEqual(1.0f, jompes.VisualScale, 1e-5f);
+
+            Assert.AreEqual(1.75f, rochard.heightMeters, 0.001f);
+            Assert.AreEqual(67f, rochard.weightKg, 0.01f);
+            Assert.AreEqual(WeightClass.Light, rochard.WeightCategory);
+            Assert.AreEqual(FightingArchetype.AgileStriker, rochard.archetype);
+            Assert.AreEqual(1.75f / 1.81f, rochard.ModelScale, 1e-5f);
+            Assert.AreEqual(1.75f / 1.81f, rochard.HurtboxScale, 1e-5f);
+            Assert.AreEqual(1.0f, rochard.VisualScale, 1e-5f);
+
+            Assert.AreNotSame(jompes.lightPunch, rochard.lightPunch);
+            Assert.AreNotSame(jompes.heavyPunch, rochard.heavyPunch);
+            Assert.AreNotSame(jompes.lightKick, rochard.lightKick);
+            Assert.AreNotSame(jompes.heavyKick, rochard.heavyKick);
+
+            AssertLightTicks(jompes);
+            AssertLightTicks(rochard);
+
+            string jompesFbx = "Assets/UnDFight/Art/Models/Jompes/Jompes.fbx";
+            string rochardFbx = "Assets/UnDFight/Art/Models/Rochard/Rochard.fbx";
+            AssertMovesetMatchesFbx(jompes, jompesFbx, "AOC_Jompes");
+            AssertMovesetMatchesFbx(rochard, rochardFbx, "AOC_Rochard");
+
+            Assert.AreEqual(52, ((ModelImporter)AssetImporter.GetAtPath(jompesFbx)).humanDescription.human.Length);
+            Assert.AreEqual(52, ((ModelImporter)AssetImporter.GetAtPath(rochardFbx)).humanDescription.human.Length);
+        }
+
+        private static void AssertLightTicks(FighterData data)
+        {
+            Assert.AreEqual(13, data.lightPunch.TotalTicks);
+            Assert.AreEqual(21, data.heavyPunch.TotalTicks);
+            Assert.AreEqual(16, data.lightKick.TotalTicks);
+            Assert.AreEqual(27, data.heavyKick.TotalTicks);
         }
 
         [Test]

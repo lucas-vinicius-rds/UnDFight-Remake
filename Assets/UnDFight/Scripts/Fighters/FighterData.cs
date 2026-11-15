@@ -17,6 +17,8 @@ namespace UnDFight
         [Header("Physical Dimensions (Reference: 1.81 m / 92 kg)")]
         [Min(0.5f)] public float heightMeters = 1.81f;
         [Min(20f)] public float weightKg = 92f;
+        [Tooltip("True when the FBX mesh was already exported at heightMeters in Blender (avoids double-scaling visualRoot).")]
+        public bool fbxHeightPrebaked = false;
 
         [Header("Combat & Movement Base Stats (at Reference Weight)")]
         [Min(100)] public int maxHealth = 1000;
@@ -37,6 +39,7 @@ namespace UnDFight
 
         public WeightClass WeightCategory => FighterScaling.GetWeightClass(weightKg);
         public float ModelScale => FighterScaling.ComputeModelScale(heightMeters);
+        public float VisualScale => fbxHeightPrebaked ? 1.0f : ModelScale;
         public float HurtboxScale => FighterScaling.ComputeHurtboxScale(heightMeters);
         public float EffectiveGravity => FighterScaling.ComputeEffectiveGravity(baseGravity, weightKg);
         public float EffectiveWalkForwardSpeed => FighterScaling.ComputeEffectiveWalkSpeed(walkForwardSpeed, weightKg);

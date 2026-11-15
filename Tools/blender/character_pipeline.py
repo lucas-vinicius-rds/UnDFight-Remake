@@ -148,6 +148,104 @@ CHARACTER_CONFIGS = {
             "RightToes":     ((-0.1661, -0.0522, 0.0455), (-0.2111, -0.2040, 0.0455)),
         },
     },
+    "Jompes": {
+        "name": "Jompes",
+        "archetype_label": "Technical Striker",
+        "weight_kg": 70.0,
+        "weight_class": "light",
+        "fighting_style": "technical_striker",
+        "mesh_name": "Jompes_Body",
+        "armature_name": "Jompes_Armature",
+        "material_name": "Jompes_Mat",
+        "source_fbx": os.path.join(
+            PROJECT_ROOT,
+            r"Assets\UnDFight\Art\Source\Jompes\Meshy_AI_Shadow_Sentinel_biped_Animation_Running_withSkin.fbx",
+        ),
+        "textures_dir": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Jompes"),
+        "orig_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Jompes_original.blend"),
+        "work_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Jompes.blend"),
+        "export_fbx": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Models\Jompes\Jompes.fbx"),
+        "target_height": 1.65,
+        "target_tris": 30000,
+        "body_tris_target": 12000,
+        "hair_z_threshold": 1.36,
+        "center_x": 0.0035,
+        "fps": 60,
+        "anim_overrides": {},
+        "joints": {
+            "Hips":          ((0.0035, -0.0106, 0.9375), (0.0041, -0.0026, 1.0476)),
+            "Spine":         ((0.0041, -0.0026, 1.0476), (0.0046,  0.0054, 1.1577)),
+            "Chest":         ((0.0046,  0.0054, 1.1577), (0.0051,  0.0133, 1.2678)),
+            "UpperChest":    ((0.0051,  0.0133, 1.2678), (0.0060,  0.0188, 1.3434)),
+            "Neck":          ((0.0060,  0.0188, 1.3434), (0.0067,  0.0236, 1.4094)),
+            "Head":          ((0.0067,  0.0236, 1.4094), (0.0067,  0.0100, 1.6350)),
+            "LeftShoulder":  ((0.0383,  0.0231, 1.3020), (0.1709,  0.0328, 1.3020)),
+            "LeftUpperArm":  ((0.1709,  0.0328, 1.3020), (0.3880,  0.0544, 1.2593)),
+            "LeftLowerArm":  ((0.3880,  0.0544, 1.2593), (0.5980,  0.0492, 1.2557)),
+            "LeftHand":      ((0.5980,  0.0492, 1.2557), (0.6880,  0.0400, 1.2500)),
+            "RightShoulder": ((-0.0308, 0.0226, 1.2984), (-0.1744, 0.0320, 1.2984)),
+            "RightUpperArm": ((-0.1744, 0.0320, 1.2984), (-0.3702, 0.0515, 1.2557)),
+            "RightLowerArm": ((-0.3702, 0.0515, 1.2557), (-0.5802, 0.0529, 1.2593)),
+            "RightHand":     ((-0.5802, 0.0529, 1.2593), (-0.6700, 0.0420, 1.2520)),
+            "LeftUpperLeg":  ((0.0845, -0.0074, 0.8495), (0.1175,  0.0052, 0.4975)),
+            "LeftLowerLeg":  ((0.1175,  0.0052, 0.4975), (0.1424,  0.0628, 0.1202)),
+            "LeftFoot":      ((0.1424,  0.0628, 0.1202), (0.1569, -0.0436, 0.0370)),
+            "LeftToes":      ((0.1569, -0.0436, 0.0370), (0.1753, -0.1783, 0.0370)),
+            "RightUpperLeg": ((-0.0772,-0.0078, 0.8488), (-0.1103, 0.0034, 0.4939)),
+            "RightLowerLeg": ((-0.1103, 0.0034, 0.4939), (-0.1317, 0.0649, 0.1202)),
+            "RightFoot":     ((-0.1317, 0.0649, 0.1202), (-0.1529,-0.0422, 0.0386)),
+            "RightToes":     ((-0.1529,-0.0422, 0.0386), (-0.1793,-0.1758, 0.0386)),
+        },
+    },
+    "Rochard": {
+        "name": "Rochard",
+        "archetype_label": "Agile Striker",
+        "weight_kg": 67.0,
+        "weight_class": "light",
+        "fighting_style": "agile_striker",
+        "mesh_name": "Rochard_Body",
+        "armature_name": "Rochard_Armature",
+        "material_name": "Rochard_Mat",
+        "source_fbx": os.path.join(
+            PROJECT_ROOT,
+            r"Assets\UnDFight\Art\Source\Rochard\Meshy_AI_Vasco_Jacket_Avatar_biped_Animation_Running_withSkin.fbx",
+        ),
+        "textures_dir": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Rochard"),
+        "orig_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Rochard_original.blend"),
+        "work_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Rochard.blend"),
+        "export_fbx": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Models\Rochard\Rochard.fbx"),
+        "target_height": 1.75,
+        "target_tris": 30000,
+        "body_tris_target": 12000,
+        "hair_z_threshold": 1.44,
+        "center_x": 0.0038,
+        "fps": 60,
+        "anim_overrides": {},
+        "joints": {
+            "Hips":          ((0.0038, -0.0004, 0.9490), (0.0038,  0.0062, 1.0767)),
+            "Spine":         ((0.0038,  0.0062, 1.0767), (0.0038,  0.0127, 1.2044)),
+            "Chest":         ((0.0038,  0.0127, 1.2044), (0.0038,  0.0193, 1.3322)),
+            "UpperChest":    ((0.0038,  0.0193, 1.3322), (0.0038,  0.0241, 1.4264)),
+            "Neck":          ((0.0038,  0.0241, 1.4264), (0.0038,  0.0277, 1.4964)),
+            "Head":          ((0.0038,  0.0277, 1.4964), (0.0038,  0.0100, 1.7350)),
+            "LeftShoulder":  ((0.0393,  0.0314, 1.3884), (0.1812,  0.0435, 1.3884)),
+            "LeftUpperArm":  ((0.1812,  0.0435, 1.3884), (0.4078,  0.0803, 1.3243)),
+            "LeftLowerArm":  ((0.4078,  0.0803, 1.3243), (0.6645,  0.0602, 1.3092)),
+            "LeftHand":      ((0.6645,  0.0602, 1.3092), (0.7600,  0.0500, 1.3130)),
+            "RightShoulder": ((-0.0340, 0.0313, 1.3847), (-0.1850, 0.0434, 1.3847)),
+            "RightUpperArm": ((-0.1850, 0.0434, 1.3847), (-0.3964, 0.0798, 1.3205)),
+            "RightLowerArm": ((-0.3964, 0.0798, 1.3205), (-0.6494, 0.0650, 1.3130)),
+            "RightHand":     ((-0.6494, 0.0650, 1.3130), (-0.7450, 0.0520, 1.3140)),
+            "LeftUpperLeg":  ((0.0836,  0.0001, 0.8587), (0.1170,  0.0022, 0.4974)),
+            "LeftLowerLeg":  ((0.1170,  0.0022, 0.4974), (0.1284,  0.0759, 0.1425)),
+            "LeftFoot":      ((0.1284,  0.0759, 0.1425), (0.1526, -0.0481, 0.0412)),
+            "LeftToes":      ((0.1526, -0.0481, 0.0412), (0.1836, -0.2071, 0.0412)),
+            "RightUpperLeg": ((-0.0789, 0.0003, 0.8572), (-0.1133, 0.0031, 0.4899)),
+            "RightLowerLeg": ((-0.1133, 0.0031, 0.4899), (-0.1208, 0.0719, 0.1388)),
+            "RightFoot":     ((-0.1208, 0.0719, 0.1388), (-0.1489,-0.0497, 0.0434)),
+            "RightToes":     ((-0.1489,-0.0497, 0.0434), (-0.1844,-0.2028, 0.0434)),
+        },
+    },
 }
 
 
@@ -327,31 +425,61 @@ def get_idle_stance(breath=0.0, style="heavy_brawler"):
             "RightFoot":     (-12.0, 0.0, 0.0),
         }
 
-    if style == "agile_striker":
-        # Preset for Light fighters (<= 75 kg): upright, elastic knees, compact high guard
-        dz = -0.028 + 0.009 * breath
+    if style == "technical_striker":
+        # Jompes (Shadow Sentinel): disciplined martial-arts stance, high lead guard & tight rear chin/chest guard
+        dz = -0.042 + 0.006 * breath
         return {
             "HipsOffset":    (0.0, 0.0, dz),
-            "Hips":          (3.0, 0.0, 26.0),
-            "Spine":         (3.0 + 1.2 * breath, 0.0, 4.0),
-            "Chest":         (3.0 + 1.2 * breath, 0.0, 4.0),
+            "Hips":          (4.0, 0.0, 32.0),
+            "Spine":         (2.0 + 0.8 * breath, 0.0, 4.0),
+            "Chest":         (2.0 + 0.8 * breath, 0.0, 3.0),
+            "UpperChest":    (1.0, 0.0, 2.0),
+            "Neck":          (-4.0 - 0.6 * breath, 0.0, -20.0),
+            "Head":          (-3.0, 0.0, -18.0),
+            # Lead left hand high, angled forward like karate/kickboxing sentinel guard
+            "LeftShoulder":  (0.0, 14.0, -14.0),
+            "LeftUpperArm":  (-12.0, 42.0 - 1.5 * breath, -52.0),
+            "LeftLowerArm":  (12.0, -32.0, -96.0),
+            "LeftHand":      (-10.0, 0.0, 12.0),
+            # Rear right hand tightly tucked near chin/chest
+            "RightShoulder": (0.0, -14.0, 14.0),
+            "RightUpperArm": (-6.0, -42.0 + 1.5 * breath, 66.0),
+            "RightLowerArm": (14.0, 42.0, 118.0),
+            "RightHand":     (-12.0, 0.0, -12.0),
+            # Balanced compact martial stance
+            "LeftUpperLeg":  (-22.0, -5.0, 5.0),
+            "LeftLowerLeg":  (28.0, 0.0, 0.0),
+            "LeftFoot":      (-6.0, 0.0, 0.0),
+            "RightUpperLeg": (12.0, 6.0, -5.0),
+            "RightLowerLeg": (18.0, 0.0, 0.0),
+            "RightFoot":     (-10.0, 0.0, 0.0),
+        }
+
+    if style == "agile_striker":
+        # Rochard (Vasco Jacket): athletic bouncy light stance with elastic knees and agile guard ginga
+        dz = -0.028 + 0.015 * breath
+        return {
+            "HipsOffset":    (0.0, 0.0, dz),
+            "Hips":          (3.0, 1.5 * breath, 24.0 + 3.0 * breath),
+            "Spine":         (3.0 + 2.0 * breath, -2.0 * breath, 4.0),
+            "Chest":         (3.0 + 1.8 * breath, -1.5 * breath, 4.0),
             "UpperChest":    (1.5, 0.0, 2.0),
-            "Neck":          (-4.0 - 0.8 * breath, 0.0, -16.0),
-            "Head":          (-3.0, 0.0, -16.0),
+            "Neck":          (-4.0 - 1.0 * breath, 0.0, -15.0),
+            "Head":          (-3.0, 0.0, -15.0),
             "LeftShoulder":  (0.0, 12.0, -12.0),
-            "LeftUpperArm":  (-10.0, 48.0 - 2.5 * breath, -60.0),
-            "LeftLowerArm":  (12.0, -34.0, -98.0),
+            "LeftUpperArm":  (-8.0, 52.0 - 4.0 * breath, -56.0 + 4.0 * breath),
+            "LeftLowerArm":  (12.0, -32.0, -96.0),
             "LeftHand":      (-10.0, 0.0, 10.0),
             "RightShoulder": (0.0, -12.0, 12.0),
-            "RightUpperArm": (-8.0, -50.0 + 2.5 * breath, 58.0),
+            "RightUpperArm": (-8.0, -52.0 + 4.0 * breath, 56.0 - 4.0 * breath),
             "RightLowerArm": (10.0, 34.0, 104.0),
             "RightHand":     (-10.0, 0.0, -10.0),
-            "LeftUpperLeg":  (-18.0, -4.0, 4.0),
-            "LeftLowerLeg":  (24.0, 0.0, 0.0),
-            "LeftFoot":      (-6.0, 0.0, 0.0),
-            "RightUpperLeg": (10.0, 5.0, -4.0),
-            "RightLowerLeg": (16.0, 0.0, 0.0),
-            "RightFoot":     (-10.0, 0.0, 0.0),
+            "LeftUpperLeg":  (-20.0 - 3.0 * breath, -4.0, 4.0),
+            "LeftLowerLeg":  (28.0 + 4.0 * breath, 0.0, 0.0),
+            "LeftFoot":      (-8.0 - 1.0 * breath, 0.0, 0.0),
+            "RightUpperLeg": (12.0 + 2.0 * breath, 5.0, -4.0),
+            "RightLowerLeg": (20.0 + 3.0 * breath, 0.0, 0.0),
+            "RightFoot":     (-12.0, 0.0, 0.0),
         }
 
     # Default: heavy_brawler (Lucas): planted low heavy stance, tight closed temple/chin guard
@@ -451,13 +579,57 @@ def build_style_locomotion(style, idle0):
             "RightFoot":     (-6.0, 0.0, 0.0),
         })
         wb_arm_l = {"LeftUpperArm": (-2.0, 64.0, -30.0), "RightUpperArm": (-2.0, -64.0, 26.0)}
+    elif style == "technical_striker":
+        # Disciplined compact martial footwork keeping high guard locked steady
+        wf_a = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.048),
+            "Spine":         (3.0, 0.0, 6.0),
+            "LeftUpperLeg":  (-32.0, -5.0, 5.0),
+            "LeftLowerLeg":  (26.0, 0.0, 0.0),
+            "LeftFoot":      (4.0, 0.0, 0.0),
+            "RightUpperLeg": (20.0, 5.0, -5.0),
+            "RightLowerLeg": (20.0, 0.0, 0.0),
+            "RightFoot":     (-12.0, 0.0, 0.0),
+        })
+        wf_mid1 = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.032),
+            "Spine":         (2.5, 0.0, 3.0),
+            "LeftUpperLeg":  (-10.0, -3.0, 3.0),
+            "LeftLowerLeg":  (16.0, 0.0, 0.0),
+            "LeftFoot":      (-6.0, 0.0, 0.0),
+            "RightUpperLeg": (-22.0, 4.0, -3.0),
+            "RightLowerLeg": (48.0, 0.0, 0.0),
+            "RightFoot":     (-10.0, 0.0, 0.0),
+        })
+        wf_b = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.048),
+            "Spine":         (3.0, 0.0, 1.0),
+            "LeftUpperLeg":  (20.0, -5.0, 5.0),
+            "LeftLowerLeg":  (20.0, 0.0, 0.0),
+            "LeftFoot":      (-12.0, 0.0, 0.0),
+            "RightUpperLeg": (-32.0, 5.0, -5.0),
+            "RightLowerLeg": (26.0, 0.0, 0.0),
+            "RightFoot":     (4.0, 0.0, 0.0),
+        })
+        wf_mid2 = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.032),
+            "Spine":         (2.5, 0.0, 4.0),
+            "LeftUpperLeg":  (-22.0, -4.0, 3.0),
+            "LeftLowerLeg":  (48.0, 0.0, 0.0),
+            "LeftFoot":      (-10.0, 0.0, 0.0),
+            "RightUpperLeg": (-10.0, 3.0, -3.0),
+            "RightLowerLeg": (16.0, 0.0, 0.0),
+            "RightFoot":     (-6.0, 0.0, 0.0),
+        })
+        wb_arm_l = {}
     elif style == "agile_striker":
+        # Light springy footwork with lively shoulder/torso bounce
         wf_a = merge_pose(idle0, {
             "HipsOffset":    (0.0, 0.0, -0.036),
-            "Spine":         (6.0, 0.0, 8.0),
-            "LeftUpperArm":  (-8.0, 46.0, -58.0),
-            "RightUpperArm": (-8.0, -48.0, 56.0),
-            "LeftUpperLeg":  (-34.0, -4.0, 4.0),
+            "Spine":         (6.0, 2.0, 10.0),
+            "LeftUpperArm":  (-8.0, 48.0, -54.0),
+            "RightUpperArm": (-8.0, -50.0, 52.0),
+            "LeftUpperLeg":  (-36.0, -4.0, 4.0),
             "LeftLowerLeg":  (24.0, 0.0, 0.0),
             "LeftFoot":      (8.0, 0.0, 0.0),
             "RightUpperLeg": (24.0, 4.0, -4.0),
@@ -465,32 +637,32 @@ def build_style_locomotion(style, idle0):
             "RightFoot":     (-14.0, 0.0, 0.0),
         })
         wf_mid1 = merge_pose(idle0, {
-            "HipsOffset":    (0.0, 0.0, -0.018),
-            "Spine":         (5.0, 0.0, 2.0),
+            "HipsOffset":    (0.0, 0.0, -0.012),
+            "Spine":         (4.0, -2.0, 2.0),
             "LeftUpperLeg":  (-8.0, -3.0, 2.0),
             "LeftLowerLeg":  (14.0, 0.0, 0.0),
             "LeftFoot":      (-6.0, 0.0, 0.0),
-            "RightUpperLeg": (-24.0, 3.0, -2.0),
-            "RightLowerLeg": (54.0, 0.0, 0.0),
+            "RightUpperLeg": (-26.0, 3.0, -2.0),
+            "RightLowerLeg": (58.0, 0.0, 0.0),
             "RightFoot":     (-12.0, 0.0, 0.0),
         })
         wf_b = merge_pose(idle0, {
             "HipsOffset":    (0.0, 0.0, -0.036),
-            "Spine":         (6.0, 0.0, -2.0),
-            "LeftUpperArm":  (-10.0, 50.0, -62.0),
-            "RightUpperArm": (-8.0, -48.0, 60.0),
+            "Spine":         (6.0, -2.0, -4.0),
+            "LeftUpperArm":  (-10.0, 54.0, -60.0),
+            "RightUpperArm": (-8.0, -48.0, 58.0),
             "LeftUpperLeg":  (24.0, -4.0, 4.0),
             "LeftLowerLeg":  (20.0, 0.0, 0.0),
             "LeftFoot":      (-14.0, 0.0, 0.0),
-            "RightUpperLeg": (-34.0, 4.0, -4.0),
+            "RightUpperLeg": (-36.0, 4.0, -4.0),
             "RightLowerLeg": (24.0, 0.0, 0.0),
             "RightFoot":     (8.0, 0.0, 0.0),
         })
         wf_mid2 = merge_pose(idle0, {
-            "HipsOffset":    (0.0, 0.0, -0.018),
-            "Spine":         (5.0, 0.0, 4.0),
-            "LeftUpperLeg":  (-24.0, -3.0, 2.0),
-            "LeftLowerLeg":  (54.0, 0.0, 0.0),
+            "HipsOffset":    (0.0, 0.0, -0.012),
+            "Spine":         (4.0, 2.0, 4.0),
+            "LeftUpperLeg":  (-26.0, -3.0, 2.0),
+            "LeftLowerLeg":  (58.0, 0.0, 0.0),
             "LeftFoot":      (-12.0, 0.0, 0.0),
             "RightUpperLeg": (-8.0, 3.0, -2.0),
             "RightLowerLeg": (14.0, 0.0, 0.0),
@@ -628,6 +800,45 @@ def build_style_block_and_victory(style, idle0):
             "RightLowerLeg": (12.0, 0.0, 0.0),
             "RightFoot":     (-12.0, 0.0, 0.0),
         })
+    elif style == "technical_striker":
+        # Disciplined martial peek-a-boo / tight elbow block & firm sentinel victory posture
+        block_pose = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.052),
+            "Spine":         (6.0, 0.0, 2.0),
+            "Chest":         (6.0, 0.0, 2.0),
+            "Neck":          (-6.0, 0.0, -14.0),
+            "LeftShoulder":  (0.0, 18.0, -18.0),
+            "LeftUpperArm":  (-16.0, 36.0, -72.0),
+            "LeftLowerArm":  (20.0, -48.0, -120.0),
+            "LeftHand":      (-14.0, 8.0, 14.0),
+            "RightShoulder": (0.0, -18.0, 18.0),
+            "RightUpperArm": (-16.0, -36.0, 72.0),
+            "RightLowerArm": (20.0, 48.0, 120.0),
+            "RightHand":     (-14.0, -8.0, -14.0),
+        })
+        vic_pose = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.015),
+            "Hips":          (0.0, 0.0, 16.0),
+            "Spine":         (-4.0, 0.0, 2.0),
+            "Chest":         (-4.0, 0.0, 2.0),
+            "Neck":          (-4.0, 0.0, -16.0),
+            "Head":          (-3.0, 0.0, -10.0),
+            # Left forearm crisp across upper chest / martial guard, right fist chambered firmly at waist/ribs
+            "LeftShoulder":  (0.0, 14.0, -10.0),
+            "LeftUpperArm":  (-12.0, 46.0, -48.0),
+            "LeftLowerArm":  (14.0, -36.0, -108.0),
+            "LeftHand":      (-8.0, 0.0, 10.0),
+            "RightShoulder": (0.0, -10.0, 8.0),
+            "RightUpperArm": (14.0, -56.0, 28.0),
+            "RightLowerArm": (10.0, 28.0, 96.0),
+            "RightHand":     (0.0, 0.0, 0.0),
+            "LeftUpperLeg":  (-10.0, -4.0, 4.0),
+            "LeftLowerLeg":  (12.0, 0.0, 0.0),
+            "LeftFoot":      (-2.0, 0.0, 0.0),
+            "RightUpperLeg": (8.0, 4.0, -4.0),
+            "RightLowerLeg": (10.0, 0.0, 0.0),
+            "RightFoot":     (-10.0, 0.0, 0.0),
+        })
     elif style == "agile_striker":
         block_pose = merge_pose(idle0, {
             "HipsOffset":    (0.0, 0.0, -0.048),
@@ -635,26 +846,33 @@ def build_style_block_and_victory(style, idle0):
             "Chest":         (7.0, 0.0, 2.0),
             "Neck":          (-7.0, 0.0, -12.0),
             "LeftShoulder":  (0.0, 16.0, -16.0),
-            "LeftUpperArm":  (-12.0, 42.0, -68.0),
-            "LeftLowerArm":  (18.0, -45.0, -112.0),
+            "LeftUpperArm":  (-14.0, 40.0, -70.0),
+            "LeftLowerArm":  (18.0, -46.0, -114.0),
             "RightShoulder": (0.0, -16.0, 16.0),
-            "RightUpperArm": (-12.0, -42.0, 68.0),
-            "RightLowerArm": (18.0, 45.0, 112.0),
+            "RightUpperArm": (-14.0, -40.0, 70.0),
+            "RightLowerArm": (18.0, 46.0, 114.0),
         })
+        # Energetic, vibrant high-pump victory pose
         vic_pose = merge_pose(idle0, {
-            "HipsOffset":    (0.0, 0.0, 0.0),
-            "Hips":          (0.0, 0.0, 12.0),
-            "Spine":         (-4.0, 0.0, 0.0),
-            "Chest":         (-4.0, 0.0, 0.0),
-            "RightShoulder": (0.0, 16.0, 8.0),
-            "RightUpperArm": (-18.0, 56.0, 32.0),
-            "RightLowerArm": (0.0, 12.0, 60.0),
-            "LeftUpperArm":  (-8.0, 58.0, -35.0),
-            "LeftLowerArm":  (10.0, -25.0, -78.0),
-            "LeftUpperLeg":  (-10.0, -4.0, 4.0),
-            "LeftLowerLeg":  (12.0, 0.0, 0.0),
-            "RightUpperLeg": (8.0, 4.0, -4.0),
-            "RightLowerLeg": (10.0, 0.0, 0.0),
+            "HipsOffset":    (0.0, 0.0, 0.005),
+            "Hips":          (-3.0, -2.0, 10.0),
+            "Spine":         (-6.0, 0.0, 2.0),
+            "Chest":         (-8.0, 0.0, 2.0),
+            "Neck":          (-4.0, 0.0, -10.0),
+            "Head":          (-4.0, 0.0, -6.0),
+            "RightShoulder": (0.0, 18.0, 14.0),
+            "RightUpperArm": (-24.0, 52.0, 26.0),
+            "RightLowerArm": (0.0, 12.0, 48.0),
+            "RightHand":     (0.0, 0.0, 0.0),
+            "LeftShoulder":  (0.0, -12.0, -12.0),
+            "LeftUpperArm":  (-16.0, 60.0, -26.0),
+            "LeftLowerArm":  (10.0, -24.0, -72.0),
+            "LeftUpperLeg":  (-14.0, -4.0, 4.0),
+            "LeftLowerLeg":  (16.0, 0.0, 0.0),
+            "LeftFoot":      (-2.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, 4.0, -4.0),
+            "RightLowerLeg": (12.0, 0.0, 0.0),
+            "RightFoot":     (-10.0, 0.0, 0.0),
         })
     else:
         # heavy_brawler (Lucas): rock-solid closed double guard & dominant raised fist victory
@@ -805,63 +1023,162 @@ def build_style_attacks(style, idle0, framedata):
             "RightFoot":     (-12.0, 0.0, 0.0),
         })
 
-    elif style == "agile_striker":
-        # Fast, clean, crisp martial-arts strikes
+    elif style == "technical_striker":
+        # Jompes (Shadow Sentinel): crisp disciplined martial-arts strikes with clean hip rotation
         lp_ant = merge_pose(idle0, {
-            "Hips":          (4.0, 0.0, 30.0),
-            "LeftUpperArm":  (-5.0, 52.0, -45.0),
-            "LeftLowerArm":  (10.0, -35.0, -106.0),
+            "Hips":          (4.0, 0.0, 36.0),
+            "Spine":         (2.0, 0.0, 6.0),
+            "LeftUpperArm":  (-8.0, 44.0, -48.0),
+            "LeftLowerArm":  (12.0, -34.0, -104.0),
         })
         lp_hit = merge_pose(idle0, {
-            "HipsOffset":    (0.0, 0.0, -0.036),
-            "Hips":          (4.0, 0.0, 8.0),
-            "Spine":         (5.0, 0.0, -8.0),
-            "Chest":         (5.0, 0.0, -12.0),
-            "Neck":          (-5.0, 0.0, 12.0),
-            "LeftShoulder":  (0.0, 8.0, -18.0),
-            "LeftUpperArm":  (-8.0, 2.0, -62.0),
-            "LeftLowerArm":  (0.0, -25.0, -4.0),
+            "HipsOffset":    (0.0, 0.0, -0.042),
+            "Hips":          (4.0, 0.0, 4.0),
+            "Spine":         (4.0, 0.0, -12.0),
+            "Chest":         (4.0, 0.0, -14.0),
+            "Neck":          (-5.0, 0.0, 14.0),
+            "Head":          (-4.0, 0.0, 14.0),
+            "LeftShoulder":  (0.0, 10.0, -20.0),
+            "LeftUpperArm":  (-10.0, 2.0, -64.0),
+            "LeftLowerArm":  (0.0, -28.0, -3.0),
+            "LeftHand":      (-18.0, -32.0, 0.0),
+            "RightUpperArm": (-6.0, -44.0, 68.0),
+            "RightLowerArm": (14.0, 42.0, 118.0),
+        })
+        hp_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.052),
+            "Hips":          (6.0, 0.0, -14.0),
+            "Spine":         (4.0, 0.0, -14.0),
+            "Chest":         (4.0, 0.0, -16.0),
+            "Neck":          (-4.0, 0.0, 18.0),
+            "RightShoulder": (0.0, -10.0, -12.0),
+            "RightUpperArm": (6.0, -42.0, 18.0),
+            "RightLowerArm": (10.0, 28.0, 110.0),
+        })
+        hp_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.058),
+            "Hips":          (8.0, 0.0, 26.0),
+            "Spine":         (6.0, 0.0, 16.0),
+            "Chest":         (6.0, 0.0, 18.0),
+            "UpperChest":    (4.0, 0.0, 12.0),
+            "Neck":          (-6.0, 0.0, -28.0),
+            "Head":          (-5.0, 0.0, -26.0),
+            "RightShoulder": (0.0, -6.0, 16.0),
+            "RightUpperArm": (-10.0, 0.0, 30.0),
+            "RightLowerArm": (0.0, 46.0, 3.0),
+            "RightHand":     (-22.0, 42.0, 0.0),
+            # Left hand chambers back cleanly beside cheek
+            "LeftShoulder":  (0.0, 14.0, -12.0),
+            "LeftUpperArm":  (-8.0, 48.0, -56.0),
+            "LeftLowerArm":  (14.0, -38.0, -114.0),
+            "LeftUpperLeg":  (-30.0, -5.0, 5.0),
+            "LeftLowerLeg":  (36.0, 0.0, 0.0),
+            "RightUpperLeg": (20.0, 6.0, -5.0),
+            "RightLowerLeg": (20.0, 0.0, 0.0),
+        })
+        # Crisp front snap kick / teep
+        lk_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.025),
+            "Hips":          (-6.0, 0.0, 18.0),
+            "LeftUpperLeg":  (-78.0, -2.0, 3.0),
+            "LeftLowerLeg":  (94.0, 0.0, 0.0),
+        })
+        lk_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.028),
+            "Hips":          (-10.0, 0.0, 16.0),
+            "Spine":         (-3.0, 0.0, 4.0),
+            "LeftUpperLeg":  (-60.0, -2.0, 3.0),
+            "LeftLowerLeg":  (5.0, 0.0, 0.0),
+            "LeftFoot":      (26.0, 0.0, 0.0),
+            "RightUpperLeg": (8.0, 4.0, -4.0),
+            "RightLowerLeg": (14.0, 0.0, 0.0),
+        })
+        # Technical high roundhouse / crescent kick keeping tight martial guard
+        hk_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.028),
+            "Hips":          (-10.0, 12.0, -22.0),
+            "Spine":         (-6.0, 0.0, 8.0),
+            "LeftUpperLeg":  (-98.0, -10.0, 12.0),
+            "LeftLowerLeg":  (112.0, 0.0, 0.0),
+        })
+        hk_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.028),
+            "Hips":          (-12.0, 14.0, -28.0),
+            "Spine":         (-8.0, 0.0, 10.0),
+            "Chest":         (4.0, 0.0, 8.0),
+            "Neck":          (6.0, 0.0, 4.0),
+            "LeftUpperLeg":  (-110.0, -14.0, 16.0),
+            "LeftLowerLeg":  (4.0, 0.0, 0.0),
+            "LeftFoot":      (28.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, -6.0, 6.0),
+            "RightLowerLeg": (16.0, 0.0, 0.0),
+        })
+
+    elif style == "agile_striker":
+        # Rochard (Vasco Jacket): fast athletic flick jab, lunge cross, quick low/mid kick & dynamic high kick
+        lp_ant = merge_pose(idle0, {
+            "Hips":          (4.0, 0.0, 28.0),
+            "LeftUpperArm":  (-5.0, 54.0, -42.0),
+            "LeftLowerArm":  (10.0, -34.0, -102.0),
+        })
+        lp_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.034),
+            "Hips":          (4.0, 0.0, 6.0),
+            "Spine":         (6.0, -4.0, -10.0),
+            "Chest":         (6.0, -4.0, -14.0),
+            "Neck":          (-5.0, 0.0, 14.0),
+            "LeftShoulder":  (0.0, 10.0, -18.0),
+            "LeftUpperArm":  (-10.0, 4.0, -60.0),
+            "LeftLowerArm":  (0.0, -24.0, -3.0),
             "LeftHand":      (-18.0, -30.0, 0.0),
         })
         hp_ant = merge_pose(idle0, {
             "HipsOffset":    (0.0, 0.0, -0.048),
-            "Hips":          (6.0, 0.0, -8.0),
-            "Chest":         (4.0, 0.0, -15.0),
-            "RightUpperArm": (-5.0, -45.0, 22.0),
-            "RightLowerArm": (8.0, 25.0, 104.0),
+            "Hips":          (6.0, 0.0, -10.0),
+            "Chest":         (4.0, 0.0, -16.0),
+            "RightUpperArm": (-4.0, -46.0, 20.0),
+            "RightLowerArm": (8.0, 24.0, 104.0),
         })
         hp_hit = merge_pose(idle0, {
-            "HipsOffset":    (0.0, 0.0, -0.055),
-            "Hips":          (8.0, 0.0, 14.0),
-            "Spine":         (7.0, 0.0, 12.0),
-            "Chest":         (7.0, 0.0, 14.0),
-            "Neck":          (-8.0, 0.0, -24.0),
-            "RightShoulder": (0.0, -6.0, 14.0),
-            "RightUpperArm": (-10.0, 0.0, 32.0),
-            "RightLowerArm": (0.0, 42.0, 4.0),
+            "HipsOffset":    (0.0, -0.04, -0.058),
+            "Hips":          (9.0, 0.0, 20.0),
+            "Spine":         (8.0, 0.0, 14.0),
+            "Chest":         (8.0, 0.0, 16.0),
+            "Neck":          (-8.0, 0.0, -26.0),
+            "RightShoulder": (0.0, -6.0, 16.0),
+            "RightUpperArm": (-12.0, 0.0, 32.0),
+            "RightLowerArm": (0.0, 44.0, 3.0),
             "RightHand":     (-22.0, 40.0, 0.0),
+            "LeftUpperLeg":  (-34.0, -4.0, 4.0),
+            "LeftLowerLeg":  (40.0, 0.0, 0.0),
+            "RightUpperLeg": (22.0, 5.0, -4.0),
+            "RightLowerLeg": (20.0, 0.0, 0.0),
         })
         lk_ant = merge_pose(idle0, {
-            "LeftUpperLeg":  (-76.0, -4.0, 4.0),
-            "LeftLowerLeg":  (94.0, 0.0, 0.0),
+            "LeftUpperLeg":  (-74.0, -4.0, 4.0),
+            "LeftLowerLeg":  (92.0, 0.0, 0.0),
         })
         lk_hit = merge_pose(idle0, {
-            "Hips":          (-8.0, 0.0, 12.0),
-            "LeftUpperLeg":  (-66.0, -4.0, 4.0),
-            "LeftLowerLeg":  (5.0, 0.0, 0.0),
-            "LeftFoot":      (22.0, 0.0, 0.0),
+            "Hips":          (-8.0, 2.0, 16.0),
+            "LeftUpperLeg":  (-64.0, -6.0, 6.0),
+            "LeftLowerLeg":  (4.0, 0.0, 0.0),
+            "LeftFoot":      (24.0, 0.0, 0.0),
         })
         hk_ant = merge_pose(idle0, {
-            "Hips":          (-12.0, 6.0, -10.0),
-            "LeftUpperLeg":  (-92.0, -8.0, 8.0),
-            "LeftLowerLeg":  (105.0, 0.0, 0.0),
+            "Hips":          (-14.0, 6.0, -12.0),
+            "RightUpperArm": (-14.0, -48.0, 44.0),
+            "LeftUpperLeg":  (-96.0, -8.0, 8.0),
+            "LeftLowerLeg":  (108.0, 0.0, 0.0),
         })
         hk_hit = merge_pose(idle0, {
-            "Hips":          (-16.0, 8.0, -12.0),
-            "Spine":         (-10.0, 0.0, 5.0),
-            "LeftUpperLeg":  (-108.0, -8.0, 8.0),
+            "Hips":          (-20.0, 10.0, -18.0),
+            "Spine":         (-12.0, 0.0, 6.0),
+            "Chest":         (4.0, 0.0, 6.0),
+            "RightUpperArm": (-18.0, -52.0, 46.0),
+            "RightLowerArm": (6.0, 22.0, 84.0),
+            "LeftUpperLeg":  (-114.0, -8.0, 8.0),
             "LeftLowerLeg":  (4.0, 0.0, 0.0),
-            "LeftFoot":      (25.0, 0.0, 0.0),
+            "LeftFoot":      (28.0, 0.0, 0.0),
         })
 
     else:
@@ -1463,8 +1780,14 @@ def decimate_character_mesh(config):
 
     z_thresh = config.get("hair_z_threshold", 1.48)
     target_tris = config.get("target_tris", 30000)
+    joints = config.get("joints") or {}
+    lw_x = joints["LeftHand"][0][0] if "LeftHand" in joints else 999.0
+    rw_x = joints["RightHand"][0][0] if "RightHand" in joints else -999.0
 
-    head_verts = {v.index for v in mesh_obj.data.vertices if v.co.z >= z_thresh}
+    def _is_preserved(co):
+        return co.z >= z_thresh or co.x >= lw_x - 0.015 or co.x <= rw_x + 0.015
+
+    head_verts = {v.index for v in mesh_obj.data.vertices if _is_preserved(v.co)}
     head_tris = 0
     body_tris = 0
     for poly in mesh_obj.data.polygons:
@@ -1482,7 +1805,7 @@ def decimate_character_mesh(config):
         return mesh_obj
 
     vg = mesh_obj.vertex_groups.get("BodyDecimate") or mesh_obj.vertex_groups.new(name="BodyDecimate")
-    body_indices = [v.index for v in mesh_obj.data.vertices if v.co.z < z_thresh]
+    body_indices = [v.index for v in mesh_obj.data.vertices if not _is_preserved(v.co)]
     vg.add(body_indices, 1.0, 'REPLACE')
 
     ratio = max(0.15, min(1.0, target_tris / max(1, total_tris)))
@@ -1664,10 +1987,10 @@ def detect_hand_fingers(mesh_obj, hand_head, hand_tail, sign):
             sum(co[vi].y for vi in tip_cluster) / len(tip_cluster),
             sum(co[vi].z for vi in tip_cluster) / len(tip_cluster),
         ))
-        base_vs = [
-            vi for vi in thumb_vs
-            if wrist_along + 0.16 * hand_len <= co[vi].x * sign <= wrist_along + 0.34 * hand_len
-        ]
+        base_vs = sorted(
+            thumb_vs,
+            key=lambda vi: co[vi].x * sign - wrist_along,
+        )[:max(4, min(10, len(thumb_vs) // 5))]
         if base_vs:
             raw_base = Vector((
                 sum(co[vi].x for vi in base_vs) / len(base_vs),
@@ -1681,12 +2004,18 @@ def detect_hand_fingers(mesh_obj, hand_head, hand_tail, sign):
                 0.70 * raw_base.z + 0.30 * (h_tail.z - 0.006),
             ))
         else:
-            t_base = Vector((sign * (wrist_along + 0.22 * hand_len), index_min_y - 0.008, h_tail.z - 0.008))
+            t_base = Vector((sign * (wrist_along + 0.20 * hand_len), index_min_y - 0.008, h_tail.z - 0.008))
         axis = raw_tip - t_base
         if axis.length > 0.01:
             t_tip = raw_tip - axis.normalized() * 0.004
         else:
             t_tip = raw_tip
+        if (t_tip - t_base).length < 0.24 * hand_len:
+            t_base = Vector((
+                sign * (wrist_along + 0.20 * hand_len),
+                0.5 * (t_tip.y + index_min_y),
+                h_tail.z - 0.008,
+            ))
         fingers["Thumb"] = [t_base.lerp(t_tip, u) for u in thumb_u]
     else:
         t_base = Vector((sign * (wrist_along + 0.18 * hand_len), h_head.y - 0.025, h_tail.z - 0.010))
@@ -1965,12 +2294,13 @@ def bind_and_refine_weights(config):
     head_group = mesh_obj.vertex_groups.get("Head")
 
     for v in mesh_obj.data.vertices:
-        # Prevent cross-leg bleeding below pelvis
+        # Prevent cross-leg bleeding below pelvis (tight seam split below crotch)
         if v.co.z < hip_z - 0.04:
-            if v.co.x > center_x + 0.015:
+            seam_margin = 0.002 if v.co.z < hip_z - 0.14 else 0.015
+            if v.co.x > center_x + seam_margin:
                 for g in right_leg_groups:
                     g.remove([v.index])
-            elif v.co.x < center_x - 0.015:
+            elif v.co.x < center_x - seam_margin:
                 for g in left_leg_groups:
                     g.remove([v.index])
         # Prevent torso/shoulders from pulling face/crown vertices
@@ -1992,7 +2322,7 @@ def bind_and_refine_weights(config):
     print(f"Weights bound and refined for {config['mesh_name']} (max 4 influences, normalized).")
 
 
-def render_pose_checks(arm_obj, mesh_obj, out_dir, prefix="test"):
+def render_pose_checks(arm_obj, mesh_obj, out_dir, prefix="test", style="heavy_brawler"):
     """Render 3 extreme weight-validation poses (high kick, deep squat, punch) to PNGs."""
     os.makedirs(out_dir, exist_ok=True)
     scene = bpy.context.scene
@@ -2018,7 +2348,7 @@ def render_pose_checks(arm_obj, mesh_obj, out_dir, prefix="test"):
     if arm_obj.animation_data:
         arm_obj.animation_data.action = None
 
-    idle0 = get_idle_stance(0.0)
+    idle0 = get_idle_stance(0.0, style=style)
     poses = {
         "high_kick": merge_pose(idle0, {
             "HipsOffset":   (0.0, 0.0, -0.02),
@@ -2111,15 +2441,25 @@ def write_frame_data_doc(config):
             "BlockStand": "Encolhe os ombros e cruza os antebraços em frente ao rosto de forma instintiva até o último frame",
             "Victory": "Comemoração descontraída de rua erguendo o braço e mantendo a pose até o último frame",
         },
+        "technical_striker": {
+            "LightPunch": "Jab/direto marcial rápido com guarda traseira fechada (`LeftHand`)",
+            "HeavyPunch": "Golpe penetrante/cruzado firme com giro limpo de quadril (`RightHand`)",
+            "LightKick": "Chute frontal/snap rápido na altura baixa/média (`LeftFoot`)",
+            "HeavyKick": "Chute alto circular técnico com rotação de quadril e guarda fechada (`LeftFoot`)",
+            "Idle": "Guarda marcial disciplinada e fechada (mão da frente alta, mão de trás junto ao peito/queixo)",
+            "Walk": "Deslocamento técnico compacto mantendo a guarda marcial travada",
+            "BlockStand": "Bloqueio marcial peek-a-boo fechado até o último frame",
+            "Victory": "Postura firme e disciplinada de sentinela/artes marciais até o último frame",
+        },
         "agile_striker": {
-            "LightPunch": "Jab rápido e preciso (`LeftHand`)",
-            "HeavyPunch": "Direto veloz com rotação compacta (`RightHand`)",
-            "LightKick": "Chute baixo rápido e elástico (`LeftFoot`)",
-            "HeavyKick": "Chute alto rápido com extensão limpa (`LeftFoot`)",
-            "Idle": "Base leve e ereta, joelhos elásticos e guarda compacta",
-            "Walk": "Passada rápida e leve mantendo guarda compacta",
+            "LightPunch": "Jab veloz com leve esquiva de tronco (`LeftHand`)",
+            "HeavyPunch": "Cruzado rápido com passo firme para frente (`RightHand`)",
+            "LightKick": "Chute baixo/médio veloz e elástico (`LeftFoot`)",
+            "HeavyKick": "Chute alto dinâmico/explosivo com contrapeso do braço (`LeftFoot`)",
+            "Idle": "Postura atlética leve com ginga/bounce ágil e joelhos elásticos",
+            "Walk": "Passada leve e saltitante mantendo guarda ágil",
             "BlockStand": "Guarda alta compacta mantida até o último frame",
-            "Victory": "Comemoração ágil mantendo a pose final até o último frame",
+            "Victory": "Comemoração vibrante e energética com punho erguido até o último frame",
         },
     }[style]
 
