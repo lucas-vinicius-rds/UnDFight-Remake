@@ -19,7 +19,7 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 - [x] Fase 3 - Importar Lucas no Unity + Animator
 - [x] Fase 4 - Blender: Tiago (reuso do script)
 - [x] Fase 5 - Combate: hitbox/hurtbox, vida, rounds, HUD
-- [ ] Fase 6 - Menus: principal, opcoes, selecao, pausa
+- [x] Fase 6 - Menus: principal, opcoes, selecao, pausa
 - [ ] Fase 7 - Mapa 3D (favela)
 - [ ] Fase 8 - CPU e polimento
 

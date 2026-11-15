@@ -48,6 +48,7 @@ namespace UnDFight
         private bool _blockFromCrouch;
         private bool _inputsEnabled = true;
         private int _wakeupInvincibilityTicks;
+        private int _ticksSinceLastHit;
         private float _knockbackDecelPerSec;
         private float _baseHurtboxHeight = 1.81f;
         private float _baseHurtboxCenterY = 0.905f;
@@ -67,6 +68,7 @@ namespace UnDFight
         public bool HasRegisteredHit => _hasRegisteredHit;
         public bool InputsEnabled => _inputsEnabled;
         public int WakeupInvincibilityTicks => _wakeupInvincibilityTicks;
+        public int TicksSinceLastHit => _ticksSinceLastHit;
         public bool IsCrouching => _state == FighterState.Crouch || (_state == FighterState.Block && _blockFromCrouch);
         public bool IsInvulnerable =>
             _wakeupInvincibilityTicks > 0 ||
@@ -148,6 +150,7 @@ namespace UnDFight
             _hasRegisteredHit = false;
             _blockFromCrouch = false;
             _wakeupInvincibilityTicks = 0;
+            _ticksSinceLastHit = 0;
             _knockbackDecelPerSec = 0f;
             SetupAnimatorForFixedTick();
             ApplyFighterDataScaling();
@@ -173,6 +176,7 @@ namespace UnDFight
             _hasRegisteredHit = false;
             _blockFromCrouch = false;
             _wakeupInvincibilityTicks = 0;
+            _ticksSinceLastHit = 0;
             _knockbackDecelPerSec = 0f;
             _inputHandler?.ClearBufferedInputs();
 
@@ -211,6 +215,29 @@ namespace UnDFight
         public void HoldVisualForHitstop()
         {
             _prevSimPos = _currSimPos;
+        }
+
+        /// <summary>
+        /// Restores health during Training mode auto-regeneration and allows getting up if knocked out at 0 HP.
+        /// </summary>
+        public void RegenerateHealthTick(int amount)
+        {
+            if (amount <= 0 || _currentHealth >= MaxHealth)
+            {
+                return;
+            }
+
+            bool wasZeroHp = _currentHealth <= 0;
+            _currentHealth = Mathf.Min(MaxHealth, _currentHealth + amount);
+
+            if (wasZeroHp && _currentHealth > 0 && _state == FighterState.KnockDown && _stateTicks >= _stateTotalTicks && _isGrounded)
+            {
+                _simVelocity.x = 0f;
+                _stateTotalTicks = GetUpDurationTicks;
+                _wakeupInvincibilityTicks = GetUpDurationTicks + WakeupInvincibilityGraceTicks;
+                EnterState(FighterState.GetUp);
+                StepAnimatorTick(0f);
+            }
         }
 
         private void ApplyFighterDataScaling()
@@ -373,6 +400,7 @@ namespace UnDFight
             _currentHealth = Mathf.Max(0, _currentHealth - move.damage);
             damageDealt = prevHealth - _currentHealth;
             _blockFromCrouch = false;
+            _ticksSinceLastHit = 0;
 
             float hitKbSpeed = move.knockback * BaseKnockbackVelocityScale * kbMult;
             knockbackVelocity = pushDir * hitKbSpeed;
@@ -412,6 +440,7 @@ namespace UnDFight
                 _wakeupInvincibilityTicks--;
             }
 
+            _ticksSinceLastHit++;
             _stateTicks++;
 
             // Terminal round-end states stay posed until MatchManager resets the round

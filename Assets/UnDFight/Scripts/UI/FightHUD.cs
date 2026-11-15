@@ -263,11 +263,19 @@ namespace UnDFight
 
             if (timerText != null)
             {
-                int sec = matchManager.RemainingSeconds;
-                timerText.text = sec.ToString("00");
-                timerText.color = sec <= 15
-                    ? new Color(1.0f, 0.32f, 0.25f, 1f)
-                    : new Color(1.0f, 0.94f, 0.72f, 1f);
+                if (matchManager.IsTrainingMode)
+                {
+                    timerText.text = "\u221E";
+                    timerText.color = new Color(1.0f, 0.94f, 0.72f, 1f);
+                }
+                else
+                {
+                    int sec = matchManager.RemainingSeconds;
+                    timerText.text = sec.ToString("00");
+                    timerText.color = sec <= 15
+                        ? new Color(1.0f, 0.32f, 0.25f, 1f)
+                        : new Color(1.0f, 0.94f, 0.72f, 1f);
+                }
             }
 
             UpdatePips(p1RoundPips, matchManager.P1RoundsWon);

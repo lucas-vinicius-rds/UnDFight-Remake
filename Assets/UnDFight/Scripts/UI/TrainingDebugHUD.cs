@@ -48,8 +48,9 @@ namespace UnDFight
             FighterController p2 = simulation.Fighter2;
             MatchManager match = simulation.MatchManager;
 
+            string timerStr = match != null && match.IsTrainingMode ? "\u221E" : (match != null ? match.RemainingSeconds.ToString("00") : "--");
             string matchLabel = match != null
-                ? $"R{match.CurrentRound} [{match.Phase}] ({match.P1RoundsWon}-{match.P2RoundsWon}) | T={match.RemainingSeconds:00}"
+                ? $"R{match.CurrentRound} [{(match.IsTrainingMode ? "Training" : match.Phase.ToString())}] ({match.P1RoundsWon}-{match.P2RoundsWon}) | T={timerStr}"
                 : "Free";
 
             string p1Info = FormatFighterLine("P1", p1);

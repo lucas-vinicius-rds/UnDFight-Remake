@@ -3,6 +3,7 @@
     "rootNamespace": "UnDFight.Tests",
     "references": [
         "UnDFight.Runtime",
+        "Unity.InputSystem",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

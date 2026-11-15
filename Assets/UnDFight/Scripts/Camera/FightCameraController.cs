@@ -40,6 +40,12 @@ namespace UnDFight
             _currentDistance = minDistance;
         }
 
+        public void SetTargets(Transform p1, Transform p2)
+        {
+            fighter1Transform = p1;
+            fighter2Transform = p2;
+        }
+
         private void Awake()
         {
             _currentDistance = minDistance;

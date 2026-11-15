@@ -33,6 +33,11 @@ namespace UnDFight
             Accumulator = 0f;
         }
 
+        public void ClearAccumulator()
+        {
+            Accumulator = 0f;
+        }
+
         /// <summary>
         /// Advances the clock by frameDeltaTime and invokes onTick for each fixed 60 Hz step.
         /// Returns the number of simulation ticks executed in this frame.
@@ -91,6 +96,7 @@ namespace UnDFight
         private FixedTickClock _clock;
         private int _hitstopTicksRemaining;
         private int _manualTickCounter;
+        private bool _isPaused;
 
         public int CurrentTick => _clock != null ? _clock.CurrentTick : _manualTickCounter;
         public float InterpolationAlpha => _clock != null ? _clock.InterpolationAlpha : 1f;
@@ -99,10 +105,13 @@ namespace UnDFight
         public float GroundY => groundY;
         public FighterController Fighter1 => fighter1;
         public FighterController Fighter2 => fighter2;
+        public FightCameraController FightCamera => fightCamera;
         public MatchManager MatchManager => matchManager;
         public int HitstopTicksRemaining => _hitstopTicksRemaining;
+        public bool IsPaused => _isPaused;
 
         public event Action<CombatHitEvent> OnCombatHit;
+        public event Action<FighterController, FighterController> OnParticipantsChanged;
 
         private void Awake()
         {
@@ -126,7 +135,21 @@ namespace UnDFight
             _hitstopTicksRemaining = 0;
             if (fighter1 != null) fighter1.InitializeSimulation(this, 0);
             if (fighter2 != null) fighter2.InitializeSimulation(this, 1);
+            if (fightCamera != null && fighter1 != null && fighter2 != null)
+            {
+                fightCamera.SetTargets(fighter1.transform, fighter2.transform);
+            }
             UpdateFacing(force: true);
+            OnParticipantsChanged?.Invoke(fighter1, fighter2);
+        }
+
+        public void SetPaused(bool paused)
+        {
+            _isPaused = paused;
+            if (!paused)
+            {
+                _clock?.ClearAccumulator();
+            }
         }
 
         public void SetMatchManager(MatchManager manager)
@@ -158,6 +181,11 @@ namespace UnDFight
 
         private void Update()
         {
+            if (_isPaused)
+            {
+                return;
+            }
+
             if (_clock == null)
             {
                 _clock = new FixedTickClock(TickRate);

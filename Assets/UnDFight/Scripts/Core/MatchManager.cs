@@ -1,17 +1,24 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 namespace UnDFight
 {
     /// <summary>
-    /// Best-of-3 match rules, 99-second countdown timer, round intro/KO/Time Over flow,
-    /// and post-round victory/defeat states driven strictly by the 60 Hz simulation clock.
+    /// Best-of-3 match rules, 99-second countdown timer (or infinite Training mode with auto health regen),
+    /// dynamic session fighter spawning, round intro/KO/Time Over flow, and post-round states driven by 60 Hz ticks.
     /// </summary>
     public class MatchManager : MonoBehaviour
     {
+        public const int TrainingRegenDelayTicks = 90;
+        public const int TrainingRegenPerTick = 25;
+
         [Header("References")]
         [SerializeField] private FightSimulation simulation;
+        [SerializeField] private FighterRoster fighterRoster;
+        [SerializeField] private FighterData defaultFighterP1;
+        [SerializeField] private FighterData defaultFighterP2;
 
         [Header("Match Rules (60 Hz Ticks)")]
         [SerializeField, Min(1)] private int roundsToWin = 2;
@@ -33,11 +40,14 @@ namespace UnDFight
         public int RoundsToWin => roundsToWin;
         public int RoundDurationSeconds => roundDurationSeconds;
         public int RoundTimerTicks { get; private set; }
-        public int RemainingSeconds => Mathf.Clamp(Mathf.CeilToInt(RoundTimerTicks / (float)FightSimulation.TickRate), 0, roundDurationSeconds);
+        public int RemainingSeconds => IsTrainingMode
+            ? roundDurationSeconds
+            : Mathf.Clamp(Mathf.CeilToInt(RoundTimerTicks / (float)FightSimulation.TickRate), 0, roundDurationSeconds);
         public int PhaseTicks { get; private set; }
         public int WinnerPlayerIndex { get; private set; } = -1;
         public string BannerText { get; private set; } = string.Empty;
         public string SubtitleText { get; private set; } = string.Empty;
+        public bool IsTrainingMode { get; private set; }
         public bool InputsAllowed => Phase == MatchPhase.Fighting;
         public bool CombatActive => Phase == MatchPhase.Fighting;
 
@@ -57,24 +67,37 @@ namespace UnDFight
 
         private void Update()
         {
-            if (Phase != MatchPhase.MatchOver)
+            if (Phase != MatchPhase.MatchOver || (simulation != null && simulation.IsPaused))
             {
                 return;
             }
 
             Keyboard kb = Keyboard.current;
-            if (kb != null && (kb.enterKey.wasPressedThisFrame || kb.rKey.wasPressedThisFrame))
+            if (kb != null && kb.rKey.wasPressedThisFrame)
             {
                 RestartMatch();
             }
         }
 
-        public void InitializeMatch(FightSimulation targetSimulation)
+        public void SetTrainingMode(bool enabled)
+        {
+            IsTrainingMode = enabled;
+        }
+
+        public void InitializeMatch(FightSimulation targetSimulation, bool? trainingModeOverride = null)
         {
             simulation = targetSimulation;
             if (simulation != null)
             {
                 simulation.SetMatchManager(this);
+            }
+
+            IsTrainingMode = trainingModeOverride ?? GameSessionState.IsTrainingMode;
+
+            if (Application.isPlaying)
+            {
+                SpawnSessionFightersIfNeeded();
+                SettingsManager.ApplySettings(SettingsManager.Current, applyResolution: false);
             }
 
             _initialized = true;
@@ -83,6 +106,11 @@ namespace UnDFight
 
         public void RestartMatch()
         {
+            if (simulation != null)
+            {
+                simulation.SetPaused(false);
+            }
+
             CurrentRound = 1;
             P1RoundsWon = 0;
             P2RoundsWon = 0;
@@ -92,22 +120,30 @@ namespace UnDFight
 
         public void StartRound()
         {
-            Phase = MatchPhase.RoundIntro;
             PhaseTicks = 0;
             _wasTimeOver = false;
             WinnerPlayerIndex = -1;
             RoundTimerTicks = roundDurationSeconds * FightSimulation.TickRate;
-            BannerText = $"ROUND {CurrentRound}";
-            SubtitleText = string.Empty;
 
             ResetFightersForRound();
+
+            if (IsTrainingMode)
+            {
+                Phase = MatchPhase.Fighting;
+                BannerText = string.Empty;
+                SubtitleText = string.Empty;
+                SetFightersInputsEnabled(true);
+                OnMatchStateChanged?.Invoke(this);
+                return;
+            }
+
+            Phase = MatchPhase.RoundIntro;
+            BannerText = $"ROUND {CurrentRound}";
+            SubtitleText = string.Empty;
             SetFightersInputsEnabled(false);
             OnMatchStateChanged?.Invoke(this);
         }
 
-        /// <summary>
-        /// Immediately transitions from RoundIntro to Fighting with full timer (primarily for deterministic combat tests).
-        /// </summary>
         public void SkipIntroToFighting()
         {
             Phase = MatchPhase.Fighting;
@@ -116,6 +152,18 @@ namespace UnDFight
             SubtitleText = string.Empty;
             SetFightersInputsEnabled(true);
             OnMatchStateChanged?.Invoke(this);
+        }
+
+        public void GoToCharacterSelect()
+        {
+            simulation?.SetPaused(false);
+            SceneManager.LoadScene("CharacterSelect");
+        }
+
+        public void GoToMainMenu()
+        {
+            simulation?.SetPaused(false);
+            SceneManager.LoadScene("MainMenu");
         }
 
         public void StepTick(int simulationTick)
@@ -171,16 +219,23 @@ namespace UnDFight
                 OnMatchStateChanged?.Invoke(this);
             }
 
-            if (RoundTimerTicks > 0)
-            {
-                RoundTimerTicks--;
-            }
-
             FighterController p1 = simulation != null ? simulation.Fighter1 : null;
             FighterController p2 = simulation != null ? simulation.Fighter2 : null;
             if (p1 == null || p2 == null)
             {
                 return;
+            }
+
+            if (IsTrainingMode)
+            {
+                TryRegenerateTrainingFighter(p1);
+                TryRegenerateTrainingFighter(p2);
+                return;
+            }
+
+            if (RoundTimerTicks > 0)
+            {
+                RoundTimerTicks--;
             }
 
             bool p1Ko = p1.CurrentHealth <= 0;
@@ -197,6 +252,16 @@ namespace UnDFight
                 int roundWinner = p1.CurrentHealth > p2.CurrentHealth ? 0 :
                     (p2.CurrentHealth > p1.CurrentHealth ? 1 : -1);
                 EnterRoundOver(roundWinner, isTimeOver: true);
+            }
+        }
+
+        private static void TryRegenerateTrainingFighter(FighterController fighter)
+        {
+            if (fighter != null &&
+                fighter.CurrentHealth < fighter.MaxHealth &&
+                fighter.TicksSinceLastHit >= TrainingRegenDelayTicks)
+            {
+                fighter.RegenerateHealthTick(TrainingRegenPerTick);
             }
         }
 
@@ -224,7 +289,7 @@ namespace UnDFight
                     WinnerPlayerIndex = championIndex;
                     string winnerName = GetFighterDisplayName(championIndex).ToUpperInvariant();
                     BannerText = $"{winnerName} WINS!";
-                    SubtitleText = "PRESS ENTER OR R TO REMATCH";
+                    SubtitleText = string.Empty;
                     OnMatchStateChanged?.Invoke(this);
                 }
                 else
@@ -273,6 +338,60 @@ namespace UnDFight
             }
 
             OnMatchStateChanged?.Invoke(this);
+        }
+
+        private void SpawnSessionFightersIfNeeded()
+        {
+            if (simulation == null)
+            {
+                return;
+            }
+
+            GameSessionState.ResolveFighters(
+                fighterRoster,
+                defaultFighterP1 != null ? defaultFighterP1 : simulation.Fighter1?.Data,
+                defaultFighterP2 != null ? defaultFighterP2 : simulation.Fighter2?.Data,
+                out FighterData desiredP1,
+                out FighterData desiredP2);
+
+            FighterController p1 = ReplaceFighterIfNeeded(simulation.Fighter1, desiredP1, p1StartX, 0, "Fighter1");
+            FighterController p2 = ReplaceFighterIfNeeded(simulation.Fighter2, desiredP2, p2StartX, 1, "Fighter2");
+
+            simulation.SetParticipants(p1, p2, simulation.FightCamera);
+        }
+
+        private FighterController ReplaceFighterIfNeeded(
+            FighterController existing,
+            FighterData desiredData,
+            float startX,
+            int playerIndex,
+            string slotPrefix)
+        {
+            if (desiredData == null || desiredData.prefab == null)
+            {
+                return existing;
+            }
+
+            if (existing != null && existing.Data == desiredData)
+            {
+                return existing;
+            }
+
+            float groundY = simulation != null ? simulation.GroundY : 0f;
+            if (existing != null)
+            {
+                Destroy(existing.gameObject);
+            }
+
+            GameObject instance = Instantiate(desiredData.prefab, new Vector3(startX, groundY, 0f), Quaternion.identity);
+            instance.name = $"{slotPrefix}_{desiredData.fighterName}";
+            var controller = instance.GetComponent<FighterController>();
+            if (controller != null)
+            {
+                controller.SetFighterData(desiredData);
+                controller.InputHandler?.Configure(playerIndex);
+            }
+            return controller;
         }
 
         private static void TryTriggerVictoryPose(FighterController winner)
