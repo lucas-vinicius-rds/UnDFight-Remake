@@ -90,22 +90,23 @@ namespace UnDFight
             var backdrop = GetComponent<UnityEngine.UI.Image>();
             if (backdrop == null) backdrop = gameObject.AddComponent<UnityEngine.UI.Image>();
             backdrop.sprite = whiteSprite;
-            backdrop.color = new Color(0.02f, 0.03f, 0.06f, 0.80f);
+            backdrop.color = new Color(0.02f, 0.022f, 0.03f, 0.86f);
             backdrop.raycastTarget = true;
 
-            RectTransform modal = MenuUiFactory.CreatePanel("ModalBox", transform, new Color(0.07f, 0.09f, 0.14f, 0.98f), whiteSprite, raycastTarget: true);
+            RectTransform modal = MenuUiFactory.CreatePanel("ModalBox", transform, MenuUiFactory.ObsidianBg, whiteSprite, raycastTarget: true);
             modal.anchorMin = new Vector2(0.5f, 0.5f);
             modal.anchorMax = new Vector2(0.5f, 0.5f);
             modal.pivot = new Vector2(0.5f, 0.5f);
             modal.sizeDelta = new Vector2(1480f, 900f);
+            MenuUiFactory.AddBorder(modal, MenuUiFactory.BronzeBorder, whiteSprite, 2f);
 
             RectTransform topLine = MenuUiFactory.CreatePanel("TopGoldLine", modal, MenuUiFactory.AccentGold, whiteSprite);
             topLine.anchorMin = new Vector2(0f, 1f);
             topLine.anchorMax = new Vector2(1f, 1f);
             topLine.pivot = new Vector2(0.5f, 1f);
-            topLine.sizeDelta = new Vector2(0f, 5f);
+            topLine.sizeDelta = new Vector2(0f, 4f);
 
-            TextMeshProUGUI title = MenuUiFactory.CreateText("Title", modal, "OPÇÕES", 44f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentGold);
+            TextMeshProUGUI title = MenuUiFactory.CreateText("Title", modal, "CONFIGURAÇÕES", 42f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentGold, characterSpacing: 7f);
             title.rectTransform.anchorMin = new Vector2(0f, 1f);
             title.rectTransform.anchorMax = new Vector2(1f, 1f);
             title.rectTransform.pivot = new Vector2(0.5f, 1f);
@@ -113,7 +114,7 @@ namespace UnDFight
             title.rectTransform.sizeDelta = new Vector2(-80f, 58f);
 
             // Top Left: Audio section
-            TextMeshProUGUI audioHdr = MenuUiFactory.CreateText("AudioHeader", modal, "ÁUDIO", 24f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentCyan);
+            TextMeshProUGUI audioHdr = MenuUiFactory.CreateText("AudioHeader", modal, "ÁUDIO", 22f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentAmber, characterSpacing: 5f);
             PlaceTopLeftRect(audioHdr.rectTransform, 44f, -86f, 670f, 34f);
 
             CreateSliderOptionRow(modal, whiteSprite, "Volume Geral (Master)", 44f, -126f, 670f, out _masterSlider, out _masterVal, v =>
@@ -136,7 +137,7 @@ namespace UnDFight
             });
 
             // Top Right: Video & Devices
-            TextMeshProUGUI videoHdr = MenuUiFactory.CreateText("VideoHeader", modal, "VÍDEO E DISPOSITIVOS", 24f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentCyan);
+            TextMeshProUGUI videoHdr = MenuUiFactory.CreateText("VideoHeader", modal, "VÍDEO E DISPOSITIVOS", 22f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentAmber, characterSpacing: 5f);
             PlaceTopLeftRect(videoHdr.rectTransform, 756f, -86f, 680f, 34f);
 
             CreateCyclerRow(modal, whiteSprite, "Resolução", 756f, -126f, 680f, out _resolutionVal, step =>

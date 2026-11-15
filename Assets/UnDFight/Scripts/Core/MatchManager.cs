@@ -156,12 +156,29 @@ namespace UnDFight
 
         public void GoToCharacterSelect()
         {
+            GameSessionState.OpenStageSelectOnCharacterSelect = false;
+            simulation?.SetPaused(false);
+            SceneManager.LoadScene("CharacterSelect");
+        }
+
+        public void GoToStageSelect()
+        {
+            FighterData p1 = simulation != null && simulation.Fighter1 != null ? simulation.Fighter1.Data : defaultFighterP1;
+            FighterData p2 = simulation != null && simulation.Fighter2 != null ? simulation.Fighter2.Data : defaultFighterP2;
+            if (GameSessionState.SelectedFighterP1 == null || GameSessionState.SelectedFighterP2 == null)
+            {
+                GameSessionState.SelectFighters(
+                    GameSessionState.SelectedFighterP1 != null ? GameSessionState.SelectedFighterP1 : p1,
+                    GameSessionState.SelectedFighterP2 != null ? GameSessionState.SelectedFighterP2 : p2);
+            }
+            GameSessionState.OpenStageSelectOnCharacterSelect = true;
             simulation?.SetPaused(false);
             SceneManager.LoadScene("CharacterSelect");
         }
 
         public void GoToMainMenu()
         {
+            GameSessionState.OpenStageSelectOnCharacterSelect = false;
             simulation?.SetPaused(false);
             SceneManager.LoadScene("MainMenu");
         }

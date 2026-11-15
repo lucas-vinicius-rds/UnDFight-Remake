@@ -8,13 +8,17 @@ namespace UnDFight
     }
 
     /// <summary>
-    /// Shared cross-scene match session state holding active GameMode and selected fighters.
+    /// Shared cross-scene match session state holding active GameMode, selected fighters, and selected stage.
     /// </summary>
     public static class GameSessionState
     {
+        public const string DefaultStageSceneName = "Arena_Favela";
+
         public static GameMode CurrentMode { get; set; } = GameMode.LocalVersus;
         public static FighterData SelectedFighterP1 { get; set; }
         public static FighterData SelectedFighterP2 { get; set; }
+        public static string SelectedStageSceneName { get; set; } = DefaultStageSceneName;
+        public static bool OpenStageSelectOnCharacterSelect { get; set; }
 
         public static bool IsTrainingMode => CurrentMode == GameMode.Training;
         public static bool P1SelectsBothFighters => CurrentMode == GameMode.VersusCpu || CurrentMode == GameMode.Training;
@@ -30,11 +34,51 @@ namespace UnDFight
             SelectedFighterP2 = p2;
         }
 
+        public static void SelectStage(StageData stage)
+        {
+            if (stage != null && !string.IsNullOrWhiteSpace(stage.sceneName))
+            {
+                SelectedStageSceneName = stage.sceneName;
+            }
+        }
+
+        public static void SelectStageScene(string sceneName)
+        {
+            if (!string.IsNullOrWhiteSpace(sceneName))
+            {
+                SelectedStageSceneName = sceneName;
+            }
+        }
+
+        public static string ResolveStageSceneName(StageRoster roster, string fallbackSceneName = "Training")
+        {
+            if (!string.IsNullOrWhiteSpace(SelectedStageSceneName))
+            {
+                if (roster == null || roster.FindBySceneName(SelectedStageSceneName) != null)
+                {
+                    return SelectedStageSceneName;
+                }
+            }
+
+            if (roster != null && roster.Count > 0)
+            {
+                StageData first = roster.GetStage(0);
+                if (first != null && !string.IsNullOrWhiteSpace(first.sceneName))
+                {
+                    return first.sceneName;
+                }
+            }
+
+            return !string.IsNullOrWhiteSpace(fallbackSceneName) ? fallbackSceneName : DefaultStageSceneName;
+        }
+
         public static void Reset()
         {
             CurrentMode = GameMode.LocalVersus;
             SelectedFighterP1 = null;
             SelectedFighterP2 = null;
+            SelectedStageSceneName = DefaultStageSceneName;
+            OpenStageSelectOnCharacterSelect = false;
         }
 
         /// <summary>

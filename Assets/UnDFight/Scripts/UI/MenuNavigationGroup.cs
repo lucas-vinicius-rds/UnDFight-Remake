@@ -29,13 +29,14 @@ namespace UnDFight
         public UnityEngine.UI.Button Button;
         public UnityEngine.UI.Image Background;
         public UnityEngine.UI.Image AccentBar;
+        public UnityEngine.UI.Image AccentGlow;
         public TextMeshProUGUI Label;
         public Action OnSubmit;
         public Action<int> OnHorizontalStep;
-        public Color NormalBg = new Color(0.11f, 0.14f, 0.20f, 0.94f);
-        public Color SelectedBg = new Color(0.20f, 0.28f, 0.42f, 1.0f);
-        public Color NormalAccent = new Color(0.32f, 0.38f, 0.48f, 0.7f);
-        public Color SelectedAccent = new Color(1.0f, 0.76f, 0.16f, 1.0f);
+        public Color NormalBg = new Color(0.086f, 0.098f, 0.133f, 0.88f);      // #161922
+        public Color SelectedBg = new Color(0.180f, 0.145f, 0.095f, 0.96f);    // Warm dark bronze-amber tint
+        public Color NormalAccent = new Color(0.290f, 0.247f, 0.208f, 0.75f);  // #4A3F35
+        public Color SelectedAccent = new Color(1.000f, 0.722f, 0.000f, 1.0f); // #FFB800
     }
 
     /// <summary>
@@ -124,9 +125,14 @@ namespace UnDFight
                 {
                     item.AccentBar.color = selected ? item.SelectedAccent : item.NormalAccent;
                 }
+                if (item.AccentGlow != null)
+                {
+                    item.AccentGlow.enabled = selected;
+                    item.AccentGlow.color = new Color(item.SelectedAccent.r, item.SelectedAccent.g, item.SelectedAccent.b, 0.28f);
+                }
                 if (item.Label != null)
                 {
-                    item.Label.color = selected ? new Color(1.0f, 0.94f, 0.68f, 1f) : Color.white;
+                    item.Label.color = selected ? new Color(1.0f, 0.86f, 0.38f, 1f) : new Color(0.84f, 0.84f, 0.82f, 1f);
                 }
             }
         }

@@ -206,5 +206,49 @@ namespace UnDFight.Tests
             Assert.AreEqual(1000, p2.CurrentHealth);
             Assert.AreEqual(MatchPhase.Fighting, match.Phase);
         }
+
+        [Test]
+        public void StageRoster_FindsStagesAndResolvesSessionStageSelection()
+        {
+            var favela = Track(ScriptableObject.CreateInstance<StageData>());
+            favela.stageId = "favela_carioca";
+            favela.displayName = "FAVELA CARIOCA";
+            favela.subtitle = "Bar do Jorge • Pôr do Sol";
+            favela.sceneName = "Arena_Favela";
+
+            var treino = Track(ScriptableObject.CreateInstance<StageData>());
+            treino.stageId = "sala_de_treino";
+            treino.displayName = "SALA DE TREINO";
+            treino.subtitle = "Arena Tática • Simulação";
+            treino.sceneName = "Training";
+
+            var roster = Track(ScriptableObject.CreateInstance<StageRoster>());
+            var field = typeof(StageRoster).GetField("stages", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field.SetValue(roster, new List<StageData> { favela, treino });
+
+            Assert.AreEqual(2, roster.Count);
+            Assert.AreSame(favela, roster.FindBySceneName("Arena_Favela"));
+            Assert.AreSame(treino, roster.FindBySceneName("Training"));
+            Assert.IsNull(roster.FindBySceneName("MissingScene"));
+
+            // Default resolves cleanly to Arena_Favela
+            Assert.AreEqual("Arena_Favela", GameSessionState.ResolveStageSceneName(roster));
+
+            // Selecting Sala de Treino persists across GameSessionState
+            GameSessionState.SelectStage(treino);
+            Assert.AreEqual("Training", GameSessionState.SelectedStageSceneName);
+            Assert.AreEqual("Training", GameSessionState.ResolveStageSceneName(roster));
+
+            // Unknown scene name falls back safely to first roster entry
+            GameSessionState.SelectStageScene("NonExistentArena");
+            Assert.AreEqual("Arena_Favela", GameSessionState.ResolveStageSceneName(roster));
+
+            // Direct reopen flag for "TROCAR MAPA"
+            GameSessionState.OpenStageSelectOnCharacterSelect = true;
+            Assert.IsTrue(GameSessionState.OpenStageSelectOnCharacterSelect);
+            GameSessionState.Reset();
+            Assert.IsFalse(GameSessionState.OpenStageSelectOnCharacterSelect);
+            Assert.AreEqual(GameSessionState.DefaultStageSceneName, GameSessionState.SelectedStageSceneName);
+        }
     }
 }

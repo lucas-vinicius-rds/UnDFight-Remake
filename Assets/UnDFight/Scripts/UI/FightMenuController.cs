@@ -5,8 +5,8 @@ using UnityEngine.InputSystem;
 namespace UnDFight
 {
     /// <summary>
-    /// Handles in-fight Pause Menu (Esc / Gamepad Start), automatic MatchOver post-fight menu,
-    /// and shared Options modal inside combat scenes.
+    /// MKX-styled in-fight Pause Menu (Esc / Gamepad Start), automatic MatchOver post-fight menu,
+    /// and shared Options modal inside combat scenes, supporting Change Stage and Change Fighters.
     /// </summary>
     public class FightMenuController : MonoBehaviour
     {
@@ -82,29 +82,30 @@ namespace UnDFight
         {
             whiteSprite = sprite;
 
-            // Pause Panel
-            RectTransform pauseOverlay = MenuUiFactory.CreatePanel("PausePanel", canvasRoot, new Color(0.02f, 0.03f, 0.06f, 0.72f), whiteSprite, raycastTarget: true);
+            // Pause Panel (MKX obsidian/bronze/amber)
+            RectTransform pauseOverlay = MenuUiFactory.CreatePanel("PausePanel", canvasRoot, new Color(0.02f, 0.022f, 0.03f, 0.78f), whiteSprite, raycastTarget: true);
             MenuUiFactory.StretchFull(pauseOverlay, 0f, 0f, 0f, 0f);
             pausePanel = pauseOverlay.gameObject;
 
-            RectTransform pauseBox = MenuUiFactory.CreatePanel("PauseBox", pauseOverlay, new Color(0.07f, 0.09f, 0.14f, 0.97f), whiteSprite, raycastTarget: true);
+            RectTransform pauseBox = MenuUiFactory.CreatePanel("PauseBox", pauseOverlay, MenuUiFactory.ObsidianBg, whiteSprite, raycastTarget: true);
             pauseBox.anchorMin = new Vector2(0.5f, 0.5f);
             pauseBox.anchorMax = new Vector2(0.5f, 0.5f);
             pauseBox.pivot = new Vector2(0.5f, 0.5f);
-            pauseBox.sizeDelta = new Vector2(560f, 600f);
+            pauseBox.sizeDelta = new Vector2(580f, 640f);
+            MenuUiFactory.AddBorder(pauseBox, MenuUiFactory.BronzeBorder, whiteSprite, 2f);
 
             RectTransform pauseTop = MenuUiFactory.CreatePanel("PauseAccent", pauseBox, MenuUiFactory.AccentGold, whiteSprite);
             pauseTop.anchorMin = new Vector2(0f, 1f);
             pauseTop.anchorMax = new Vector2(1f, 1f);
             pauseTop.pivot = new Vector2(0.5f, 1f);
-            pauseTop.sizeDelta = new Vector2(0f, 5f);
+            pauseTop.sizeDelta = new Vector2(0f, 4f);
 
-            TextMeshProUGUI pauseTitle = MenuUiFactory.CreateText("PauseTitle", pauseBox, "PAUSADO", 44f, FontStyles.Bold, TextAlignmentOptions.Center, MenuUiFactory.AccentGold);
+            TextMeshProUGUI pauseTitle = MenuUiFactory.CreateText("PauseTitle", pauseBox, "PAUSADO", 42f, FontStyles.Bold, TextAlignmentOptions.Center, MenuUiFactory.AccentGold, characterSpacing: 8f);
             pauseTitle.rectTransform.anchorMin = new Vector2(0f, 1f);
             pauseTitle.rectTransform.anchorMax = new Vector2(1f, 1f);
             pauseTitle.rectTransform.pivot = new Vector2(0.5f, 1f);
             pauseTitle.rectTransform.anchoredPosition = new Vector2(0f, -20f);
-            pauseTitle.rectTransform.sizeDelta = new Vector2(-40f, 60f);
+            pauseTitle.rectTransform.sizeDelta = new Vector2(-40f, 58f);
 
             pauseNavigation = pauseBox.gameObject.AddComponent<MenuNavigationGroup>();
             string[] pauseLabels =
@@ -112,30 +113,32 @@ namespace UnDFight
                 "CONTINUAR",
                 "REINICIAR LUTA",
                 "HITBOXES (F1): OFF",
-                "OPÇÕES",
+                "CONFIGURAÇÕES",
+                "TROCAR MAPA",
                 "TROCAR PERSONAGENS",
                 "MENU PRINCIPAL"
             };
 
             for (int i = 0; i < pauseLabels.Length; i++)
             {
-                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"PauseBtn_{i}", pauseBox, pauseLabels[i], whiteSprite, 25f, TextAlignmentOptions.Center);
+                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"PauseBtn_{i}", pauseBox, pauseLabels[i], whiteSprite, 23f, TextAlignmentOptions.Center, characterSpacing: 5f);
                 RectTransform rt = entry.Button.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.5f, 1f);
                 rt.anchorMax = new Vector2(0.5f, 1f);
                 rt.pivot = new Vector2(0.5f, 1f);
-                rt.anchoredPosition = new Vector2(0f, -102f - i * 74f);
-                rt.sizeDelta = new Vector2(460f, 60f);
+                rt.anchoredPosition = new Vector2(0f, -96f - i * 72f);
+                rt.sizeDelta = new Vector2(476f, 58f);
                 pauseNavigation.AddItem(entry);
             }
 
             // MatchOver Post-Fight Menu Panel (positioned cleanly below the winner banner)
-            RectTransform moPanel = MenuUiFactory.CreatePanel("MatchOverPanel", canvasRoot, new Color(0.06f, 0.08f, 0.13f, 0.94f), whiteSprite, raycastTarget: true);
-            moPanel.anchorMin = new Vector2(0.5f, 0.42f);
-            moPanel.anchorMax = new Vector2(0.5f, 0.42f);
+            RectTransform moPanel = MenuUiFactory.CreatePanel("MatchOverPanel", canvasRoot, MenuUiFactory.ObsidianBg, whiteSprite, raycastTarget: true);
+            moPanel.anchorMin = new Vector2(0.5f, 0.39f);
+            moPanel.anchorMax = new Vector2(0.5f, 0.39f);
             moPanel.pivot = new Vector2(0.5f, 0.5f);
-            moPanel.sizeDelta = new Vector2(480f, 270f);
+            moPanel.sizeDelta = new Vector2(500f, 318f);
             matchOverPanel = moPanel.gameObject;
+            MenuUiFactory.AddBorder(moPanel, MenuUiFactory.BronzeBorder, whiteSprite, 2f);
 
             RectTransform moLine = MenuUiFactory.CreatePanel("MOAccent", moPanel, MenuUiFactory.AccentGold, whiteSprite);
             moLine.anchorMin = new Vector2(0f, 1f);
@@ -147,19 +150,20 @@ namespace UnDFight
             string[] moLabels =
             {
                 "REVANCHE",
+                "TROCAR MAPA",
                 "TROCAR PERSONAGENS",
                 "MENU PRINCIPAL"
             };
 
             for (int i = 0; i < moLabels.Length; i++)
             {
-                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"MatchOverBtn_{i}", moPanel, moLabels[i], whiteSprite, 25f, TextAlignmentOptions.Center);
+                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"MatchOverBtn_{i}", moPanel, moLabels[i], whiteSprite, 23f, TextAlignmentOptions.Center, characterSpacing: 5f);
                 RectTransform rt = entry.Button.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.5f, 1f);
                 rt.anchorMax = new Vector2(0.5f, 1f);
                 rt.pivot = new Vector2(0.5f, 1f);
-                rt.anchoredPosition = new Vector2(0f, -24f - i * 78f);
-                rt.sizeDelta = new Vector2(410f, 62f);
+                rt.anchoredPosition = new Vector2(0f, -22f - i * 70f);
+                rt.sizeDelta = new Vector2(424f, 56f);
                 matchOverNavigation.AddItem(entry);
             }
 
@@ -191,6 +195,7 @@ namespace UnDFight
                         Button = btns[i],
                         Background = btns[i].GetComponent<UnityEngine.UI.Image>(),
                         AccentBar = btns[i].transform.Find("AccentBar")?.GetComponent<UnityEngine.UI.Image>(),
+                        AccentGlow = btns[i].transform.Find("AccentGlow")?.GetComponent<UnityEngine.UI.Image>(),
                         Label = label,
                         OnSubmit = () => ExecutePauseAction(idx)
                     });
@@ -210,6 +215,7 @@ namespace UnDFight
                         Button = btns[i],
                         Background = btns[i].GetComponent<UnityEngine.UI.Image>(),
                         AccentBar = btns[i].transform.Find("AccentBar")?.GetComponent<UnityEngine.UI.Image>(),
+                        AccentGlow = btns[i].transform.Find("AccentGlow")?.GetComponent<UnityEngine.UI.Image>(),
                         Label = btns[i].transform.Find("Label")?.GetComponent<TextMeshProUGUI>(),
                         OnSubmit = () => ExecuteMatchOverAction(idx)
                     });
@@ -300,14 +306,18 @@ namespace UnDFight
                         RefreshHitboxLabel();
                     }
                     break;
-                case 3: // Opções
+                case 3: // Configurações
                     OpenOptionsFromPause();
                     break;
-                case 4: // Trocar Personagens
+                case 4: // Trocar Mapa
+                    SetPaused(false);
+                    matchManager?.GoToStageSelect();
+                    break;
+                case 5: // Trocar Personagens
                     SetPaused(false);
                     matchManager?.GoToCharacterSelect();
                     break;
-                case 5: // Menu Principal
+                case 6: // Menu Principal
                     SetPaused(false);
                     matchManager?.GoToMainMenu();
                     break;
@@ -322,10 +332,13 @@ namespace UnDFight
                     SetMatchOverMenuVisible(false);
                     matchManager?.RestartMatch();
                     break;
-                case 1: // Trocar Personagens
+                case 1: // Trocar Mapa
+                    matchManager?.GoToStageSelect();
+                    break;
+                case 2: // Trocar Personagens
                     matchManager?.GoToCharacterSelect();
                     break;
-                case 2: // Menu Principal
+                case 3: // Menu Principal
                     matchManager?.GoToMainMenu();
                     break;
             }
