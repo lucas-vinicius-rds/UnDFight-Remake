@@ -60,6 +60,10 @@ namespace UnDFight
         public int ItemCount => _items.Count;
         public Action OnCancel;
 
+        public static event Action OnAnySelectionMoved;
+        public static event Action OnAnySubmitted;
+        public static event Action OnAnyCancelled;
+
         public void ClearItems()
         {
             _items.Clear();
@@ -87,7 +91,8 @@ namespace UnDFight
             entry.Button.onClick.AddListener(() =>
             {
                 if (_inputLocked) return;
-                SetSelectedIndex(idx);
+                SetSelectedIndex(idx, notifyAudio: false);
+                OnAnySubmitted?.Invoke();
                 entry.OnSubmit?.Invoke();
             });
 
@@ -99,7 +104,7 @@ namespace UnDFight
             _inputLocked = locked;
         }
 
-        public void SetSelectedIndex(int index)
+        public void SetSelectedIndex(int index, bool notifyAudio = true)
         {
             if (_items.Count == 0)
             {
@@ -107,8 +112,14 @@ namespace UnDFight
                 return;
             }
 
-            _selectedIndex = ((index % _items.Count) + _items.Count) % _items.Count;
+            int next = ((index % _items.Count) + _items.Count) % _items.Count;
+            bool changed = next != _selectedIndex;
+            _selectedIndex = next;
             RefreshVisuals();
+            if (changed && notifyAudio)
+            {
+                OnAnySelectionMoved?.Invoke();
+            }
         }
 
         public void RefreshVisuals()
@@ -193,10 +204,12 @@ namespace UnDFight
 
             if (submitPressed)
             {
+                OnAnySubmitted?.Invoke();
                 _items[_selectedIndex].OnSubmit?.Invoke();
             }
             else if (cancelPressed)
             {
+                OnAnyCancelled?.Invoke();
                 OnCancel?.Invoke();
             }
         }

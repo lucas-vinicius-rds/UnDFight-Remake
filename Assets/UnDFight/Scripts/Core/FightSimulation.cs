@@ -92,6 +92,7 @@ namespace UnDFight
         [SerializeField] private FighterController fighter2;
         [SerializeField] private FightCameraController fightCamera;
         [SerializeField] private MatchManager matchManager;
+        [SerializeField] private CpuAiController cpuAiController;
 
         private FixedTickClock _clock;
         private int _hitstopTicksRemaining;
@@ -107,6 +108,7 @@ namespace UnDFight
         public FighterController Fighter2 => fighter2;
         public FightCameraController FightCamera => fightCamera;
         public MatchManager MatchManager => matchManager;
+        public CpuAiController CpuAi => cpuAiController;
         public int HitstopTicksRemaining => _hitstopTicksRemaining;
         public bool IsPaused => _isPaused;
 
@@ -119,6 +121,10 @@ namespace UnDFight
             if (matchManager == null)
             {
                 matchManager = GetComponent<MatchManager>();
+            }
+            if (cpuAiController == null)
+            {
+                cpuAiController = GetComponent<CpuAiController>();
             }
             if (fighter1 != null) fighter1.InitializeSimulation(this, 0);
             if (fighter2 != null) fighter2.InitializeSimulation(this, 1);
@@ -139,8 +145,21 @@ namespace UnDFight
             {
                 fightCamera.SetTargets(fighter1.transform, fighter2.transform);
             }
+            if (cpuAiController != null)
+            {
+                cpuAiController.Configure(this, fighter2, fighter1, matchManager);
+            }
             UpdateFacing(force: true);
             OnParticipantsChanged?.Invoke(fighter1, fighter2);
+        }
+
+        public void SetCpuAiController(CpuAiController ai)
+        {
+            cpuAiController = ai;
+            if (cpuAiController != null)
+            {
+                cpuAiController.Configure(this, fighter2, fighter1, matchManager);
+            }
         }
 
         public void SetPaused(bool paused)
@@ -205,6 +224,12 @@ namespace UnDFight
                 return;
             }
 
+            // Step CPU AI strictly on the 60 Hz simulation clock before advancing fighters
+            if (cpuAiController != null && cpuAiController.IsEnabled)
+            {
+                cpuAiController.StepAiTick(tick);
+            }
+
             if (fighter1 != null) fighter1.StepTick(tick, dt);
             if (fighter2 != null) fighter2.StepTick(tick, dt);
 
@@ -215,6 +240,11 @@ namespace UnDFight
             if (combatAllowed)
             {
                 ResolveCombatHits();
+            }
+
+            if (cpuAiController != null && cpuAiController.IsEnabled)
+            {
+                cpuAiController.ObserveTick(tick);
             }
 
             matchManager?.StepTick(tick);
@@ -306,6 +336,25 @@ namespace UnDFight
             if (hitstop > maxHitstop)
             {
                 maxHitstop = hitstop;
+            }
+
+            if (fightCamera != null)
+            {
+                if (outcome == HitOutcomeType.Blocked)
+                {
+                    fightCamera.TriggerImpactShake(0.03f, 0.06f);
+                }
+                else if (outcome == HitOutcomeType.KnockDown ||
+                         strike.Move.causesKnockdown ||
+                         strike.Move.attackType == AttackType.HeavyPunch ||
+                         strike.Move.attackType == AttackType.HeavyKick)
+                {
+                    fightCamera.TriggerImpactShake(0.14f, 0.16f);
+                }
+                else
+                {
+                    fightCamera.TriggerImpactShake(0.06f, 0.09f);
+                }
             }
 
             OnCombatHit?.Invoke(new CombatHitEvent

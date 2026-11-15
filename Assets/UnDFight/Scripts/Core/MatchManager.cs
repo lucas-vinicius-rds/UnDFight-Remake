@@ -19,6 +19,7 @@ namespace UnDFight
         [SerializeField] private FighterRoster fighterRoster;
         [SerializeField] private FighterData defaultFighterP1;
         [SerializeField] private FighterData defaultFighterP2;
+        [SerializeField] private CpuAiController cpuAiController;
 
         [Header("Match Rules (60 Hz Ticks)")]
         [SerializeField, Min(1)] private int roundsToWin = 2;
@@ -97,11 +98,41 @@ namespace UnDFight
             if (Application.isPlaying)
             {
                 SpawnSessionFightersIfNeeded();
+                ConfigureCpuAiForCurrentMode();
                 SettingsManager.ApplySettings(SettingsManager.Current, applyResolution: false);
             }
 
             _initialized = true;
             RestartMatch();
+        }
+
+        private void ConfigureCpuAiForCurrentMode()
+        {
+            if (simulation == null)
+            {
+                return;
+            }
+
+            if (cpuAiController == null)
+            {
+                cpuAiController = simulation.CpuAi != null
+                    ? simulation.CpuAi
+                    : (simulation.GetComponent<CpuAiController>() ?? simulation.gameObject.AddComponent<CpuAiController>());
+            }
+
+            simulation.SetCpuAiController(cpuAiController);
+            cpuAiController.Configure(simulation, simulation.Fighter2, simulation.Fighter1, this);
+            cpuAiController.SetDifficulty(GameSessionState.SelectedCpuDifficulty);
+
+            if (GameSessionState.CurrentMode == GameMode.VersusCpu)
+            {
+                cpuAiController.SetEnabled(true);
+            }
+            else
+            {
+                // LocalVersus & Training start with CPU disabled (F2 can toggle CPU in Training)
+                cpuAiController.SetEnabled(false);
+            }
         }
 
         public void RestartMatch()
@@ -433,6 +464,7 @@ namespace UnDFight
 
             float groundY = simulation.GroundY;
             simulation.ClearHitstop();
+            cpuAiController?.ResetObservationState();
             simulation.Fighter1?.ResetForRound(p1StartX, 1, groundY);
             simulation.Fighter2?.ResetForRound(p2StartX, -1, groundY);
             simulation.ForceUpdateFacing();

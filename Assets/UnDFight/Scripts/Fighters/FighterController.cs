@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace UnDFight
@@ -9,6 +10,7 @@ namespace UnDFight
     [RequireComponent(typeof(PlayerInputHandler))]
     public class FighterController : MonoBehaviour
     {
+        public static event Action<FighterController, AttackType> OnAnyAttackStarted;
         public const int KnockDownDurationTicks = 45;
         public const int GetUpDurationTicks = 40;
         public const int WakeupInvincibilityGraceTicks = 6;
@@ -656,10 +658,14 @@ namespace UnDFight
                 _currentMoveData = null;
                 _hasRegisteredHit = false;
             }
-            else if (triggerAttack && fighterAnimator != null)
+            else if (triggerAttack)
             {
-                fighterAnimator.SetInteger(AttackTypeParamHash, (int)_currentAttack);
-                fighterAnimator.SetTrigger(AttackTriggerParamHash);
+                if (fighterAnimator != null)
+                {
+                    fighterAnimator.SetInteger(AttackTypeParamHash, (int)_currentAttack);
+                    fighterAnimator.SetTrigger(AttackTriggerParamHash);
+                }
+                OnAnyAttackStarted?.Invoke(this, _currentAttack);
             }
         }
 

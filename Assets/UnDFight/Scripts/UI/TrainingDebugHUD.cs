@@ -57,8 +57,22 @@ namespace UnDFight
             string p2Info = FormatFighterLine("P2", p2);
             string boxes = _debugBoxesOn ? "<color=#55FF66>ON</color>" : "OFF";
 
+            CpuAiController cpu = simulation.CpuAi;
+            string cpuTag = string.Empty;
+            if (match != null && match.IsTrainingMode)
+            {
+                bool cpuActive = cpu != null && cpu.IsEnabled;
+                cpuTag = cpuActive
+                    ? $" | [F2] CPU: <color=#55FF66>ATIVA ({GameSessionState.GetCpuDifficultyLabel(cpu.Difficulty)})</color>"
+                    : " | [F2] CPU: DUMMY";
+            }
+            else if (GameSessionState.CurrentMode == GameMode.VersusCpu)
+            {
+                cpuTag = $" | CPU: <color=#FFB800>{GameSessionState.GetCpuDifficultyLabel(GameSessionState.SelectedCpuDifficulty)}</color>";
+            }
+
             debugText.text =
-                $"<b>Sim 60Hz</b> #{simulation.CurrentTick} | FPS {_currentFps:F0} | {matchLabel} | Hitstop={simulation.HitstopTicksRemaining} | [F1] Boxes: {boxes}\n" +
+                $"<b>Sim 60Hz</b> #{simulation.CurrentTick} | FPS {_currentFps:F0} | {matchLabel} | Hitstop={simulation.HitstopTicksRemaining} | [F1] Boxes: {boxes}{cpuTag}\n" +
                 $"{p1Info}   ||   {p2Info}   |   <color=#B8C2CC>P1: WASD+JKUI/L | P2: Arrows+Num4512/6</color>";
         }
 

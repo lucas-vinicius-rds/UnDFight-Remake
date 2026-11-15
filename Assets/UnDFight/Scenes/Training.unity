@@ -789,6 +789,7 @@ GameObject:
   - component: {fileID: 48328524}
   - component: {fileID: 48328523}
   - component: {fileID: 48328522}
+  - component: {fileID: 48328525}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -894,6 +895,14 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!81 &48328525
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 48328521}
+  m_Enabled: 1
 --- !u!1 &49134391
 GameObject:
   m_ObjectHideFlags: 0
@@ -25914,6 +25923,7 @@ MonoBehaviour:
   stageMinX: -8
   stageMaxX: 8
   zoomSmoothSpeed: 10
+  maxShakeOffset: 0.25
 --- !u!114 &1482782567
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31530,6 +31540,7 @@ GameObject:
   - component: {fileID: 1950666010}
   - component: {fileID: 1950666012}
   - component: {fileID: 1950666013}
+  - component: {fileID: 1950666014}
   m_Layer: 0
   m_Name: FightSimulation
   m_TagString: Untagged
@@ -31556,6 +31567,7 @@ MonoBehaviour:
   fighter2: {fileID: 300680204}
   fightCamera: {fileID: 1482782566}
   matchManager: {fileID: 1950666012}
+  cpuAiController: {fileID: 1950666014}
 --- !u!4 &1950666011
 Transform:
   m_ObjectHideFlags: 0
@@ -31587,6 +31599,7 @@ MonoBehaviour:
   fighterRoster: {fileID: 11400000, guid: 0ecbee701769686488f08df5abc5e4d2, type: 2}
   defaultFighterP1: {fileID: 11400000, guid: d70218e88c804ef458addf992710b8d6, type: 2}
   defaultFighterP2: {fileID: 11400000, guid: 7de1c02998040b34b837d9128c5c2a25, type: 2}
+  cpuAiController: {fileID: 1950666014}
   roundsToWin: 2
   roundDurationSeconds: 99
   roundIntroTicks: 90
@@ -31611,6 +31624,26 @@ MonoBehaviour:
   matchManager: {fileID: 0}
   debugHud: {fileID: 710010637}
   showDebugBoxes: 0
+--- !u!114 &1950666014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1950666009}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abcf9e904d20c334e8d4bbbd3df0033e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.CpuAiController
+  simulation: {fileID: 1950666010}
+  controlledFighter: {fileID: 0}
+  opponentFighter: {fileID: 0}
+  matchManager: {fileID: 1950666012}
+  difficulty: 1
+  aiEnabled: 0
+  randomSeed: 1337
+  allowTrainingF2Toggle: 1
 --- !u!1 &1955063251
 GameObject:
   m_ObjectHideFlags: 0

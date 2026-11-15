@@ -7,14 +7,22 @@ namespace UnDFight
         Training = 2
     }
 
+    public enum CpuDifficulty
+    {
+        Easy = 0,
+        Medium = 1,
+        Hard = 2
+    }
+
     /// <summary>
-    /// Shared cross-scene match session state holding active GameMode, selected fighters, and selected stage.
+    /// Shared cross-scene match session state holding active GameMode, CPU difficulty, selected fighters, and selected stage.
     /// </summary>
     public static class GameSessionState
     {
         public const string DefaultStageSceneName = "Arena_Favela";
 
         public static GameMode CurrentMode { get; set; } = GameMode.LocalVersus;
+        public static CpuDifficulty SelectedCpuDifficulty { get; set; } = CpuDifficulty.Medium;
         public static FighterData SelectedFighterP1 { get; set; }
         public static FighterData SelectedFighterP2 { get; set; }
         public static string SelectedStageSceneName { get; set; } = DefaultStageSceneName;
@@ -26,6 +34,24 @@ namespace UnDFight
         public static void SelectMode(GameMode mode)
         {
             CurrentMode = mode;
+        }
+
+        public static void CycleCpuDifficulty(int direction = 1)
+        {
+            const int count = 3;
+            int step = direction >= 0 ? 1 : -1;
+            int next = (((int)SelectedCpuDifficulty + step) % count + count) % count;
+            SelectedCpuDifficulty = (CpuDifficulty)next;
+        }
+
+        public static string GetCpuDifficultyLabel(CpuDifficulty diff)
+        {
+            return diff switch
+            {
+                CpuDifficulty.Easy => "FÁCIL",
+                CpuDifficulty.Hard => "DIFÍCIL",
+                _ => "MÉDIO"
+            };
         }
 
         public static void SelectFighters(FighterData p1, FighterData p2)
@@ -75,6 +101,7 @@ namespace UnDFight
         public static void Reset()
         {
             CurrentMode = GameMode.LocalVersus;
+            SelectedCpuDifficulty = CpuDifficulty.Medium;
             SelectedFighterP1 = null;
             SelectedFighterP2 = null;
             SelectedStageSceneName = DefaultStageSceneName;

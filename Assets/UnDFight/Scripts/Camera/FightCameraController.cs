@@ -28,7 +28,32 @@ namespace UnDFight
         [SerializeField] private float stageMaxX = 8.0f;
         [SerializeField] private float zoomSmoothSpeed = 10f;
 
+        [Header("Impact Camera Shake")]
+        [SerializeField] private float maxShakeOffset = 0.25f;
+
         private float _currentDistance;
+        private float _shakeIntensity;
+        private float _shakeDuration;
+        private float _shakeElapsed;
+        private float _shakePhase;
+
+        public float CurrentShakeOffsetMagnitude { get; private set; }
+
+        public void TriggerImpactShake(float intensity, float duration)
+        {
+            if (intensity <= 0f || duration <= 0f)
+            {
+                return;
+            }
+
+            float clamped = Mathf.Min(intensity, maxShakeOffset);
+            if (clamped >= _shakeIntensity * (1f - (_shakeDuration > 0f ? _shakeElapsed / _shakeDuration : 1f)))
+            {
+                _shakeIntensity = clamped;
+                _shakeDuration = duration;
+                _shakeElapsed = 0f;
+            }
+        }
 
         public void Configure(Transform p1, Transform p2, Transform midpoint, CinemachineCamera vcam, CinemachinePositionComposer composer)
         {
@@ -37,6 +62,14 @@ namespace UnDFight
             focusMidpoint = midpoint;
             cinemachineCamera = vcam;
             positionComposer = composer;
+            _currentDistance = minDistance;
+        }
+
+        public void ConfigureTargets(Transform p1, Transform p2, Transform midpoint)
+        {
+            fighter1Transform = p1;
+            fighter2Transform = p2;
+            focusMidpoint = midpoint;
             _currentDistance = minDistance;
         }
 
@@ -78,12 +111,33 @@ namespace UnDFight
             float midX = Mathf.Clamp((p1.x + p2.x) * 0.5f, clampedMin, clampedMax);
             float midY = Mathf.Max(0f, (p1.y + p2.y) * 0.5f) + heightOffset;
 
-            focusMidpoint.position = new Vector3(midX, midY, 0f);
+            Vector2 shakeOffset = EvaluateShakeOffset(dt);
+            focusMidpoint.position = new Vector3(midX + shakeOffset.x, midY + shakeOffset.y, 0f);
 
             if (positionComposer != null)
             {
                 positionComposer.CameraDistance = _currentDistance;
             }
+        }
+
+        private Vector2 EvaluateShakeOffset(float dt)
+        {
+            if (_shakeDuration <= 0f || _shakeElapsed >= _shakeDuration)
+            {
+                CurrentShakeOffsetMagnitude = 0f;
+                return Vector2.zero;
+            }
+
+            _shakeElapsed += dt;
+            float progress = Mathf.Clamp01(_shakeElapsed / _shakeDuration);
+            float envelope = 1f - progress;
+            _shakePhase += dt * 95f;
+
+            float sx = Mathf.Sin(_shakePhase) * _shakeIntensity * envelope;
+            float sy = Mathf.Cos(_shakePhase * 1.37f) * (_shakeIntensity * 0.65f) * envelope;
+            var offset = new Vector2(sx, sy);
+            CurrentShakeOffsetMagnitude = offset.magnitude;
+            return offset;
         }
     }
 }

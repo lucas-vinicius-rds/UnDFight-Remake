@@ -21,6 +21,6 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 - [x] Fase 5 - Combate: hitbox/hurtbox, vida, rounds, HUD
 - [x] Fase 6 - Menus: principal, opcoes, selecao, pausa
 - [x] Fase 7 - Mapa 3D (favela)
-- [ ] Fase 8 - CPU e polimento
+- [x] Fase 8 - CPU e polimento
 
 - Decisao: animacoes em 60 fps (1 frame anim = 1 tick de simulacao)

@@ -517,6 +517,13 @@ namespace UnDFight
                 _inputCooldownFrames--;
             }
 
+            if (GameSessionState.CurrentMode == GameMode.VersusCpu && _inputCooldownFrames <= 0 && IsDifficultyCyclePressed())
+            {
+                GameSessionState.CycleCpuDifficulty(1);
+                FightAudioManager.Instance?.PlayUiMove();
+                RefreshAll();
+            }
+
             if (_stageTransitionTimer >= 0f)
             {
                 _stageTransitionTimer -= Time.unscaledDeltaTime;
@@ -562,15 +569,18 @@ namespace UnDFight
                 if (moveStep != 0)
                 {
                     _p1Index = WrapIndex(_p1Index + moveStep);
+                    FightAudioManager.Instance?.PlayUiMove();
                     RefreshAll();
                 }
                 if (confirm)
                 {
                     _p1Confirmed = true;
+                    FightAudioManager.Instance?.PlayUiConfirm();
                     RefreshAll();
                 }
                 else if (cancel)
                 {
+                    FightAudioManager.Instance?.PlayUiBack();
                     SceneManager.LoadScene(mainMenuSceneName);
                 }
             }
@@ -579,17 +589,20 @@ namespace UnDFight
                 if (moveStep != 0)
                 {
                     _p2Index = WrapIndex(_p2Index + moveStep);
+                    FightAudioManager.Instance?.PlayUiMove();
                     RefreshAll();
                 }
                 if (confirm)
                 {
                     _p2Confirmed = true;
+                    FightAudioManager.Instance?.PlayUiConfirm();
                     RefreshAll();
                     BeginStageStepTransition();
                 }
                 else if (cancel)
                 {
                     _p1Confirmed = false;
+                    FightAudioManager.Instance?.PlayUiBack();
                     RefreshAll();
                 }
             }
@@ -604,24 +617,26 @@ namespace UnDFight
 
             if (!_p1Confirmed)
             {
-                if (p1Move != 0) { _p1Index = WrapIndex(_p1Index + p1Move); changed = true; }
-                if (p1Confirm) { _p1Confirmed = true; changed = true; }
-                else if (p1Cancel) { SceneManager.LoadScene(mainMenuSceneName); return; }
+                if (p1Move != 0) { _p1Index = WrapIndex(_p1Index + p1Move); FightAudioManager.Instance?.PlayUiMove(); changed = true; }
+                if (p1Confirm) { _p1Confirmed = true; FightAudioManager.Instance?.PlayUiConfirm(); changed = true; }
+                else if (p1Cancel) { FightAudioManager.Instance?.PlayUiBack(); SceneManager.LoadScene(mainMenuSceneName); return; }
             }
             else if (p1Cancel)
             {
                 _p1Confirmed = false;
+                FightAudioManager.Instance?.PlayUiBack();
                 changed = true;
             }
 
             if (!_p2Confirmed)
             {
-                if (p2Move != 0) { _p2Index = WrapIndex(_p2Index + p2Move); changed = true; }
-                if (p2Confirm) { _p2Confirmed = true; changed = true; }
+                if (p2Move != 0) { _p2Index = WrapIndex(_p2Index + p2Move); FightAudioManager.Instance?.PlayUiMove(); changed = true; }
+                if (p2Confirm) { _p2Confirmed = true; FightAudioManager.Instance?.PlayUiConfirm(); changed = true; }
             }
             else if (p2Cancel)
             {
                 _p2Confirmed = false;
+                FightAudioManager.Instance?.PlayUiBack();
                 changed = true;
             }
 
@@ -810,28 +825,59 @@ namespace UnDFight
             UpdateFighterSlot(1, _p2Index, _p2Confirmed, p2PreviewAnchor, false, ref _p2PreviewInstance, ref _p2PreviewAnimator, ref _p2SpawnedData, p2HeaderText, p2NameText, p2HeightText, p2WeightText, p2StatusText);
         }
 
+        private static bool IsDifficultyCyclePressed()
+        {
+            Keyboard kb = Keyboard.current;
+            if (kb != null && kb.tabKey.wasPressedThisFrame)
+            {
+                return true;
+            }
+
+            var pads = Gamepad.all;
+            for (int i = 0; i < pads.Count; i++)
+            {
+                Gamepad pad = pads[i];
+                if (pad != null && pad.added && pad.buttonNorth.wasPressedThisFrame)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private void UpdateModeHeader()
         {
+            string diffLabel = GameSessionState.GetCpuDifficultyLabel(GameSessionState.SelectedCpuDifficulty);
             string modeName = GameSessionState.CurrentMode switch
             {
-                GameMode.VersusCpu => "PLAYER VS CPU",
+                GameMode.VersusCpu => $"PLAYER VS CPU (DIFICULDADE: {diffLabel})",
                 GameMode.Training => "TREINO",
                 _ => "PLAYER VS PLAYER"
             };
 
             if (modeBannerText != null)
             {
-                string stepTitle = _currentStep == SelectStep.StageSelect
-                    ? "SELECIONE A ARENA"
-                    : "ESCOLHA DOS LUTADORES";
-                modeBannerText.text = $"{stepTitle}   •   {modeName}";
+                modeBannerText.text = _currentStep == SelectStep.StageSelect
+                    ? $"SELECIONE A ARENA   •   {modeName}"
+                    : (GameSessionState.CurrentMode == GameMode.VersusCpu
+                        ? $"MODO: {modeName}"
+                        : $"ESCOLHA DOS LUTADORES   •   {modeName}");
             }
 
             if (footerHintText != null)
             {
-                footerHintText.text = _currentStep == SelectStep.StageSelect
-                    ? "WASD / SETAS / D-PAD: ESCOLHER ARENA   •   ENTER / J / A: INICIAR LUTA   •   ESC / K / B: VOLTAR AOS LUTADORES"
-                    : "P1: WASD + J/ENTER (K/ESC VOLTA)   •   P2: SETAS + NUM4/ENTER (NUM5 VOLTA)   •   MOUSE & GAMEPAD";
+                if (_currentStep == SelectStep.StageSelect)
+                {
+                    footerHintText.text = GameSessionState.CurrentMode == GameMode.VersusCpu
+                        ? "WASD / SETAS / D-PAD: ESCOLHER ARENA   •   TAB / BOTÃO Y: DIFICULDADE CPU   •   ENTER / J / A: LUTAR   •   ESC / K / B: VOLTAR"
+                        : "WASD / SETAS / D-PAD: ESCOLHER ARENA   •   ENTER / J / A: INICIAR LUTA   •   ESC / K / B: VOLTAR AOS LUTADORES";
+                }
+                else
+                {
+                    footerHintText.text = GameSessionState.CurrentMode == GameMode.VersusCpu
+                        ? "P1: WASD + J/ENTER (K/ESC VOLTA)   •   TAB / BOTÃO Y: DIFICULDADE CPU   •   MOUSE & GAMEPAD"
+                        : "P1: WASD + J/ENTER (K/ESC VOLTA)   •   P2: SETAS + NUM4/ENTER (NUM5 VOLTA)   •   MOUSE & GAMEPAD";
+                }
             }
         }
 
@@ -884,8 +930,9 @@ namespace UnDFight
             {
                 hdrTmp.text = slotIndex == 0
                     ? "JOGADOR 1"
-                    : (GameSessionState.CurrentMode == GameMode.VersusCpu ? "P2 (CPU)" :
-                       GameSessionState.CurrentMode == GameMode.Training ? "P2 (TREINO)" : "JOGADOR 2");
+                    : (GameSessionState.CurrentMode == GameMode.VersusCpu
+                        ? $"P2 (CPU - {GameSessionState.GetCpuDifficultyLabel(GameSessionState.SelectedCpuDifficulty)})"
+                        : (GameSessionState.CurrentMode == GameMode.Training ? "P2 (TREINO)" : "JOGADOR 2"));
             }
 
             if (nameTmp != null) nameTmp.text = data.fighterName.ToUpperInvariant();
