@@ -169,22 +169,30 @@ namespace UnDFight
 
         private void HandleCombatHit(CombatHitEvent hit)
         {
-            SpawnSparkBurst(hit.ContactPoint, hit.Outcome);
+            bool isSpecial = hit.IsSpecial || (hit.Move != null && hit.Move.attackType == AttackType.Special);
+            SpawnSparkBurst(hit.ContactPoint, hit.Outcome, isSpecial);
         }
 
         public void SpawnSparkBurst(Vector2 contactPoint, HitOutcomeType outcome)
+        {
+            SpawnSparkBurst(contactPoint, outcome, isSpecial: false);
+        }
+
+        public void SpawnSparkBurst(Vector2 contactPoint, HitOutcomeType outcome, bool isSpecial)
         {
             bool isBlock = outcome == HitOutcomeType.Blocked;
             bool isKnockDown = outcome == HitOutcomeType.KnockDown;
 
             Color coreColor = isBlock
                 ? new Color(0.25f, 0.78f, 1.0f, 0.95f)
-                : (isKnockDown ? new Color(1.0f, 0.38f, 0.08f, 0.98f) : new Color(1.0f, 0.65f, 0.12f, 0.96f));
+                : (isSpecial
+                    ? new Color(0.95f, 0.55f, 1.0f, 1.0f)
+                    : (isKnockDown ? new Color(1.0f, 0.38f, 0.08f, 0.98f) : new Color(1.0f, 0.65f, 0.12f, 0.96f)));
             Color rayColor = isBlock
                 ? new Color(0.65f, 0.92f, 1.0f, 1.0f)
-                : new Color(1.0f, 0.92f, 0.28f, 1.0f);
+                : (isSpecial ? new Color(1.0f, 0.86f, 0.22f, 1.0f) : new Color(1.0f, 0.92f, 0.28f, 1.0f));
 
-            var root = new GameObject(isBlock ? "VFX_BlockSpark" : "VFX_HitSpark");
+            var root = new GameObject(isBlock ? "VFX_BlockSpark" : (isSpecial ? "VFX_SpecialSpark" : "VFX_HitSpark"));
             root.transform.SetParent(transform, false);
             root.transform.position = new Vector3(contactPoint.x, contactPoint.y, -0.25f);
 
@@ -198,7 +206,7 @@ namespace UnDFight
             coreRenderer.sharedMaterial = coreMat;
             coreRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             coreRenderer.receiveShadows = false;
-            float initialScale = isBlock ? 0.42f : (isKnockDown ? 0.36f : 0.26f);
+            float initialScale = isBlock ? 0.42f : (isSpecial ? 0.52f : (isKnockDown ? 0.36f : 0.26f));
             coreObj.transform.localScale = isBlock
                 ? new Vector3(initialScale * 0.55f, initialScale * 1.65f, initialScale * 0.45f)
                 : Vector3.one * initialScale;
@@ -212,12 +220,12 @@ namespace UnDFight
                 RayMat = rayMat,
                 RayBaseColor = rayColor,
                 Elapsed = 0f,
-                Duration = isKnockDown ? 0.34f : 0.26f,
-                MaxCoreScale = isBlock ? 0.68f : (isKnockDown ? 0.72f : 0.48f),
-                RaySpeed = isBlock ? 2.4f : (isKnockDown ? 3.8f : 3.0f)
+                Duration = isSpecial && !isBlock ? 0.42f : (isKnockDown ? 0.34f : 0.26f),
+                MaxCoreScale = isBlock ? 0.68f : (isSpecial ? 1.08f : (isKnockDown ? 0.72f : 0.48f)),
+                RaySpeed = isBlock ? 2.4f : (isSpecial ? 4.8f : (isKnockDown ? 3.8f : 3.0f))
             };
 
-            int rayCount = isBlock ? 10 : (isKnockDown ? 12 : 9);
+            int rayCount = isBlock ? 10 : (isSpecial ? 16 : (isKnockDown ? 12 : 9));
             for (int i = 0; i < rayCount; i++)
             {
                 float angle = (i / (float)rayCount) * Mathf.PI * 2f + (isBlock ? 0f : 0.2f);

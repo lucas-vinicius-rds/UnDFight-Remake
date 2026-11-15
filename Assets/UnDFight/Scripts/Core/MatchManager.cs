@@ -146,6 +146,19 @@ namespace UnDFight
             P1RoundsWon = 0;
             P2RoundsWon = 0;
             WinnerPlayerIndex = -1;
+            if (simulation != null)
+            {
+                if (IsTrainingMode)
+                {
+                    simulation.Fighter1?.SetSuperGauge(FighterController.MaxSuperGauge);
+                    simulation.Fighter2?.SetSuperGauge(FighterController.MaxSuperGauge);
+                }
+                else
+                {
+                    simulation.Fighter1?.ResetSuperGauge();
+                    simulation.Fighter2?.ResetSuperGauge();
+                }
+            }
             StartRound();
         }
 
@@ -305,11 +318,18 @@ namespace UnDFight
 
         private static void TryRegenerateTrainingFighter(FighterController fighter)
         {
-            if (fighter != null &&
-                fighter.CurrentHealth < fighter.MaxHealth &&
+            if (fighter == null)
+            {
+                return;
+            }
+            if (fighter.CurrentHealth < fighter.MaxHealth &&
                 fighter.TicksSinceLastHit >= TrainingRegenDelayTicks)
             {
                 fighter.RegenerateHealthTick(TrainingRegenPerTick);
+            }
+            if (fighter.State != FighterState.Attack && fighter.SuperGauge < FighterController.MaxSuperGauge)
+            {
+                fighter.SetSuperGauge(FighterController.MaxSuperGauge);
             }
         }
 

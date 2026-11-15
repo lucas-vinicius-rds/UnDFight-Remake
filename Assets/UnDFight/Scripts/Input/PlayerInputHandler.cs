@@ -29,6 +29,7 @@ namespace UnDFight
         private Key _lightKickKey;
         private Key _heavyKickKey;
         private Key _blockKey;
+        private Key _specialKey;
 
         public int PlayerIndex => playerIndex;
         public InputAssignmentMode AssignmentMode => assignmentMode;
@@ -40,8 +41,8 @@ namespace UnDFight
             get
             {
                 string kb = playerIndex == 0
-                    ? $"KB(WASD+{_lightPunchKey}/{_heavyPunchKey}/{_lightKickKey}/{_heavyKickKey}/{_blockKey})"
-                    : $"KB(Arrows+{_lightPunchKey}/{_heavyPunchKey}/{_lightKickKey}/{_heavyKickKey}/{_blockKey})";
+                    ? $"KB(WASD+{_lightPunchKey}/{_heavyPunchKey}/{_lightKickKey}/{_heavyKickKey}/{_blockKey}/{_specialKey})"
+                    : $"KB(Arrows+{_lightPunchKey}/{_heavyPunchKey}/{_lightKickKey}/{_heavyKickKey}/{_blockKey}/{_specialKey})";
                 return _activeGamepad != null ? $"{kb} + {_activeGamepad.displayName}" : kb;
             }
         }
@@ -99,6 +100,7 @@ namespace UnDFight
             _lightKickKey = bindings.GetKey(FighterInputButton.LightKick, playerIndex);
             _heavyKickKey = bindings.GetKey(FighterInputButton.HeavyKick, playerIndex);
             _blockKey = bindings.GetKey(FighterInputButton.Block, playerIndex);
+            _specialKey = bindings.GetKey(FighterInputButton.Special, playerIndex);
 
             ResolveAssignedGamepad();
         }
@@ -197,6 +199,7 @@ namespace UnDFight
                 if (WasKeyPressedThisFrame(kb, _lightKickKey)) BufferButton(FighterInputButton.LightKick);
                 if (WasKeyPressedThisFrame(kb, _heavyKickKey)) BufferButton(FighterInputButton.HeavyKick);
                 if (WasKeyPressedThisFrame(kb, _blockKey)) BufferButton(FighterInputButton.Block);
+                if (WasKeyPressedThisFrame(kb, _specialKey)) BufferButton(FighterInputButton.Special);
             }
 
             if (_activeGamepad != null && _activeGamepad.added)
@@ -220,6 +223,7 @@ namespace UnDFight
                 if (_activeGamepad.buttonSouth.wasPressedThisFrame) BufferButton(FighterInputButton.LightKick);
                 if (_activeGamepad.buttonEast.wasPressedThisFrame) BufferButton(FighterInputButton.HeavyKick);
                 if (_activeGamepad.rightShoulder.wasPressedThisFrame) BufferButton(FighterInputButton.Block);
+                if (_activeGamepad.leftShoulder.wasPressedThisFrame) BufferButton(FighterInputButton.Special);
             }
 
             _currentInput.MoveX = Mathf.Clamp(moveX, -1f, 1f);
@@ -236,6 +240,11 @@ namespace UnDFight
         private static bool WasKeyPressedThisFrame(Keyboard kb, Key key)
         {
             return key != Key.None && kb[key] != null && kb[key].wasPressedThisFrame;
+        }
+
+        private bool TryGetValidExpireTick(FighterInputButton button, int currentTick, out int expireTick)
+        {
+            return _bufferedButtonExpireTick.TryGetValue(button, out expireTick) && currentTick <= expireTick;
         }
 
         public void BufferButton(FighterInputButton button)
@@ -255,6 +264,17 @@ namespace UnDFight
 
         public bool ConsumeAttackInput(int currentTick, out AttackType attackType)
         {
+            return ConsumeAttackInput(currentTick, allowSpecial: true, out attackType);
+        }
+
+        public bool ConsumeAttackInput(int currentTick, bool allowSpecial, out AttackType attackType)
+        {
+            if (allowSpecial && TryConsumeSpecialShortcutOrButton(currentTick))
+            {
+                attackType = AttackType.Special;
+                return true;
+            }
+
             if (ConsumeBufferedButton(FighterInputButton.HeavyKick, currentTick))
             {
                 attackType = AttackType.HeavyKick;
@@ -278,6 +298,74 @@ namespace UnDFight
 
             attackType = AttackType.None;
             return false;
+        }
+
+        public bool ConsumeChainAttackInput(int currentTick, AttackType currentAttack, bool allowSpecial, out AttackType nextAttack)
+        {
+            if (allowSpecial && IsChainCancelAllowed(currentAttack, AttackType.Special, true) && TryConsumeSpecialShortcutOrButton(currentTick))
+            {
+                nextAttack = AttackType.Special;
+                return true;
+            }
+
+            if (IsChainCancelAllowed(currentAttack, AttackType.HeavyKick, allowSpecial) && ConsumeBufferedButton(FighterInputButton.HeavyKick, currentTick))
+            {
+                nextAttack = AttackType.HeavyKick;
+                return true;
+            }
+            if (IsChainCancelAllowed(currentAttack, AttackType.HeavyPunch, allowSpecial) && ConsumeBufferedButton(FighterInputButton.HeavyPunch, currentTick))
+            {
+                nextAttack = AttackType.HeavyPunch;
+                return true;
+            }
+            if (IsChainCancelAllowed(currentAttack, AttackType.LightKick, allowSpecial) && ConsumeBufferedButton(FighterInputButton.LightKick, currentTick))
+            {
+                nextAttack = AttackType.LightKick;
+                return true;
+            }
+            if (IsChainCancelAllowed(currentAttack, AttackType.LightPunch, allowSpecial) && ConsumeBufferedButton(FighterInputButton.LightPunch, currentTick))
+            {
+                nextAttack = AttackType.LightPunch;
+                return true;
+            }
+
+            nextAttack = AttackType.None;
+            return false;
+        }
+
+        public static bool IsChainCancelAllowed(AttackType fromAttack, AttackType toAttack, bool allowSpecial)
+        {
+            if (toAttack == AttackType.None || toAttack == fromAttack)
+            {
+                return false;
+            }
+
+            if (toAttack == AttackType.Special)
+            {
+                return allowSpecial && fromAttack != AttackType.Special;
+            }
+
+            return fromAttack switch
+            {
+                AttackType.LightPunch => toAttack == AttackType.HeavyPunch || toAttack == AttackType.LightKick || toAttack == AttackType.HeavyKick,
+                AttackType.LightKick => toAttack == AttackType.HeavyPunch || toAttack == AttackType.HeavyKick,
+                _ => false
+            };
+        }
+
+        private bool TryConsumeSpecialShortcutOrButton(int currentTick)
+        {
+            if (TryGetValidExpireTick(FighterInputButton.LightPunch, currentTick, out int lpExpire) &&
+                TryGetValidExpireTick(FighterInputButton.HeavyPunch, currentTick, out int hpExpire) &&
+                Mathf.Abs(lpExpire - hpExpire) <= 2)
+            {
+                _bufferedButtonExpireTick.Remove(FighterInputButton.LightPunch);
+                _bufferedButtonExpireTick.Remove(FighterInputButton.HeavyPunch);
+                _bufferedButtonExpireTick.Remove(FighterInputButton.Special);
+                return true;
+            }
+
+            return ConsumeBufferedButton(FighterInputButton.Special, currentTick);
         }
     }
 }

@@ -36,5 +36,8 @@ namespace UnDFight
         public int HitstopTicks;
         public float KnockbackVelocity;
         public bool WasTrade;
+        public int ComboCount;
+        public int ComboDamage;
+        public bool IsSpecial;
     }
 }

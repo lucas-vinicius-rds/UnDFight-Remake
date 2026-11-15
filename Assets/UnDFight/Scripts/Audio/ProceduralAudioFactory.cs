@@ -55,6 +55,20 @@ namespace UnDFight
             return BuildFilteredNoiseSweepClip("SFX_Whoosh_Heavy", 0.22f, startCutoffHz: 680f, endCutoffHz: 150f, gain: 0.42f);
         }
 
+        public static AudioClip CreateWhooshSpecialClip()
+        {
+            return BuildClip("SFX_Whoosh_Special", 0.34f, (t, dur, rng) =>
+            {
+                float norm = t / dur;
+                float env = FastAttackDecay(t, 0.008f, dur, 5.2f);
+                float sweepHz = Mathf.Lerp(260f, 1240f, norm);
+                float tone = (Mathf.Sin(2f * Mathf.PI * sweepHz * t) * 0.45f +
+                              Mathf.Sin(2f * Mathf.PI * sweepHz * 1.5f * t) * 0.25f) * 0.42f;
+                float air = ((float)rng.NextDouble() * 2f - 1f) * 0.28f;
+                return (tone + air) * env;
+            });
+        }
+
         public static AudioClip CreateHitLightClip()
         {
             return BuildClip("SFX_Hit_Light", 0.15f, (t, dur, rng) =>
@@ -78,6 +92,22 @@ namespace UnDFight
                 float mid = Mathf.Sin(2f * Mathf.PI * 96f * t) * FastAttackDecay(t, 0.002f, 0.12f, 16f) * 0.22f;
                 float noise = ((float)rng.NextDouble() * 2f - 1f) * FastAttackDecay(t, 0.001f, 0.08f, 19f) * 0.42f;
                 return sub + mid + noise;
+            });
+        }
+
+        public static AudioClip CreateHitSpecialClip()
+        {
+            return BuildClip("SFX_Hit_Special", 0.42f, (t, dur, rng) =>
+            {
+                float subEnv = FastAttackDecay(t, 0.002f, dur, 6.2f);
+                float subFreq = Mathf.Lerp(160f, 30f, Mathf.Min(1f, t / 0.18f));
+                float sub = Mathf.Sin(2f * Mathf.PI * subFreq * t) * subEnv * 0.72f;
+                float ringEnv = FastAttackDecay(t, 0.003f, 0.34f, 8.5f);
+                float ring = (Mathf.Sin(2f * Mathf.PI * 220f * t) * 0.4f +
+                              Mathf.Sin(2f * Mathf.PI * 330f * t) * 0.3f +
+                              Mathf.Sin(2f * Mathf.PI * 660f * t) * 0.2f) * ringEnv * 0.32f;
+                float crack = ((float)rng.NextDouble() * 2f - 1f) * FastAttackDecay(t, 0.001f, 0.11f, 14f) * 0.45f;
+                return sub + ring + crack;
             });
         }
 

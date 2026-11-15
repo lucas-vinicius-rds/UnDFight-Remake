@@ -27,6 +27,14 @@ namespace UnDFight
         [SerializeField] private UnityEngine.UI.Image[] p2RoundPips;
         [SerializeField] private TextMeshProUGUI p2CalloutText;
 
+        [Header("Super Gauge & Combo Counter")]
+        [SerializeField] private UnityEngine.UI.Image p1SuperFill;
+        [SerializeField] private TextMeshProUGUI p1SuperText;
+        [SerializeField] private TextMeshProUGUI p1ComboText;
+        [SerializeField] private UnityEngine.UI.Image p2SuperFill;
+        [SerializeField] private TextMeshProUGUI p2SuperText;
+        [SerializeField] private TextMeshProUGUI p2ComboText;
+
         [Header("Center Timer & Banner")]
         [SerializeField] private TextMeshProUGUI timerText;
         [SerializeField] private GameObject bannerContainer;
@@ -38,9 +46,13 @@ namespace UnDFight
         [SerializeField] private Color lowHealthColor = new Color(0.95f, 0.25f, 0.18f, 1f);
         [SerializeField] private Color roundWonColor = new Color(1.0f, 0.78f, 0.16f, 1f);
         [SerializeField] private Color roundEmptyColor = new Color(0.20f, 0.23f, 0.29f, 0.9f);
+        [SerializeField] private Color superChargingColor = new Color(0.20f, 0.72f, 1.0f, 1f);
+        [SerializeField] private Color superReadyColorA = new Color(1.0f, 0.78f, 0.16f, 1f);
+        [SerializeField] private Color superReadyColorB = new Color(1.0f, 0.94f, 0.58f, 1f);
         [SerializeField] private float trailHoldSeconds = 0.28f;
         [SerializeField] private float trailDecaySpeed = 0.75f;
         [SerializeField] private float calloutDurationSeconds = 0.65f;
+        [SerializeField] private float comboDisplayDurationSeconds = 1.45f;
 
         private float _p1TrailRatio = 1f;
         private float _p2TrailRatio = 1f;
@@ -51,6 +63,9 @@ namespace UnDFight
 
         private float _p1CalloutTimer;
         private float _p2CalloutTimer;
+        private float _p1ComboTimer;
+        private float _p2ComboTimer;
+        private Sprite _fallbackWhiteSprite;
 
         public void Configure(
             FightSimulation sim,
@@ -93,6 +108,7 @@ namespace UnDFight
             {
                 simulation.OnCombatHit += HandleCombatHit;
             }
+            EnsureSuperAndComboWidgets();
             RefreshImmediate();
         }
 
@@ -100,6 +116,7 @@ namespace UnDFight
         {
             if (simulation == null) simulation = FindAnyObjectByType<FightSimulation>();
             if (matchManager == null) matchManager = FindAnyObjectByType<MatchManager>();
+            EnsureSuperAndComboWidgets();
         }
 
         private void OnEnable()
@@ -109,6 +126,7 @@ namespace UnDFight
                 simulation.OnCombatHit -= HandleCombatHit;
                 simulation.OnCombatHit += HandleCombatHit;
             }
+            EnsureSuperAndComboWidgets();
             RefreshImmediate();
         }
 
@@ -140,10 +158,16 @@ namespace UnDFight
             UpdateFighterNames();
             ApplyHealthWidgets(p1HealthFill, p1DamageTrailFill, _p1PrevRatio, _p1TrailRatio);
             ApplyHealthWidgets(p2HealthFill, p2DamageTrailFill, _p2PrevRatio, _p2TrailRatio);
+            UpdateSingleSuperBar(simulation != null ? simulation.Fighter1 : null, p1SuperFill, p1SuperText);
+            UpdateSingleSuperBar(simulation != null ? simulation.Fighter2 : null, p2SuperFill, p2SuperText);
             UpdateRoundAndTimerUI();
 
             if (p1CalloutText != null) p1CalloutText.text = string.Empty;
             if (p2CalloutText != null) p2CalloutText.text = string.Empty;
+            if (p1ComboText != null) p1ComboText.text = string.Empty;
+            if (p2ComboText != null) p2ComboText.text = string.Empty;
+            _p1ComboTimer = 0f;
+            _p2ComboTimer = 0f;
         }
 
         private void HandleCombatHit(CombatHitEvent hit)
@@ -153,32 +177,54 @@ namespace UnDFight
                 return;
             }
 
-            // Show feedback callout on the defender's side (HIT / BLOCK / K.O.!)
+            // Show feedback callout on the defender's side (HIT / BLOCK / K.O.! / ESPECIAL!)
             bool defenderIsP1 = hit.Defender == simulation.Fighter1;
             TextMeshProUGUI targetCallout = defenderIsP1 ? p1CalloutText : p2CalloutText;
-            if (targetCallout == null)
+            if (targetCallout != null)
             {
-                return;
+                if (hit.Outcome == HitOutcomeType.Blocked)
+                {
+                    targetCallout.text = "BLOCK!";
+                    targetCallout.color = new Color(0.35f, 0.85f, 1.0f, 1f);
+                }
+                else if (hit.Outcome == HitOutcomeType.KnockDown && hit.Defender.CurrentHealth <= 0)
+                {
+                    targetCallout.text = "K.O.!";
+                    targetCallout.color = new Color(1.0f, 0.25f, 0.20f, 1f);
+                }
+                else if (hit.IsSpecial)
+                {
+                    string moveLabel = hit.Move != null && !string.IsNullOrWhiteSpace(hit.Move.moveName)
+                        ? hit.Move.moveName.ToUpperInvariant() + "!"
+                        : "ESPECIAL!";
+                    targetCallout.text = moveLabel;
+                    targetCallout.color = new Color(1.0f, 0.86f, 0.25f, 1f);
+                }
+                else
+                {
+                    targetCallout.text = hit.WasTrade ? "TRADE HIT!" : "HIT!";
+                    targetCallout.color = new Color(1.0f, 0.78f, 0.16f, 1f);
+                }
+
+                if (defenderIsP1) _p1CalloutTimer = calloutDurationSeconds;
+                else _p2CalloutTimer = calloutDurationSeconds;
             }
 
-            if (hit.Outcome == HitOutcomeType.Blocked)
+            // Show combo counter on the attacker's side from 2 hits onward
+            if (hit.Outcome != HitOutcomeType.Blocked && hit.Attacker != null && hit.ComboCount >= 2)
             {
-                targetCallout.text = "BLOCK!";
-                targetCallout.color = new Color(0.35f, 0.85f, 1.0f, 1f);
+                bool attackerIsP1 = hit.Attacker == simulation.Fighter1;
+                TextMeshProUGUI comboText = attackerIsP1 ? p1ComboText : p2ComboText;
+                if (comboText != null)
+                {
+                    comboText.text = $"{hit.ComboCount} HITS!";
+                    comboText.color = hit.IsSpecial
+                        ? new Color(1.0f, 0.88f, 0.28f, 1f)
+                        : new Color(1.0f, 0.65f, 0.18f, 1f);
+                    if (attackerIsP1) _p1ComboTimer = comboDisplayDurationSeconds;
+                    else _p2ComboTimer = comboDisplayDurationSeconds;
+                }
             }
-            else if (hit.Outcome == HitOutcomeType.KnockDown && hit.Defender.CurrentHealth <= 0)
-            {
-                targetCallout.text = "K.O.!";
-                targetCallout.color = new Color(1.0f, 0.25f, 0.20f, 1f);
-            }
-            else
-            {
-                targetCallout.text = hit.WasTrade ? "TRADE HIT!" : "HIT!";
-                targetCallout.color = new Color(1.0f, 0.78f, 0.16f, 1f);
-            }
-
-            if (defenderIsP1) _p1CalloutTimer = calloutDurationSeconds;
-            else _p2CalloutTimer = calloutDurationSeconds;
         }
 
         private void UpdateFighterBars(float dt)
@@ -188,6 +234,8 @@ namespace UnDFight
 
             UpdateSingleHealthBar(p1, p1HealthFill, p1DamageTrailFill, ref _p1PrevRatio, ref _p1TrailRatio, ref _p1TrailHoldTimer, dt);
             UpdateSingleHealthBar(p2, p2HealthFill, p2DamageTrailFill, ref _p2PrevRatio, ref _p2TrailRatio, ref _p2TrailHoldTimer, dt);
+            UpdateSingleSuperBar(p1, p1SuperFill, p1SuperText);
+            UpdateSingleSuperBar(p2, p2SuperFill, p2SuperText);
             UpdateFighterNames();
         }
 
@@ -309,18 +357,21 @@ namespace UnDFight
 
         private void UpdateCallouts(float dt)
         {
-            UpdateSingleCallout(p1CalloutText, ref _p1CalloutTimer, dt);
-            UpdateSingleCallout(p2CalloutText, ref _p2CalloutTimer, dt);
+            UpdateSingleCallout(p1CalloutText, ref _p1CalloutTimer, dt, calloutDurationSeconds);
+            UpdateSingleCallout(p2CalloutText, ref _p2CalloutTimer, dt, calloutDurationSeconds);
+            UpdateSingleCallout(p1ComboText, ref _p1ComboTimer, dt, comboDisplayDurationSeconds);
+            UpdateSingleCallout(p2ComboText, ref _p2ComboTimer, dt, comboDisplayDurationSeconds);
         }
 
-        private void UpdateSingleCallout(TextMeshProUGUI callout, ref float timer, float dt)
+        private void UpdateSingleCallout(TextMeshProUGUI callout, ref float timer, float dt, float totalDuration)
         {
             if (callout == null) return;
 
             if (timer > 0f)
             {
                 timer -= dt;
-                float alpha = Mathf.Clamp01(timer / (calloutDurationSeconds * 0.35f));
+                float fadeWindow = Mathf.Max(0.15f, totalDuration * 0.35f);
+                float alpha = Mathf.Clamp01(timer / fadeWindow);
                 Color c = callout.color;
                 callout.color = new Color(c.r, c.g, c.b, alpha);
                 if (timer <= 0f)
@@ -328,6 +379,280 @@ namespace UnDFight
                     callout.text = string.Empty;
                 }
             }
+        }
+
+        private void UpdateSingleSuperBar(FighterController fighter, UnityEngine.UI.Image superFill, TextMeshProUGUI superText)
+        {
+            float ratio = fighter != null ? fighter.SuperNormalized : 0f;
+            bool isReady = fighter != null && fighter.CanUseSpecial;
+
+            if (superFill != null)
+            {
+                superFill.fillAmount = ratio;
+                if (isReady)
+                {
+                    float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f);
+                    superFill.color = Color.Lerp(superReadyColorA, superReadyColorB, pulse);
+                }
+                else
+                {
+                    superFill.color = superChargingColor;
+                }
+            }
+
+            if (superText != null)
+            {
+                if (isReady)
+                {
+                    float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f);
+                    superText.text = "SUPER PRONTO!";
+                    superText.color = Color.Lerp(superReadyColorA, superReadyColorB, pulse);
+                }
+                else
+                {
+                    int pct = fighter != null ? fighter.SuperGauge : 0;
+                    superText.text = $"ESPECIAL {pct}%";
+                    superText.color = new Color(0.75f, 0.88f, 0.98f, 0.92f);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Ensures P1 & P2 Super Gauge bars and Combo Counter labels exist and are wired,
+        /// both for Edit-Mode scene serialization and as a dynamic runtime fallback.
+        /// </summary>
+        public void EnsureSuperAndComboWidgets()
+        {
+            Transform p1Group = FindSideGroup(p1NameText, p1HealthFill, "P1_Group");
+            Transform p2Group = FindSideGroup(p2NameText, p2HealthFill, "P2_Group");
+
+            Sprite barSprite = GetHudSprite();
+            TMP_FontAsset fontAsset = p1NameText != null ? p1NameText.font : (p2NameText != null ? p2NameText.font : null);
+
+            if (p1Group != null)
+            {
+                EnsureSideWidgets(
+                    p1Group,
+                    "P1",
+                    isLeft: true,
+                    barSprite,
+                    fontAsset,
+                    p1CalloutText,
+                    ref p1SuperFill,
+                    ref p1SuperText,
+                    ref p1ComboText);
+            }
+
+            if (p2Group != null)
+            {
+                EnsureSideWidgets(
+                    p2Group,
+                    "P2",
+                    isLeft: false,
+                    barSprite,
+                    fontAsset,
+                    p2CalloutText,
+                    ref p2SuperFill,
+                    ref p2SuperText,
+                    ref p2ComboText);
+            }
+        }
+
+        private Transform FindSideGroup(TextMeshProUGUI nameText, UnityEngine.UI.Image healthFill, string fallbackChildName)
+        {
+            if (nameText != null && nameText.transform.parent != null)
+            {
+                return nameText.transform.parent;
+            }
+            if (healthFill != null)
+            {
+                Transform cursor = healthFill.transform;
+                while (cursor != null && cursor.parent != null && cursor.parent != transform)
+                {
+                    if (cursor.name.EndsWith("_Group", System.StringComparison.Ordinal))
+                    {
+                        return cursor;
+                    }
+                    cursor = cursor.parent;
+                }
+            }
+            return FindDescendant(transform, fallbackChildName);
+        }
+
+        private static Transform FindDescendant(Transform root, string targetName)
+        {
+            if (root == null) return null;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (child.name == targetName) return child;
+                Transform nested = FindDescendant(child, targetName);
+                if (nested != null) return nested;
+            }
+            return null;
+        }
+
+        private void EnsureSideWidgets(
+            Transform group,
+            string prefix,
+            bool isLeft,
+            Sprite barSprite,
+            TMP_FontAsset fontAsset,
+            TextMeshProUGUI calloutText,
+            ref UnityEngine.UI.Image superFill,
+            ref TextMeshProUGUI superText,
+            ref TextMeshProUGUI comboText)
+        {
+            Transform existingBorder = group.Find($"{prefix}_SuperBorder");
+            if (existingBorder == null)
+            {
+                var borderGo = new GameObject($"{prefix}_SuperBorder", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                borderGo.transform.SetParent(group, false);
+                var borderRt = (RectTransform)borderGo.transform;
+                borderRt.anchorMin = isLeft ? new Vector2(0f, 1f) : new Vector2(0.28f, 1f);
+                borderRt.anchorMax = isLeft ? new Vector2(0.72f, 1f) : new Vector2(1f, 1f);
+                borderRt.pivot = new Vector2(0.5f, 1f);
+                borderRt.anchoredPosition = new Vector2(0f, -96f);
+                borderRt.sizeDelta = new Vector2(0f, 14f);
+
+                var borderImg = borderGo.GetComponent<UnityEngine.UI.Image>();
+                borderImg.sprite = barSprite;
+                borderImg.color = new Color(0.29f, 0.25f, 0.21f, 0.95f);
+                borderImg.raycastTarget = false;
+
+                var bgGo = new GameObject($"{prefix}_SuperBg", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                bgGo.transform.SetParent(borderGo.transform, false);
+                var bgRt = (RectTransform)bgGo.transform;
+                bgRt.anchorMin = Vector2.zero;
+                bgRt.anchorMax = Vector2.one;
+                bgRt.offsetMin = new Vector2(2f, 2f);
+                bgRt.offsetMax = new Vector2(-2f, -2f);
+
+                var bgImg = bgGo.GetComponent<UnityEngine.UI.Image>();
+                bgImg.sprite = barSprite;
+                bgImg.color = new Color(0.08f, 0.09f, 0.13f, 0.96f);
+                bgImg.raycastTarget = false;
+
+                var fillGo = new GameObject($"{prefix}_SuperFill", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                fillGo.transform.SetParent(bgGo.transform, false);
+                var fillRt = (RectTransform)fillGo.transform;
+                fillRt.anchorMin = Vector2.zero;
+                fillRt.anchorMax = Vector2.one;
+                fillRt.offsetMin = Vector2.zero;
+                fillRt.offsetMax = Vector2.zero;
+
+                superFill = fillGo.GetComponent<UnityEngine.UI.Image>();
+                superFill.sprite = barSprite;
+                superFill.type = UnityEngine.UI.Image.Type.Filled;
+                superFill.fillMethod = UnityEngine.UI.Image.FillMethod.Horizontal;
+                superFill.fillOrigin = isLeft ? (int)UnityEngine.UI.Image.OriginHorizontal.Left : (int)UnityEngine.UI.Image.OriginHorizontal.Right;
+                superFill.fillAmount = 0f;
+                superFill.color = superChargingColor;
+                superFill.raycastTarget = false;
+            }
+            else if (superFill == null)
+            {
+                Transform fillTr = FindDescendant(existingBorder, $"{prefix}_SuperFill");
+                if (fillTr != null) superFill = fillTr.GetComponent<UnityEngine.UI.Image>();
+            }
+
+            if (superText == null)
+            {
+                Transform existingLabel = group.Find($"{prefix}_SuperText");
+                if (existingLabel != null)
+                {
+                    superText = existingLabel.GetComponent<TextMeshProUGUI>();
+                }
+                else
+                {
+                    superText = CreateHudLabel(
+                        group,
+                        $"{prefix}_SuperText",
+                        fontAsset,
+                        anchorMin: new Vector2(0f, 1f),
+                        anchorMax: new Vector2(1f, 1f),
+                        anchoredPos: new Vector2(0f, -112f),
+                        sizeDelta: new Vector2(0f, 22f),
+                        fontSize: 14f,
+                        alignment: isLeft ? TextAlignmentOptions.MidlineLeft : TextAlignmentOptions.MidlineRight,
+                        initialColor: new Color(0.75f, 0.88f, 0.98f, 0.92f));
+                    superText.text = "ESPECIAL 0%";
+                }
+            }
+
+            if (calloutText != null && calloutText.rectTransform.anchoredPosition.y > -130f)
+            {
+                calloutText.rectTransform.anchoredPosition = new Vector2(calloutText.rectTransform.anchoredPosition.x, -138f);
+            }
+
+            if (comboText == null)
+            {
+                Transform existingCombo = group.Find($"{prefix}_ComboText");
+                if (existingCombo != null)
+                {
+                    comboText = existingCombo.GetComponent<TextMeshProUGUI>();
+                }
+                else
+                {
+                    comboText = CreateHudLabel(
+                        group,
+                        $"{prefix}_ComboText",
+                        fontAsset,
+                        anchorMin: new Vector2(0f, 1f),
+                        anchorMax: new Vector2(1f, 1f),
+                        anchoredPos: new Vector2(0f, -184f),
+                        sizeDelta: new Vector2(0f, 44f),
+                        fontSize: 32f,
+                        alignment: isLeft ? TextAlignmentOptions.MidlineLeft : TextAlignmentOptions.MidlineRight,
+                        initialColor: new Color(1.0f, 0.65f, 0.18f, 1f));
+                    comboText.text = string.Empty;
+                }
+            }
+        }
+
+        private static TextMeshProUGUI CreateHudLabel(
+            Transform parent,
+            string name,
+            TMP_FontAsset fontAsset,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 anchoredPos,
+            Vector2 sizeDelta,
+            float fontSize,
+            TextAlignmentOptions alignment,
+            Color initialColor)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
+            go.transform.SetParent(parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = sizeDelta;
+
+            var tmp = go.GetComponent<TextMeshProUGUI>();
+            if (fontAsset != null) tmp.font = fontAsset;
+            tmp.fontSize = fontSize;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.alignment = alignment;
+            tmp.characterSpacing = 2.5f;
+            tmp.color = initialColor;
+            tmp.raycastTarget = false;
+            return tmp;
+        }
+
+        private Sprite GetHudSprite()
+        {
+            if (p1HealthFill != null && p1HealthFill.sprite != null) return p1HealthFill.sprite;
+            if (p2HealthFill != null && p2HealthFill.sprite != null) return p2HealthFill.sprite;
+            if (_fallbackWhiteSprite != null) return _fallbackWhiteSprite;
+
+            var tex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+            tex.SetPixel(0, 0, Color.white);
+            tex.Apply();
+            _fallbackWhiteSprite = Sprite.Create(tex, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f));
+            return _fallbackWhiteSprite;
         }
 
         private static float GetHealthRatio(FighterController fighter)

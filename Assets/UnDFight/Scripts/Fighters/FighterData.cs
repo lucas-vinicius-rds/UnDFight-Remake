@@ -36,6 +36,7 @@ namespace UnDFight
         public MoveData heavyPunch;
         public MoveData lightKick;
         public MoveData heavyKick;
+        public MoveData specialMove;
 
         public WeightClass WeightCategory => FighterScaling.GetWeightClass(weightKg);
         public float ModelScale => FighterScaling.ComputeModelScale(heightMeters);
@@ -54,6 +55,7 @@ namespace UnDFight
                 AttackType.HeavyPunch => heavyPunch,
                 AttackType.LightKick => lightKick,
                 AttackType.HeavyKick => heavyKick,
+                AttackType.Special => specialMove,
                 _ => null
             };
         }

@@ -20,6 +20,7 @@ namespace UnDFight.Tests
             public MoveData HeavyPunch;
             public MoveData LightKick;
             public MoveData HeavyKick;
+            public MoveData Special;
         }
 
         [SetUp]
@@ -64,6 +65,9 @@ namespace UnDFight.Tests
             rig.HeavyKick = Track(ScriptableObject.CreateInstance<MoveData>());
             rig.HeavyKick.Configure("HeavyKick", AttackType.HeavyKick, 9, 4, 20, 135, 22, 14, 8, 3.6f, HitHeight.High, true, new Vector2(0.86f, 1.24f), new Vector2(1.10f, 0.56f));
 
+            rig.Special = Track(ScriptableObject.CreateInstance<MoveData>());
+            rig.Special.Configure("Golpe Especial", AttackType.Special, 8, 5, 15, 220, 30, 14, 12, 4.4f, HitHeight.Mid, true, new Vector2(0.95f, 1.15f), new Vector2(1.25f, 0.72f), chip: 30, lungeSpeedValue: 5.5f);
+
             rig.LucasData = CreateFighterData("Lucas", 1.81f, 92f, rig);
             rig.TiagoData = CreateFighterData("Tiago", 1.79f, 87f, rig);
 
@@ -96,6 +100,7 @@ namespace UnDFight.Tests
             data.heavyPunch = rig.HeavyPunch;
             data.lightKick = rig.LightKick;
             data.heavyKick = rig.HeavyKick;
+            data.specialMove = rig.Special;
             return data;
         }
 
@@ -342,6 +347,170 @@ namespace UnDFight.Tests
             Assert.AreEqual(1, rig.Match.CurrentRound);
             Assert.AreEqual(0, rig.Match.P1RoundsWon);
             Assert.AreEqual(0, rig.Match.P2RoundsWon);
+        }
+
+        [Test]
+        public void ChainCombo_LPIntoHPAndSpecial_WorksOnHitWithComboCounterAndScaling()
+        {
+            FighterRig rig = CreateRig();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+            rig.P1.SetSuperGauge(100);
+
+            var events = new List<CombatHitEvent>();
+            rig.Sim.OnCombatHit += e => events.Add(e);
+
+            // LP (startup 4, active 3, hitstop 4, damage 50)
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.Sim.StepSimulationTicks(1 + 5); // LP hits on tick 5; hitstop 4 ticks follows
+
+            Assert.AreEqual(1, events.Count);
+            Assert.AreEqual(1, events[0].ComboCount);
+            Assert.AreEqual(50, events[0].DamageDealt);
+            Assert.AreEqual(950, rig.P2.CurrentHealth);
+
+            // Wait out LP hitstop (4 ticks) and keep P1 close so HP reaches after LP knockback
+            rig.Sim.StepSimulationTicks(4);
+            rig.P1.SetSimPositionX(rig.P2.SimPosition.x - 0.9f);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.HeavyPunch);
+
+            // HP cancels immediately out of LP (startup 7, active 4, hitstop 7, damage 110 * 0.85 = 94)
+            rig.Sim.StepSimulationTicks(1 + 8 + 7);
+            Assert.AreEqual(AttackType.HeavyPunch, rig.P1.CurrentAttack);
+            Assert.AreEqual(2, events.Count);
+            Assert.AreEqual(2, events[1].ComboCount);
+            Assert.AreEqual(94, events[1].DamageDealt); // Round(110 * 0.85) = 94
+            Assert.AreEqual(144, events[1].ComboDamage);
+
+            // Cancel HP on hit into Special (damage 220 * 0.72 = 158)
+            rig.P1.SetSimPositionX(rig.P2.SimPosition.x - 1.0f);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.Special);
+            rig.Sim.StepSimulationTicks(1 + 9);
+            Assert.AreEqual(AttackType.Special, rig.P1.CurrentAttack);
+            Assert.AreEqual(0, rig.P1.SuperGauge);
+            Assert.AreEqual(3, events.Count);
+            Assert.IsTrue(events[2].IsSpecial);
+            Assert.AreEqual(3, events[2].ComboCount);
+            Assert.AreEqual(158, events[2].DamageDealt); // Round(220 * 0.72) = 158
+            Assert.AreEqual(302, events[2].ComboDamage);
+        }
+
+        [Test]
+        public void ChainCombo_RejectsInvalidRoutesAndCancelsOnWhiff()
+        {
+            FighterRig rig = CreateRig();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+            rig.P1.SetSimPositionX(-3.2f);
+            rig.P2.SetSimPositionX(3.2f);
+
+            // Whiff LP -> cannot chain into HP without HasRegisteredHit
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.Sim.StepSimulationTicks(6);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.HeavyPunch);
+            rig.Sim.StepSimulationTicks(3);
+            Assert.AreEqual(AttackType.LightPunch, rig.P1.CurrentAttack);
+
+            // Wait back to Idle, put in range, verify HP cannot cancel backwards into LP nor LP into LP
+            rig.Sim.StepSimulationTicks(30);
+            Assert.AreEqual(FighterState.Idle, rig.P1.State);
+            Assert.IsFalse(PlayerInputHandler.IsChainCancelAllowed(AttackType.LightPunch, AttackType.LightPunch, allowSpecial: true));
+            Assert.IsFalse(PlayerInputHandler.IsChainCancelAllowed(AttackType.HeavyPunch, AttackType.LightPunch, allowSpecial: true));
+            Assert.IsFalse(PlayerInputHandler.IsChainCancelAllowed(AttackType.HeavyPunch, AttackType.Special, allowSpecial: false));
+            Assert.IsTrue(PlayerInputHandler.IsChainCancelAllowed(AttackType.LightPunch, AttackType.LightKick, allowSpecial: false));
+            Assert.IsTrue(PlayerInputHandler.IsChainCancelAllowed(AttackType.LightKick, AttackType.HeavyKick, allowSpecial: false));
+            Assert.IsTrue(PlayerInputHandler.IsChainCancelAllowed(AttackType.HeavyKick, AttackType.Special, allowSpecial: true));
+        }
+
+        [Test]
+        public void ComboScaling_FourthHitScalesToSixtyPercentMinimumFifty_AndResetsOnIdle()
+        {
+            Assert.AreEqual(1.00f, FighterController.ComputeComboScalingMultiplier(1), 0.001f);
+            Assert.AreEqual(0.85f, FighterController.ComputeComboScalingMultiplier(2), 0.001f);
+            Assert.AreEqual(0.72f, FighterController.ComputeComboScalingMultiplier(3), 0.001f);
+            Assert.AreEqual(0.60f, FighterController.ComputeComboScalingMultiplier(4), 0.001f);
+            Assert.AreEqual(0.50f, FighterController.ComputeComboScalingMultiplier(5), 0.001f);
+            Assert.AreEqual(0.50f, FighterController.ComputeComboScalingMultiplier(9), 0.001f);
+
+            FighterRig rig = CreateRig();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.Sim.StepSimulationTicks(1 + 5);
+            Assert.AreEqual(1, rig.P2.ReceivedComboHits);
+            Assert.AreEqual(50, rig.P2.ReceivedComboDamage);
+
+            // Step until P2 returns to Idle -> combo tracker resets
+            rig.Sim.StepSimulationTicks(35);
+            Assert.AreEqual(FighterState.Idle, rig.P2.State);
+            Assert.AreEqual(0, rig.P2.ReceivedComboHits);
+            Assert.AreEqual(0, rig.P2.ReceivedComboDamage);
+        }
+
+        [Test]
+        public void SuperGauge_AccumulatesAcrossRounds_ResetsOnRestart_AndAutoRefillsInTraining()
+        {
+            FighterRig rig = CreateRig(withMatchManager: true);
+            rig.Sim.StepSimulationTicks(90); // RoundIntro -> Fighting
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+
+            // Whiff at far range: +2 gauge
+            rig.P1.SetSimPositionX(-3.0f);
+            rig.P2.SetSimPositionX(3.0f);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.Sim.StepSimulationTicks(2);
+            Assert.AreEqual(2, rig.P1.SuperGauge);
+
+            rig.Sim.StepSimulationTicks(25);
+            // Hit at close range: LP grants +14 attacker total (+7 defender)
+            rig.P1.SetSimPositionX(-0.55f);
+            rig.P2.SetSimPositionX(0.55f);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.Sim.StepSimulationTicks(1 + 5);
+            Assert.AreEqual(16, rig.P1.SuperGauge);
+            Assert.AreEqual(7, rig.P2.SuperGauge);
+
+            // Block grants +6 attacker total, +9 defender
+            rig.Sim.StepSimulationTicks(25);
+            rig.P1.SetSimPositionX(-0.55f);
+            rig.P2.SetSimPositionX(0.55f);
+            rig.P2.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f }, true);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.Sim.StepSimulationTicks(1 + 5);
+            Assert.AreEqual(22, rig.P1.SuperGauge);
+            Assert.AreEqual(16, rig.P2.SuperGauge);
+
+            // Time over to start Round 2 -> SuperGauge must persist across rounds
+            int p1GaugeAfterRound1 = rig.P1.SuperGauge;
+            rig.Sim.StepSimulationTicks(rig.Match.RoundTimerTicks + 150 + 90);
+            Assert.AreEqual(2, rig.Match.CurrentRound);
+            Assert.AreEqual(p1GaugeAfterRound1, rig.P1.SuperGauge);
+
+            // RestartMatch resets SuperGauge to 0 in standard Versus
+            rig.Match.RestartMatch();
+            Assert.AreEqual(0, rig.P1.SuperGauge);
+            Assert.AreEqual(0, rig.P2.SuperGauge);
+
+            // Training mode starts with 100 and refills after Special ends
+            GameSessionState.CurrentMode = GameMode.Training;
+            rig.Match.SetTrainingMode(true);
+            rig.Match.RestartMatch();
+            Assert.AreEqual(100, rig.P1.SuperGauge);
+            rig.Sim.StepSimulationTicks(90);
+            rig.P1.SetSimPositionX(-0.55f);
+            rig.P2.SetSimPositionX(0.55f);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.HeavyPunch); // Simultaneous LP+HP triggers Special
+            rig.Sim.StepSimulationTicks(2);
+            Assert.AreEqual(AttackType.Special, rig.P1.CurrentAttack);
+            Assert.AreEqual(0, rig.P1.SuperGauge);
+
+            // Finish Special recovery + hitstop (28 + 12 = 40 ticks) -> Training refills back to 100
+            rig.Sim.StepSimulationTicks(45);
+            Assert.AreNotEqual(FighterState.Attack, rig.P1.State);
+            Assert.AreEqual(100, rig.P1.SuperGauge);
         }
     }
 }

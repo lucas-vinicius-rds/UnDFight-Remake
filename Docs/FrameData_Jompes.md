@@ -15,6 +15,7 @@
 | **HeavyPunch** | 5 | 4 | 12 | 21 | 0,350 s | 6–9 | Golpe penetrante/cruzado firme com giro limpo de quadril (`RightHand`) |
 | **LightKick** | 4 | 3 | 9 | 16 | 0,267 s | 5–7 | Chute frontal/snap rápido na altura baixa/média (`LeftFoot`) |
 | **HeavyKick** | 7 | 4 | 16 | 27 | 0,450 s | 8–11 | Chute alto circular técnico com rotação de quadril e guarda fechada (`LeftFoot`) |
+| **Special** | 7 | 4 | 13 | 24 | 0,400 s | 8–11 | Especial **Golpe Sombrio**: avanço baixo em postura fechada seguido de estocada/palma perfurante central (`RightHand`) |
 
 ---
 

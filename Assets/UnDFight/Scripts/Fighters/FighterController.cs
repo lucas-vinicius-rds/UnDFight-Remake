@@ -16,6 +16,14 @@ namespace UnDFight
         public const int WakeupInvincibilityGraceTicks = 6;
         public const float BaseKnockbackVelocityScale = 2.0f;
 
+        public const int MaxSuperGauge = 100;
+        public const int SuperGainLightHitAttacker = 14;
+        public const int SuperGainHeavyHitAttacker = 20;
+        public const int SuperGainHitDefender = 7;
+        public const int SuperGainBlockAttacker = 6;
+        public const int SuperGainBlockDefender = 9;
+        public const int SuperGainWhiff = 2;
+
         [Header("Data & References")]
         [SerializeField] private FighterData fighterData;
         [SerializeField] private Transform visualRoot;
@@ -52,6 +60,10 @@ namespace UnDFight
         private int _wakeupInvincibilityTicks;
         private int _ticksSinceLastHit;
         private float _knockbackDecelPerSec;
+        private int _superGauge;
+        private int _receivedComboHits;
+        private int _receivedComboDamage;
+        private bool _grantedStartSuperOnCurrentMove;
         private float _baseHurtboxHeight = 1.81f;
         private float _baseHurtboxCenterY = 0.905f;
 
@@ -67,6 +79,11 @@ namespace UnDFight
         public bool IsGrounded => _isGrounded;
         public int CurrentHealth => _currentHealth;
         public int MaxHealth => fighterData != null ? fighterData.maxHealth : 1000;
+        public int SuperGauge => _superGauge;
+        public float SuperNormalized => Mathf.Clamp01((float)_superGauge / MaxSuperGauge);
+        public bool CanUseSpecial => _superGauge >= MaxSuperGauge;
+        public int ReceivedComboHits => _receivedComboHits;
+        public int ReceivedComboDamage => _receivedComboDamage;
         public bool HasRegisteredHit => _hasRegisteredHit;
         public bool InputsEnabled => _inputsEnabled;
         public int WakeupInvincibilityTicks => _wakeupInvincibilityTicks;
@@ -154,6 +171,10 @@ namespace UnDFight
             _wakeupInvincibilityTicks = 0;
             _ticksSinceLastHit = 0;
             _knockbackDecelPerSec = 0f;
+            _superGauge = 0;
+            _receivedComboHits = 0;
+            _receivedComboDamage = 0;
+            _grantedStartSuperOnCurrentMove = false;
             SetupAnimatorForFixedTick();
             ApplyFighterDataScaling();
             StepAnimatorTick(0f);
@@ -180,6 +201,9 @@ namespace UnDFight
             _wakeupInvincibilityTicks = 0;
             _ticksSinceLastHit = 0;
             _knockbackDecelPerSec = 0f;
+            _receivedComboHits = 0;
+            _receivedComboDamage = 0;
+            _grantedStartSuperOnCurrentMove = false;
             _inputHandler?.ClearBufferedInputs();
 
             transform.position = new Vector3(_currSimPos.x, _currSimPos.y, 0f);
@@ -357,8 +381,45 @@ namespace UnDFight
                 : (move.hitHeight == HitHeight.High || move.hitHeight == HitHeight.Mid);
         }
 
+        public void AddSuperGauge(int amount)
+        {
+            if (amount == 0)
+            {
+                return;
+            }
+            _superGauge = Mathf.Clamp(_superGauge + amount, 0, MaxSuperGauge);
+        }
+
+        public void SetSuperGauge(int value)
+        {
+            _superGauge = Mathf.Clamp(value, 0, MaxSuperGauge);
+        }
+
+        public void ResetSuperGauge()
+        {
+            _superGauge = 0;
+        }
+
+        public int ConsumeStartSuperBonus()
+        {
+            if (!_grantedStartSuperOnCurrentMove)
+            {
+                return 0;
+            }
+            _grantedStartSuperOnCurrentMove = false;
+            return SuperGainWhiff;
+        }
+
+        public static float ComputeComboScalingMultiplier(int hitIndex)
+        {
+            if (hitIndex <= 1) return 1.00f;
+            if (hitIndex == 2) return 0.85f;
+            if (hitIndex == 3) return 0.72f;
+            return Mathf.Max(0.50f, 0.72f - (hitIndex - 3) * 0.12f);
+        }
+
         /// <summary>
-        /// Resolves damage, stun, knockback (scaled by weight), block, or knockdown from an incoming strike.
+        /// Backwards-compatible overload for callers not inspecting combo tracking outputs.
         /// </summary>
         public void ApplyIncomingAttack(
             MoveData move,
@@ -367,11 +428,36 @@ namespace UnDFight
             out int damageDealt,
             out float knockbackVelocity)
         {
+            ApplyIncomingAttack(
+                move,
+                attackerFacingSign,
+                out outcome,
+                out damageDealt,
+                out knockbackVelocity,
+                out _,
+                out _);
+        }
+
+        /// <summary>
+        /// Resolves damage (with combo scaling), stun, knockback (scaled by weight), block, or knockdown from an incoming strike.
+        /// </summary>
+        public void ApplyIncomingAttack(
+            MoveData move,
+            int attackerFacingSign,
+            out HitOutcomeType outcome,
+            out int damageDealt,
+            out float knockbackVelocity,
+            out int comboCount,
+            out int comboDamage)
+        {
             float pushDir = attackerFacingSign >= 0 ? 1f : -1f;
             float kbMult = fighterData != null ? fighterData.KnockbackMultiplier : 1f;
 
             if (CanBlockMove(move, attackerFacingSign))
             {
+                _receivedComboHits = 0;
+                _receivedComboDamage = 0;
+
                 int chip = Mathf.Min(move.chipDamage, Mathf.Max(0, _currentHealth - 1));
                 _currentHealth -= chip;
                 damageDealt = chip;
@@ -395,12 +481,30 @@ namespace UnDFight
                 }
 
                 outcome = HitOutcomeType.Blocked;
+                comboCount = 0;
+                comboDamage = 0;
                 return;
             }
 
+            if (_state == FighterState.Hit || _state == FighterState.KnockDown)
+            {
+                _receivedComboHits++;
+            }
+            else
+            {
+                _receivedComboHits = 1;
+                _receivedComboDamage = 0;
+            }
+
+            float scaling = ComputeComboScalingMultiplier(_receivedComboHits);
+            int scaledDamage = move.damage <= 0 ? 0 : Mathf.Max(1, Mathf.RoundToInt(move.damage * scaling));
+
             int prevHealth = _currentHealth;
-            _currentHealth = Mathf.Max(0, _currentHealth - move.damage);
+            _currentHealth = Mathf.Max(0, _currentHealth - scaledDamage);
             damageDealt = prevHealth - _currentHealth;
+            _receivedComboDamage += damageDealt;
+            comboCount = _receivedComboHits;
+            comboDamage = _receivedComboDamage;
             _blockFromCrouch = false;
             _ticksSinceLastHit = 0;
 
@@ -462,12 +566,38 @@ namespace UnDFight
                 _state == FighterState.GetUp ||
                 (_state == FighterState.Block && _stateTotalTicks > 0))
             {
-                if (_state != FighterState.Attack)
+                if (_state == FighterState.Attack)
+                {
+                    if (_currentMoveData != null && _currentMoveData.lungeSpeed > 0f && _stateTicks <= _currentMoveData.LastActiveTick)
+                    {
+                        _simVelocity.x = _facingSign * _currentMoveData.lungeSpeed;
+                    }
+                    else
+                    {
+                        _simVelocity.x = 0f;
+                    }
+                }
+                else
                 {
                     ApplyHorizontalDecel(dt);
                 }
 
                 ApplyGravityAndIntegrate(dt);
+
+                bool hitstopCleared = _simulation == null || _simulation.HitstopTicksRemaining <= 0;
+                if (_state == FighterState.Attack &&
+                    _inputsEnabled &&
+                    _isGrounded &&
+                    _hasRegisteredHit &&
+                    hitstopCleared &&
+                    _inputHandler != null &&
+                    _inputHandler.ConsumeChainAttackInput(tick, _currentAttack, CanUseSpecial, out AttackType cancelAttack) &&
+                    StartAttack(cancelAttack))
+                {
+                    UpdateHurtboxDimensions();
+                    StepAnimatorTick(dt);
+                    return;
+                }
 
                 if (_stateTicks >= _stateTotalTicks && _isGrounded)
                 {
@@ -533,15 +663,10 @@ namespace UnDFight
             }
 
             // Grounded input consumption: Attack > Jump > Block/Crouch > Walk > Idle
-            if (_inputHandler != null && _inputHandler.ConsumeAttackInput(tick, out AttackType attackType))
+            if (_inputHandler != null &&
+                _inputHandler.ConsumeAttackInput(tick, CanUseSpecial, out AttackType attackType) &&
+                StartAttack(attackType))
             {
-                _simVelocity.x = 0f;
-                _blockFromCrouch = false;
-                _hasRegisteredHit = false;
-                _currentAttack = attackType;
-                _currentMoveData = fighterData != null ? fighterData.GetMoveData(attackType) : null;
-                _stateTotalTicks = _currentMoveData != null ? _currentMoveData.TotalTicks : GetFallbackAttackTotalTicks(attackType);
-                EnterState(FighterState.Attack, triggerAttack: true);
                 UpdateHurtboxDimensions();
                 StepAnimatorTick(dt);
                 return;
@@ -644,6 +769,38 @@ namespace UnDFight
             }
         }
 
+        private bool StartAttack(AttackType attackType)
+        {
+            if (attackType == AttackType.None)
+            {
+                return false;
+            }
+
+            if (attackType == AttackType.Special)
+            {
+                if (!CanUseSpecial)
+                {
+                    return false;
+                }
+                _superGauge = Mathf.Max(0, _superGauge - MaxSuperGauge);
+                _grantedStartSuperOnCurrentMove = false;
+            }
+            else
+            {
+                AddSuperGauge(SuperGainWhiff);
+                _grantedStartSuperOnCurrentMove = true;
+            }
+
+            _simVelocity.x = 0f;
+            _blockFromCrouch = false;
+            _hasRegisteredHit = false;
+            _currentAttack = attackType;
+            _currentMoveData = fighterData != null ? fighterData.GetMoveData(attackType) : null;
+            _stateTotalTicks = _currentMoveData != null ? _currentMoveData.TotalTicks : GetFallbackAttackTotalTicks(attackType);
+            EnterState(FighterState.Attack, triggerAttack: true, forceResetTicks: true);
+            return true;
+        }
+
         private void EnterState(FighterState newState, bool triggerAttack = false, bool forceResetTicks = false)
         {
             if (_state == newState && newState != FighterState.Attack && !forceResetTicks)
@@ -652,11 +809,19 @@ namespace UnDFight
             }
             _state = newState;
             _stateTicks = 0;
+
+            if (newState == FighterState.Idle || newState == FighterState.Block || newState == FighterState.GetUp)
+            {
+                _receivedComboHits = 0;
+                _receivedComboDamage = 0;
+            }
+
             if (newState != FighterState.Attack)
             {
                 _currentAttack = AttackType.None;
                 _currentMoveData = null;
                 _hasRegisteredHit = false;
+                _grantedStartSuperOnCurrentMove = false;
             }
             else if (triggerAttack)
             {
@@ -690,6 +855,7 @@ namespace UnDFight
                 AttackType.HeavyPunch => 27,
                 AttackType.LightKick => 19,
                 AttackType.HeavyKick => 33,
+                AttackType.Special => 28,
                 _ => 16
             };
         }

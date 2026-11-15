@@ -89,9 +89,12 @@ namespace UnDFight.Tests
             Assert.AreNotSame(jompes.heavyPunch, rochard.heavyPunch);
             Assert.AreNotSame(jompes.lightKick, rochard.lightKick);
             Assert.AreNotSame(jompes.heavyKick, rochard.heavyKick);
+            Assert.AreNotSame(jompes.specialMove, rochard.specialMove);
 
             AssertLightTicks(jompes);
             AssertLightTicks(rochard);
+            Assert.AreEqual(24, jompes.specialMove.TotalTicks);
+            Assert.AreEqual(22, rochard.specialMove.TotalTicks);
 
             string jompesFbx = "Assets/UnDFight/Art/Models/Jompes/Jompes.fbx";
             string rochardFbx = "Assets/UnDFight/Art/Models/Rochard/Rochard.fbx";
@@ -132,6 +135,7 @@ namespace UnDFight.Tests
             Assert.AreNotSame(lucas.heavyPunch, tiago.heavyPunch);
             Assert.AreNotSame(lucas.lightKick, tiago.lightKick);
             Assert.AreNotSame(lucas.heavyKick, tiago.heavyKick);
+            Assert.AreNotSame(lucas.specialMove, tiago.specialMove);
 
             AssertMovesetMatchesFbx(lucas, "Assets/UnDFight/Art/Models/Lucas/Lucas.fbx", "AOC_Lucas");
             AssertMovesetMatchesFbx(tiago, "Assets/UnDFight/Art/Models/Tiago/Tiago.fbx", "AOC_Tiago");
@@ -139,6 +143,14 @@ namespace UnDFight.Tests
 
         private static void AssertMovesetMatchesFbx(FighterData data, string fbxPath, string expectedControllerName)
         {
+            var importer = (ModelImporter)AssetImporter.GetAtPath(fbxPath);
+            Assert.IsNotNull(importer, $"Missing ModelImporter at {fbxPath}");
+            foreach (ModelImporterClipAnimation clipMeta in importer.clipAnimations)
+            {
+                Assert.IsFalse(clipMeta.heightFromFeet, $"{fbxPath} clip {clipMeta.name} must keep heightFromFeet=false");
+                Assert.IsTrue(clipMeta.lockRootHeightY, $"{fbxPath} clip {clipMeta.name} must lockRootHeightY=true");
+            }
+
             var clips = new Dictionary<string, AnimationClip>(StringComparer.Ordinal);
             foreach (UnityEngine.Object obj in AssetDatabase.LoadAllAssetsAtPath(fbxPath))
             {
@@ -148,10 +160,10 @@ namespace UnDFight.Tests
                 }
             }
 
-            Assert.AreEqual(15, clips.Count, $"Expected 15 clips in {fbxPath}");
+            Assert.AreEqual(16, clips.Count, $"Expected 16 clips in {fbxPath}");
 
             foreach (AttackType attackType in new[]
-                     { AttackType.LightPunch, AttackType.HeavyPunch, AttackType.LightKick, AttackType.HeavyKick })
+                     { AttackType.LightPunch, AttackType.HeavyPunch, AttackType.LightKick, AttackType.HeavyKick, AttackType.Special })
             {
                 MoveData move = data.GetMoveData(attackType);
                 Assert.IsNotNull(move, $"{data.fighterName} missing {attackType}");

@@ -315,6 +315,32 @@ namespace UnDFight
             float absDx = Mathf.Abs(observed.OpponentSimX - controlledFighter.SimPosition.x);
             bool canAct = IsControlledActionable();
 
+            // 0. Chain cancel follow-ups on hit during Medium & Hard difficulties
+            if (controlledFighter.State == FighterState.Attack &&
+                controlledFighter.HasRegisteredHit &&
+                controlledFighter.IsGrounded &&
+                difficulty != CpuDifficulty.Easy &&
+                absDx <= CloseRange + 0.3f &&
+                _attackCooldownTicks <= 24)
+            {
+                float chainChance = difficulty == CpuDifficulty.Hard ? 0.78f : 0.42f;
+                if (controlledFighter.CanUseSpecial &&
+                    PlayerInputHandler.IsChainCancelAllowed(controlledFighter.CurrentAttack, AttackType.Special, true) &&
+                    _rng.NextDouble() < chainChance)
+                {
+                    TriggerAttack(AttackType.Special, inputHandler, currentTick);
+                    return;
+                }
+
+                if ((controlledFighter.CurrentAttack == AttackType.LightPunch || controlledFighter.CurrentAttack == AttackType.LightKick) &&
+                    _rng.NextDouble() < chainChance)
+                {
+                    AttackType followUp = _rng.NextDouble() < 0.55 ? AttackType.HeavyPunch : AttackType.HeavyKick;
+                    TriggerAttack(followUp, inputHandler, currentTick);
+                    return;
+                }
+            }
+
             // 1. Reactive defense based purely on delayed simulation snapshot
             if (observed.State == FighterState.Attack && !observed.IsInRecovery && absDx <= DefenseRange)
             {
@@ -427,6 +453,15 @@ namespace UnDFight
 
         private AttackType ChooseCloseRangeAttack(float absDx)
         {
+            if (controlledFighter != null && controlledFighter.CanUseSpecial && difficulty != CpuDifficulty.Easy)
+            {
+                float rawSpecialProb = difficulty == CpuDifficulty.Hard ? 0.35f : 0.20f;
+                if (_rng.NextDouble() < rawSpecialProb)
+                {
+                    return AttackType.Special;
+                }
+            }
+
             double r = _rng.NextDouble();
             if (absDx <= PointBlankRange)
             {
@@ -453,6 +488,7 @@ namespace UnDFight
                 AttackType.LightKick => 22,
                 AttackType.HeavyPunch => 28,
                 AttackType.HeavyKick => 34,
+                AttackType.Special => 38,
                 _ => 20
             };
         }
@@ -504,6 +540,7 @@ namespace UnDFight
                 AttackType.HeavyPunch => FighterInputButton.HeavyPunch,
                 AttackType.LightKick => FighterInputButton.LightKick,
                 AttackType.HeavyKick => FighterInputButton.HeavyKick,
+                AttackType.Special => FighterInputButton.Special,
                 _ => FighterInputButton.LightPunch
             };
         }
@@ -526,6 +563,7 @@ namespace UnDFight
                 AttackType.HeavyPunch => 11,
                 AttackType.LightKick => 8,
                 AttackType.HeavyKick => 13,
+                AttackType.Special => 15,
                 _ => 8
             };
         }

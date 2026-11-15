@@ -15,6 +15,7 @@
 | **HeavyPunch** | 9 | 5 | 19 | 33 | 0,550 s | 10–14 | Cruzado/gancho potente com grande preparação de quadril e extensão total (`RightHand`) |
 | **LightKick** | 6 | 4 | 13 | 23 | 0,383 s | 7–10 | Pisão/chute baixo pesado na altura da canela/joelho (`LeftFoot`) |
 | **HeavyKick** | 11 | 5 | 24 | 40 | 0,667 s | 12–16 | Chutão frontal/lateral empurrando com o calcanhar e recuo sólido (`LeftFoot`) |
+| **Special** | 10 | 5 | 17 | 32 | 0,533 s | 11–15 | Especial **Martelo do Asfalto**: preparação profunda com as duas mãos e martelada dupla esmagadora (`RightHand`/`LeftHand`) |
 
 ---
 

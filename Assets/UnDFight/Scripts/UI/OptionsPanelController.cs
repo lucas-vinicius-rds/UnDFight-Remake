@@ -207,14 +207,15 @@ namespace UnDFight
                 (FighterInputButton.HeavyPunch, "Soco Forte"),
                 (FighterInputButton.LightKick, "Chute Fraco"),
                 (FighterInputButton.HeavyKick, "Chute Forte"),
-                (FighterInputButton.Block, "Bloqueio")
+                (FighterInputButton.Block, "Bloqueio"),
+                (FighterInputButton.Special, "Especial")
             };
 
             for (int i = 0; i < rows.Length; i++)
             {
-                float y = startY - i * 62f;
-                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"Bind_P{playerIndex + 1}_{rows[i].btn}", modal, rows[i].label, whiteSprite, 22f, TextAlignmentOptions.MidlineLeft);
-                PlaceTopLeftRect(entry.Button.GetComponent<RectTransform>(), x, y, width, 54f);
+                float y = startY - i * 56f;
+                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"Bind_P{playerIndex + 1}_{rows[i].btn}", modal, rows[i].label, whiteSprite, 21f, TextAlignmentOptions.MidlineLeft);
+                PlaceTopLeftRect(entry.Button.GetComponent<RectTransform>(), x, y, width, 48f);
 
                 TextMeshProUGUI valText = MenuUiFactory.CreateText("KeyValue", entry.Button.transform, "J", 22f, FontStyles.Bold, TextAlignmentOptions.MidlineRight, MenuUiFactory.AccentGold);
                 MenuUiFactory.StretchFull(valText.rectTransform, 24f, 4f, 22f, 4f);

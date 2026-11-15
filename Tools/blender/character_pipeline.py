@@ -24,18 +24,27 @@ WEIGHT_CLASS_FRAMEDATA = {
         "HeavyPunch": (5, 4, 12),   # 21 frames
         "LightKick":  (4, 3, 9),    # 16 frames
         "HeavyKick":  (7, 4, 16),   # 27 frames
+        "Special":    (7, 4, 13),   # 24 frames (Jompes default light)
     },
     "medium": {
         "LightPunch": (4, 3, 9),    # 16 frames
         "HeavyPunch": (7, 4, 16),   # 27 frames
         "LightKick":  (5, 3, 11),   # 19 frames
         "HeavyKick":  (9, 4, 20),   # 33 frames
+        "Special":    (8, 5, 15),   # 28 frames (Tiago)
     },
     "heavy": {
         "LightPunch": (5, 3, 11),   # 19 frames
         "HeavyPunch": (9, 5, 19),   # 33 frames
         "LightKick":  (6, 4, 13),   # 23 frames
         "HeavyKick":  (11, 5, 24),  # 40 frames
+        "Special":    (10, 5, 17),  # 32 frames (Lucas)
+    },
+}
+
+STYLE_FRAMEDATA_OVERRIDES = {
+    "agile_striker": {
+        "Special": (6, 4, 12),      # 22 frames (Rochard: Tornado Relâmpago)
     },
 }
 
@@ -46,6 +55,18 @@ def get_weight_class(weight_kg):
     if weight_kg <= 90.0:
         return "medium"
     return "heavy"
+
+
+def get_fighter_framedata(config=None):
+    config = config or {}
+    style = config.get("fighting_style", "heavy_brawler")
+    weight_class = config.get("weight_class") or get_weight_class(config.get("weight_kg", 92.0))
+    fd = dict(WEIGHT_CLASS_FRAMEDATA[weight_class])
+    if style in STYLE_FRAMEDATA_OVERRIDES:
+        fd.update(STYLE_FRAMEDATA_OVERRIDES[style])
+    if config.get("framedata_overrides"):
+        fd.update(config["framedata_overrides"])
+    return weight_class, style, fd
 
 
 CHARACTER_CONFIGS = {
@@ -355,8 +376,216 @@ def relaxed_grip(intensity=0.45):
     return _finger_curl_pose(fingers, thumb, intensity=intensity / 0.45)
 
 
-def build_action_from_keyframes(arm_obj, action_name, keyframes):
-    """Create or replace an Action on arm_obj from {frame: pose_dict}."""
+def _collect_foot_vertex_groups(mesh_obj):
+    """Identify Left/Right foot heel & toe vertex indices from rest mesh + vertex groups."""
+    if mesh_obj is None:
+        return None
+    vgs = mesh_obj.vertex_groups
+    vg_ids = {}
+    for bname in ("LeftFoot", "LeftToes", "RightFoot", "RightToes"):
+        vg = vgs.get(bname)
+        vg_ids[bname] = vg.index if vg is not None else -1
+
+    data = {
+        "Left": {"all": [], "heel": [], "toe": []},
+        "Right": {"all": [], "heel": [], "toe": []},
+    }
+    for v in mesh_obj.data.vertices:
+        weights = {g.group: g.weight for g in v.groups}
+        for side in ("Left", "Right"):
+            wf = weights.get(vg_ids[f"{side}Foot"], 0.0)
+            wt = weights.get(vg_ids[f"{side}Toes"], 0.0)
+            if wf + wt >= 0.35:
+                data[side]["all"].append(v.index)
+                if wt >= 0.30:
+                    data[side]["toe"].append(v.index)
+                elif wf >= 0.35:
+                    data[side]["heel"].append(v.index)
+
+    # Fallback if Toes group is tiny: split by rest-pose Y near mid-foot
+    for side in ("Left", "Right"):
+        all_idx = data[side]["all"]
+        if not all_idx:
+            continue
+        if len(data[side]["heel"]) < 4 or len(data[side]["toe"]) < 4:
+            ys = [mesh_obj.data.vertices[i].co.y for i in all_idx]
+            mid_y = 0.5 * (min(ys) + max(ys))
+            data[side]["toe"] = [i for i in all_idx if mesh_obj.data.vertices[i].co.y < mid_y]
+            data[side]["heel"] = [i for i in all_idx if mesh_obj.data.vertices[i].co.y >= mid_y]
+    return data
+
+
+def _eval_mesh_min_z(mesh_obj, vertex_indices=None):
+    """Evaluate deformed world-space min Z over specified vertices (or whole mesh)."""
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    eval_obj = mesh_obj.evaluated_get(depsgraph)
+    eval_mesh = eval_obj.to_mesh()
+    mw = eval_obj.matrix_world
+    try:
+        verts = eval_mesh.vertices
+        if vertex_indices:
+            min_z = min((mw @ verts[i].co).z for i in vertex_indices)
+        else:
+            min_z = min((mw @ v.co).z for v in verts)
+    finally:
+        eval_obj.to_mesh_clear()
+    return min_z
+
+
+def _get_bone_world_rx_deg(arm_obj, bone_name):
+    """Extract current pitch around world X (in degrees) of a pose bone's delta rotation."""
+    pb = arm_obj.pose.bones[bone_name]
+    r_local = pb.rotation_quaternion.to_matrix()
+    m_rest = pb.bone.matrix_local.to_3x3()
+    r_world = m_rest @ r_local @ m_rest.inverted()
+    return math.degrees(r_world.to_euler('XYZ').x)
+
+
+def _add_bone_world_rx_deg(arm_obj, bone_name, delta_deg):
+    """Adjust a pose bone's local/pose pitch by delta_deg around armature/world X."""
+    pb = arm_obj.pose.bones[bone_name]
+    r_delta = Euler((math.radians(delta_deg), 0.0, 0.0), 'XYZ').to_matrix()
+    m_rest = pb.bone.matrix_local.to_3x3()
+    r_delta_local = m_rest.inverted() @ r_delta @ m_rest
+    pb.rotation_mode = 'QUATERNION'
+    pb.rotation_quaternion = (r_delta_local @ pb.rotation_quaternion.to_matrix()).to_quaternion()
+
+
+def level_foot_world_horizontal(arm_obj, side, mesh_obj=None, foot_vdata=None, max_pitch_trim=6.0):
+    """
+    Set LeftFoot or RightFoot so its sole sits horizontal in world XY (keeping only heading yaw around Z),
+    then optionally trim world pitch by <= max_pitch_trim deg so heel and forefoot vertices share the same Z.
+    """
+    pb = arm_obj.pose.bones[f"{side}Foot"]
+    if pb.parent is None:
+        return
+    bpy.context.view_layer.update()
+
+    m_parent_pose = pb.parent.matrix.to_3x3()
+    m_foot_rest = pb.bone.matrix_local.to_3x3()
+    m_parent_rest = pb.parent.bone.matrix_local.to_3x3()
+    m_rel_rest = m_parent_rest.inverted() @ m_foot_rest
+
+    # Measure current horizontal heading yaw (rest vector -> current vector projected on XY)
+    rest_fwd = pb.bone.tail_local - pb.bone.head_local
+    rest_xy = Vector((rest_fwd.x, rest_fwd.y))
+    cur_fwd = pb.tail - pb.head
+    cur_xy = Vector((cur_fwd.x, cur_fwd.y))
+    if rest_xy.length > 1e-4 and cur_xy.length > 1e-4:
+        # 2D signed angle from rest_xy to cur_xy around +Z
+        a1 = math.atan2(rest_xy.y, rest_xy.x)
+        a2 = math.atan2(cur_xy.y, cur_xy.x)
+        yaw_rad = a2 - a1
+    else:
+        yaw_rad = 0.0
+
+    r_yaw = Euler((0.0, 0.0, yaw_rad), 'XYZ').to_matrix()
+    target_foot_world = r_yaw @ m_foot_rest
+    q_foot = ((m_parent_pose @ m_rel_rest).inverted() @ target_foot_world).to_quaternion()
+    pb.rotation_mode = 'QUATERNION'
+    pb.rotation_quaternion = q_foot
+    bpy.context.view_layer.update()
+
+    # Vertex-level sole flatness polish (compensates slight heel/arch slope in source mesh)
+    if mesh_obj is not None and foot_vdata and foot_vdata[side]["heel"] and foot_vdata[side]["toe"]:
+        heel_vs = foot_vdata[side]["heel"]
+        toe_vs = foot_vdata[side]["toe"]
+        total_trim = 0.0
+        for _ in range(4):
+            hz = _eval_mesh_min_z(mesh_obj, heel_vs)
+            tz = _eval_mesh_min_z(mesh_obj, toe_vs)
+            diff = hz - tz  # positive => heel is higher than toes => pitch toes UP (negative rot around +X relative to -Y forward)
+            if abs(diff) < 0.0005:
+                break
+            # Foot length ~0.18 m => asin(diff / 0.16)
+            trim_deg = max(-max_pitch_trim, min(max_pitch_trim, -math.degrees(math.atan2(diff, 0.16))))
+            trim_deg = max(-max_pitch_trim - total_trim, min(max_pitch_trim - total_trim, trim_deg))
+            if abs(trim_deg) < 0.05:
+                break
+            total_trim += trim_deg
+            r_pitch = Euler((math.radians(trim_deg), 0.0, 0.0), 'XYZ').to_matrix()
+            # Apply pitch around the foot's horizontal heading axis (r_yaw @ X)
+            r_trim_world = r_yaw @ r_pitch @ r_yaw.inverted()
+            q_foot = ((m_parent_pose @ m_rel_rest).inverted() @ (r_trim_world @ target_foot_world)).to_quaternion()
+            pb.rotation_quaternion = q_foot
+            target_foot_world = r_trim_world @ target_foot_world
+            bpy.context.view_layer.update()
+
+
+def _equalize_stance_feet(arm_obj, mesh_obj, foot_vdata):
+    """Level both soles horizontally and adjust knee flexion so Left and Right shoes touch the exact same Z."""
+    if mesh_obj is None or not foot_vdata:
+        return
+    left_vs = foot_vdata["Left"]["all"]
+    right_vs = foot_vdata["Right"]["all"]
+    if not left_vs or not right_vs:
+        return
+
+    level_foot_world_horizontal(arm_obj, "Left", mesh_obj, foot_vdata)
+    level_foot_world_horizontal(arm_obj, "Right", mesh_obj, foot_vdata)
+
+    for _ in range(8):
+        lz = _eval_mesh_min_z(mesh_obj, left_vs)
+        rz = _eval_mesh_min_z(mesh_obj, right_vs)
+        diff = lz - rz
+        if abs(diff) <= 0.0005:
+            break
+        # Positive diff => Left foot is higher => either straighten Left knee (less bend) or bend Right knee more.
+        higher_side = "Left" if diff > 0 else "Right"
+        lower_side = "Right" if diff > 0 else "Left"
+        step_deg = min(10.0, max(0.35, abs(diff) * 280.0))
+
+        # Prefer reducing flexion on higher leg if knee is bent > 8 deg; otherwise flex lower knee more.
+        higher_knee_rx = _get_bone_world_rx_deg(arm_obj, f"{higher_side}LowerLeg")
+        if higher_knee_rx > 8.0 + step_deg * 0.5:
+            _add_bone_world_rx_deg(arm_obj, f"{higher_side}LowerLeg", -step_deg)
+            _add_bone_world_rx_deg(arm_obj, f"{higher_side}UpperLeg", step_deg * 0.35)
+        else:
+            _add_bone_world_rx_deg(arm_obj, f"{lower_side}LowerLeg", step_deg)
+            _add_bone_world_rx_deg(arm_obj, f"{lower_side}UpperLeg", -step_deg * 0.35)
+
+        level_foot_world_horizontal(arm_obj, "Left", mesh_obj, foot_vdata)
+        level_foot_world_horizontal(arm_obj, "Right", mesh_obj, foot_vdata)
+
+
+def ground_pose_to_floor(arm_obj, mesh_obj, foot_vdata=None, mode="both", target_z=0.0):
+    """
+    Ground current pose so supporting foot (or lowest mesh point) rests on target_z (default Z=0.0).
+    mode:
+      - 'both': level both feet horizontally, equalize L/R shoe sole Z, shift Hips Z so soles sit at target_z.
+      - 'right': level RightFoot horizontally, shift Hips Z so RightFoot sole sits at target_z (Left leg kicking).
+      - 'left': level LeftFoot horizontally, shift Hips Z so LeftFoot sole sits at target_z (Right leg kicking).
+      - 'min': keep current leg angles (e.g. KnockDown / Walk) and shift Hips Z so min(all mesh verts) == target_z.
+    """
+    if mesh_obj is None:
+        return 0.0
+    bpy.context.view_layer.update()
+
+    if mode == "both":
+        _equalize_stance_feet(arm_obj, mesh_obj, foot_vdata)
+        vs = (foot_vdata["Left"]["all"] + foot_vdata["Right"]["all"]) if foot_vdata else None
+        cur_min_z = _eval_mesh_min_z(mesh_obj, vs)
+    elif mode == "right":
+        level_foot_world_horizontal(arm_obj, "Right", mesh_obj, foot_vdata)
+        vs = foot_vdata["Right"]["all"] if (foot_vdata and foot_vdata["Right"]["all"]) else None
+        cur_min_z = _eval_mesh_min_z(mesh_obj, vs)
+    elif mode == "left":
+        level_foot_world_horizontal(arm_obj, "Left", mesh_obj, foot_vdata)
+        vs = foot_vdata["Left"]["all"] if (foot_vdata and foot_vdata["Left"]["all"]) else None
+        cur_min_z = _eval_mesh_min_z(mesh_obj, vs)
+    else:
+        cur_min_z = _eval_mesh_min_z(mesh_obj, None)
+
+    dz = target_z - cur_min_z
+    pb_hips = arm_obj.pose.bones["Hips"]
+    m_rest = pb_hips.bone.matrix_local.to_3x3()
+    pb_hips.location = pb_hips.location + (m_rest.inverted() @ Vector((0.0, 0.0, dz)))
+    bpy.context.view_layer.update()
+    return _eval_mesh_min_z(mesh_obj, None)
+
+
+def build_action_from_keyframes(arm_obj, action_name, keyframes, mesh_obj=None, foot_vdata=None, frame_ground_modes=None):
+    """Create or replace an Action on arm_obj from {frame: pose_dict}, with optional per-frame vertex grounding."""
     if action_name in bpy.data.actions:
         bpy.data.actions.remove(bpy.data.actions[action_name])
     act = bpy.data.actions.new(name=action_name)
@@ -365,8 +594,12 @@ def build_action_from_keyframes(arm_obj, action_name, keyframes):
         arm_obj.animation_data_create()
     arm_obj.animation_data.action = act
 
+    modes = frame_ground_modes or {}
     for frame in sorted(keyframes.keys()):
         apply_pose_dict(arm_obj, keyframes[frame])
+        gmode = modes.get(frame)
+        if gmode:
+            ground_pose_to_floor(arm_obj, mesh_obj, foot_vdata=foot_vdata, mode=gmode, target_z=0.0)
         key_all_deform_bones(arm_obj, frame)
 
     # Set smooth Bezier interpolation on all created fcurves
@@ -393,14 +626,13 @@ def merge_pose(base, overrides):
 def get_idle_stance(breath=0.0, style="heavy_brawler"):
     """
     Fighting stance facing -Y (side-on to 2.5D camera) customized per fighting_style.
-    breath in [-1, 1] drives breathing bob & style-specific guard float.
+    breath in [-1, 1] drives chest/shoulder/guard breathing while keeping legs planted evenly on Z=0.
     """
     if style == "street_scrappy":
-        # Tiago: open asymmetrical street stance, looser/lower hands, slight street bounce
-        dz = -0.036 + 0.011 * breath
+        # Tiago: open asymmetrical street stance, looser/lower hands, street shoulder roll
         return {
-            "HipsOffset":    (0.0, 0.0, dz),
-            "Hips":          (3.0, 1.5 * breath, 12.0),
+            "HipsOffset":    (0.0, 0.0, -0.042),
+            "Hips":          (3.0, 1.5 * breath, 12.0 + 2.0 * breath),
             "Spine":         (4.0 + 2.0 * breath, 2.5 * breath, 3.0 - 3.0 * breath),
             "Chest":         (3.0 + 1.5 * breath, 1.5 * breath, 4.0),
             "UpperChest":    (2.0, 0.0, 2.0),
@@ -416,55 +648,53 @@ def get_idle_stance(breath=0.0, style="heavy_brawler"):
             "RightUpperArm": (-3.0, -60.0 + 4.0 * breath, 34.0 - 3.0 * breath),
             "RightLowerArm": (8.0, 22.0, 74.0),
             "RightHand":     (-8.0, 0.0, -8.0),
-            # Slightly wider, casual street stance
+            # Slightly wider, casual street stance (auto-leveled to Z=0)
             "LeftUpperLeg":  (-20.0, -7.0, 7.0),
             "LeftLowerLeg":  (26.0, 0.0, 0.0),
             "LeftFoot":      (-6.0, 0.0, 0.0),
-            "RightUpperLeg": (14.0, 7.0, -6.0),
+            "RightUpperLeg": (12.0, 7.0, -6.0),
             "RightLowerLeg": (20.0, 0.0, 0.0),
-            "RightFoot":     (-12.0, 0.0, 0.0),
+            "RightFoot":     (-32.0, 0.0, 0.0),
         }
 
     if style == "technical_striker":
         # Jompes (Shadow Sentinel): disciplined martial-arts stance, high lead guard & tight rear chin/chest guard
-        dz = -0.042 + 0.006 * breath
         return {
-            "HipsOffset":    (0.0, 0.0, dz),
+            "HipsOffset":    (0.0, 0.0, -0.044),
             "Hips":          (4.0, 0.0, 32.0),
-            "Spine":         (2.0 + 0.8 * breath, 0.0, 4.0),
-            "Chest":         (2.0 + 0.8 * breath, 0.0, 3.0),
+            "Spine":         (2.0 + 1.0 * breath, 0.0, 4.0),
+            "Chest":         (2.0 + 1.0 * breath, 0.0, 3.0),
             "UpperChest":    (1.0, 0.0, 2.0),
-            "Neck":          (-4.0 - 0.6 * breath, 0.0, -20.0),
+            "Neck":          (-4.0 - 0.8 * breath, 0.0, -20.0),
             "Head":          (-3.0, 0.0, -18.0),
             # Lead left hand high, angled forward like karate/kickboxing sentinel guard
             "LeftShoulder":  (0.0, 14.0, -14.0),
-            "LeftUpperArm":  (-12.0, 42.0 - 1.5 * breath, -52.0),
+            "LeftUpperArm":  (-12.0, 42.0 - 1.8 * breath, -52.0),
             "LeftLowerArm":  (12.0, -32.0, -96.0),
             "LeftHand":      (-10.0, 0.0, 12.0),
             # Rear right hand tightly tucked near chin/chest
             "RightShoulder": (0.0, -14.0, 14.0),
-            "RightUpperArm": (-6.0, -42.0 + 1.5 * breath, 66.0),
+            "RightUpperArm": (-6.0, -42.0 + 1.8 * breath, 66.0),
             "RightLowerArm": (14.0, 42.0, 118.0),
             "RightHand":     (-12.0, 0.0, -12.0),
-            # Balanced compact martial stance
+            # Balanced compact martial stance (auto-leveled to Z=0)
             "LeftUpperLeg":  (-22.0, -5.0, 5.0),
             "LeftLowerLeg":  (28.0, 0.0, 0.0),
             "LeftFoot":      (-6.0, 0.0, 0.0),
-            "RightUpperLeg": (12.0, 6.0, -5.0),
+            "RightUpperLeg": (10.0, 6.0, -5.0),
             "RightLowerLeg": (18.0, 0.0, 0.0),
-            "RightFoot":     (-10.0, 0.0, 0.0),
+            "RightFoot":     (-28.0, 0.0, 0.0),
         }
 
     if style == "agile_striker":
-        # Rochard (Vasco Jacket): athletic bouncy light stance with elastic knees and agile guard ginga
-        dz = -0.028 + 0.015 * breath
+        # Rochard (Vasco Jacket): athletic agile guard ginga while keeping both feet planted cleanly
         return {
-            "HipsOffset":    (0.0, 0.0, dz),
+            "HipsOffset":    (0.0, 0.0, -0.036),
             "Hips":          (3.0, 1.5 * breath, 24.0 + 3.0 * breath),
-            "Spine":         (3.0 + 2.0 * breath, -2.0 * breath, 4.0),
-            "Chest":         (3.0 + 1.8 * breath, -1.5 * breath, 4.0),
+            "Spine":         (3.0 + 2.2 * breath, -2.0 * breath, 4.0),
+            "Chest":         (3.0 + 2.0 * breath, -1.5 * breath, 4.0),
             "UpperChest":    (1.5, 0.0, 2.0),
-            "Neck":          (-4.0 - 1.0 * breath, 0.0, -15.0),
+            "Neck":          (-4.0 - 1.2 * breath, 0.0, -15.0),
             "Head":          (-3.0, 0.0, -15.0),
             "LeftShoulder":  (0.0, 12.0, -12.0),
             "LeftUpperArm":  (-8.0, 52.0 - 4.0 * breath, -56.0 + 4.0 * breath),
@@ -474,18 +704,17 @@ def get_idle_stance(breath=0.0, style="heavy_brawler"):
             "RightUpperArm": (-8.0, -52.0 + 4.0 * breath, 56.0 - 4.0 * breath),
             "RightLowerArm": (10.0, 34.0, 104.0),
             "RightHand":     (-10.0, 0.0, -10.0),
-            "LeftUpperLeg":  (-20.0 - 3.0 * breath, -4.0, 4.0),
-            "LeftLowerLeg":  (28.0 + 4.0 * breath, 0.0, 0.0),
-            "LeftFoot":      (-8.0 - 1.0 * breath, 0.0, 0.0),
-            "RightUpperLeg": (12.0 + 2.0 * breath, 5.0, -4.0),
-            "RightLowerLeg": (20.0 + 3.0 * breath, 0.0, 0.0),
-            "RightFoot":     (-12.0, 0.0, 0.0),
+            "LeftUpperLeg":  (-20.0, -4.0, 4.0),
+            "LeftLowerLeg":  (28.0, 0.0, 0.0),
+            "LeftFoot":      (-8.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, 5.0, -4.0),
+            "RightLowerLeg": (20.0, 0.0, 0.0),
+            "RightFoot":     (-30.0, 0.0, 0.0),
         }
 
     # Default: heavy_brawler (Lucas): planted low heavy stance, tight closed temple/chin guard
-    dz = -0.062 + 0.011 * breath
     return {
-        "HipsOffset":    (0.0, 0.0, dz),
+        "HipsOffset":    (0.0, 0.0, -0.062),
         "Hips":          (6.0, 0.0, 24.0),
         "Spine":         (7.0 + 2.0 * breath, 0.0, 5.0),
         "Chest":         (6.0 + 2.0 * breath, 0.0, 5.0),
@@ -502,13 +731,13 @@ def get_idle_stance(breath=0.0, style="heavy_brawler"):
         "RightUpperArm": (-8.0, -46.0 + 2.5 * breath, 64.0),
         "RightLowerArm": (12.0, 40.0, 114.0),
         "RightHand":     (-12.0, 0.0, -14.0),
-        # Planted heavy stance legs
+        # Planted heavy stance legs (auto-leveled to Z=0)
         "LeftUpperLeg":  (-26.0, -5.0, 6.0),
         "LeftLowerLeg":  (34.0, 0.0, 0.0),
         "LeftFoot":      (-8.0, 0.0, 0.0),
         "RightUpperLeg": (10.0, 6.0, -6.0),
         "RightLowerLeg": (16.0, 0.0, 0.0),
-        "RightFoot":     (-12.0, 0.0, 0.0),
+        "RightFoot":     (-26.0, 0.0, 0.0),
     }
 
 
@@ -1023,6 +1252,55 @@ def build_style_attacks(style, idle0, framedata):
             "RightFoot":     (-12.0, 0.0, 0.0),
         })
 
+        # Special (Sequência de Rua — Tiago): fast stepping lead hook into heavy downward street haymaker
+        sp_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.055),
+            "Hips":          (6.0, -4.0, -16.0),
+            "Spine":         (8.0, -6.0, -12.0),
+            "Chest":         (6.0, -6.0, -12.0),
+            "LeftUpperArm":  (-6.0, 54.0, -28.0),
+            "LeftLowerArm":  (10.0, -22.0, -88.0),
+            "RightUpperArm": (10.0, -42.0, 26.0),
+            "RightLowerArm": (8.0, 24.0, 82.0),
+        })
+        sp_hit1 = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.058),
+            "Hips":          (8.0, 4.0, 10.0),
+            "Spine":         (10.0, 6.0, 16.0),
+            "Chest":         (8.0, 6.0, 18.0),
+            "Neck":          (-6.0, 0.0, -18.0),
+            "LeftShoulder":  (0.0, 12.0, -18.0),
+            "LeftUpperArm":  (-18.0, 12.0, -56.0),
+            "LeftLowerArm":  (10.0, -22.0, -42.0),
+            "LeftHand":      (-14.0, -24.0, 0.0),
+            "RightUpperArm": (14.0, -22.0, -28.0),
+            "RightLowerArm": (6.0, 14.0, 56.0),
+            "LeftUpperLeg":  (-28.0, -6.0, 6.0),
+            "LeftLowerLeg":  (34.0, 0.0, 0.0),
+            "RightUpperLeg": (18.0, 7.0, -6.0),
+            "RightLowerLeg": (20.0, 0.0, 0.0),
+        })
+        sp_hit2 = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.072),
+            "Hips":          (12.0, 8.0, 28.0),
+            "Spine":         (16.0, 14.0, 22.0),
+            "Chest":         (14.0, 12.0, 26.0),
+            "UpperChest":    (10.0, 6.0, 16.0),
+            "Neck":          (-12.0, -8.0, -30.0),
+            "Head":          (-10.0, -6.0, -26.0),
+            "RightShoulder": (0.0, 16.0, 20.0),
+            "RightUpperArm": (-34.0, -12.0, 54.0),
+            "RightLowerArm": (8.0, 26.0, 38.0),
+            "RightHand":     (-18.0, 34.0, 0.0),
+            "LeftUpperArm":  (-6.0, 60.0, -24.0),
+            "LeftLowerArm":  (10.0, -24.0, -86.0),
+            "LeftUpperLeg":  (-36.0, -6.0, 6.0),
+            "LeftLowerLeg":  (42.0, 0.0, 0.0),
+            "RightUpperLeg": (24.0, 8.0, -6.0),
+            "RightLowerLeg": (24.0, 0.0, 0.0),
+        })
+        special_builder = ("multi", sp_ant, sp_hit1, sp_hit2)
+
     elif style == "technical_striker":
         # Jompes (Shadow Sentinel): crisp disciplined martial-arts strikes with clean hip rotation
         lp_ant = merge_pose(idle0, {
@@ -1114,6 +1392,47 @@ def build_style_attacks(style, idle0, framedata):
             "RightLowerLeg": (16.0, 0.0, 0.0),
         })
 
+        # Special (Golpe Sombrio — Jompes): low coiled shadow lunge -> explosive centerline spear-thrust
+        sp_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.095),
+            "Hips":          (10.0, 0.0, -28.0),
+            "Spine":         (8.0, 0.0, -20.0),
+            "Chest":         (8.0, 0.0, -20.0),
+            "Neck":          (-10.0, 0.0, 28.0),
+            "Head":          (-8.0, 0.0, 24.0),
+            "RightShoulder": (0.0, -14.0, -12.0),
+            "RightUpperArm": (10.0, -48.0, 14.0),
+            "RightLowerArm": (12.0, 32.0, 118.0),
+            "LeftShoulder":  (0.0, 16.0, -16.0),
+            "LeftUpperArm":  (-14.0, 36.0, -64.0),
+            "LeftLowerArm":  (14.0, -40.0, -112.0),
+            "LeftUpperLeg":  (-40.0, -6.0, 6.0),
+            "LeftLowerLeg":  (52.0, 0.0, 0.0),
+            "RightUpperLeg": (26.0, 6.0, -6.0),
+            "RightLowerLeg": (32.0, 0.0, 0.0),
+        })
+        sp_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.082),
+            "Hips":          (12.0, 0.0, 36.0),
+            "Spine":         (12.0, 0.0, 22.0),
+            "Chest":         (12.0, 0.0, 24.0),
+            "UpperChest":    (8.0, 0.0, 16.0),
+            "Neck":          (-12.0, 0.0, -34.0),
+            "Head":          (-10.0, 0.0, -32.0),
+            "RightShoulder": (0.0, -8.0, 20.0),
+            "RightUpperArm": (-16.0, 0.0, 28.0),
+            "RightLowerArm": (0.0, 50.0, 4.0),
+            "RightHand":     (-24.0, 44.0, 0.0),
+            "LeftShoulder":  (0.0, 14.0, -14.0),
+            "LeftUpperArm":  (-10.0, 50.0, -60.0),
+            "LeftLowerArm":  (16.0, -42.0, -118.0),
+            "LeftUpperLeg":  (-38.0, -5.0, 6.0),
+            "LeftLowerLeg":  (46.0, 0.0, 0.0),
+            "RightUpperLeg": (28.0, 6.0, -6.0),
+            "RightLowerLeg": (24.0, 0.0, 0.0),
+        })
+        special_builder = ("standard", sp_ant, sp_hit)
+
     elif style == "agile_striker":
         # Rochard (Vasco Jacket): fast athletic flick jab, lunge cross, quick low/mid kick & dynamic high kick
         lp_ant = merge_pose(idle0, {
@@ -1180,6 +1499,38 @@ def build_style_attacks(style, idle0, framedata):
             "LeftLowerLeg":  (4.0, 0.0, 0.0),
             "LeftFoot":      (28.0, 0.0, 0.0),
         })
+
+        # Special (Tornado Relâmpago — Rochard): quick coil -> high sweeping tornado kick
+        sp_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.068),
+            "Hips":          (-8.0, 10.0, -34.0),
+            "Spine":         (-6.0, 0.0, -14.0),
+            "Chest":         (4.0, 0.0, -10.0),
+            "RightUpperArm": (-14.0, -44.0, 54.0),
+            "LeftUpperArm":  (-14.0, 44.0, -54.0),
+            "LeftUpperLeg":  (-96.0, -10.0, 12.0),
+            "LeftLowerLeg":  (112.0, 0.0, 0.0),
+            "RightUpperLeg": (-24.0, 5.0, -4.0),
+            "RightLowerLeg": (34.0, 0.0, 0.0),
+        })
+        sp_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.036),
+            "Hips":          (-22.0, 14.0, -36.0),
+            "Spine":         (-14.0, 4.0, 14.0),
+            "Chest":         (6.0, 4.0, 14.0),
+            "Neck":          (10.0, 0.0, 10.0),
+            "Head":          (6.0, 0.0, 8.0),
+            "RightUpperArm": (-18.0, -48.0, 52.0),
+            "RightLowerArm": (8.0, 26.0, 92.0),
+            "LeftUpperArm":  (-16.0, 46.0, -56.0),
+            "LeftLowerArm":  (10.0, -28.0, -96.0),
+            "LeftUpperLeg":  (-118.0, -12.0, 16.0),
+            "LeftLowerLeg":  (4.0, 0.0, 0.0),
+            "LeftFoot":      (32.0, 0.0, 0.0),
+            "RightUpperLeg": (8.0, -6.0, 6.0),
+            "RightLowerLeg": (14.0, 0.0, 0.0),
+        })
+        special_builder = ("standard", sp_ant, sp_hit)
 
     else:
         # heavy_brawler (Lucas): strong hip/shoulder torque punches, heavy stomp low kick, heel thrust kick
@@ -1288,6 +1639,51 @@ def build_style_attacks(style, idle0, framedata):
             "RightFoot":     (-12.0, 0.0, 0.0),
         })
 
+        # Special (Martelo do Asfalto — Lucas): twin-fist crouch coil -> devastating overhead hammer smash
+        sp_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.095),
+            "Hips":          (-4.0, 0.0, 14.0),
+            "Spine":         (-10.0, 0.0, 4.0),
+            "Chest":         (-10.0, 0.0, 4.0),
+            "UpperChest":    (-6.0, 0.0, 2.0),
+            "Neck":          (8.0, 0.0, -10.0),
+            "Head":          (6.0, 0.0, -8.0),
+            "LeftShoulder":  (0.0, 18.0, -18.0),
+            "LeftUpperArm":  (-26.0, 32.0, -78.0),
+            "LeftLowerArm":  (18.0, -40.0, -102.0),
+            "LeftHand":      (-12.0, 18.0, 14.0),
+            "RightShoulder": (0.0, -18.0, 18.0),
+            "RightUpperArm": (-26.0, -32.0, 78.0),
+            "RightLowerArm": (18.0, 40.0, 102.0),
+            "RightHand":     (-12.0, -18.0, -14.0),
+            "LeftUpperLeg":  (-34.0, -5.0, 6.0),
+            "LeftLowerLeg":  (46.0, 0.0, 0.0),
+            "RightUpperLeg": (14.0, 6.0, -6.0),
+            "RightLowerLeg": (28.0, 0.0, 0.0),
+        })
+        sp_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.105),
+            "Hips":          (14.0, 0.0, 10.0),
+            "Spine":         (18.0, 0.0, 6.0),
+            "Chest":         (16.0, 0.0, 6.0),
+            "UpperChest":    (12.0, 0.0, 4.0),
+            "Neck":          (-16.0, 0.0, -12.0),
+            "Head":          (-14.0, 0.0, -10.0),
+            "LeftShoulder":  (0.0, 10.0, -22.0),
+            "LeftUpperArm":  (-22.0, 6.0, -46.0),
+            "LeftLowerArm":  (10.0, -36.0, -48.0),
+            "LeftHand":      (-18.0, -26.0, 0.0),
+            "RightShoulder": (0.0, -10.0, 22.0),
+            "RightUpperArm": (-22.0, -6.0, 46.0),
+            "RightLowerArm": (10.0, 36.0, 48.0),
+            "RightHand":     (-18.0, 26.0, 0.0),
+            "LeftUpperLeg":  (-42.0, -6.0, 7.0),
+            "LeftLowerLeg":  (54.0, 0.0, 0.0),
+            "RightUpperLeg": (26.0, 7.0, -6.0),
+            "RightLowerLeg": (32.0, 0.0, 0.0),
+        })
+        special_builder = ("standard", sp_ant, sp_hit)
+
     move_poses = {
         "LightPunch": (lp_ant, lp_hit),
         "HeavyPunch": (hp_ant, hp_hit),
@@ -1304,6 +1700,29 @@ def build_style_attacks(style, idle0, framedata):
             hit_start: hit_pose,
             hit_end: hit_pose,
             end_f: idle0,
+        }
+
+    sp_startup, sp_active, sp_recovery = framedata["Special"]
+    sp_ant_f, sp_hit_start, sp_hit_end, sp_end_f = _attack_key_frames(sp_startup, sp_active, sp_recovery)
+    if special_builder[0] == "multi":
+        _, sp_ant, sp_hit1, sp_hit2 = special_builder
+        sp_mid_f = sp_hit_start + max(2, sp_active // 2)
+        anims["Special"] = {
+            1: idle0,
+            sp_ant_f: sp_ant,
+            sp_hit_start: sp_hit1,
+            sp_mid_f: sp_hit2,
+            sp_hit_end: sp_hit2,
+            sp_end_f: idle0,
+        }
+    else:
+        _, sp_ant, sp_hit = special_builder
+        anims["Special"] = {
+            1: idle0,
+            sp_ant_f: sp_ant,
+            sp_hit_start: sp_hit,
+            sp_hit_end: sp_hit,
+            sp_end_f: idle0,
         }
 
     return anims
@@ -1453,18 +1872,94 @@ def build_common_actions(idle0):
     return anims
 
 
+def _get_clip_ground_modes(clip_name, style, keyframes):
+    frames = sorted(keyframes.keys())
+    first_f, last_f = frames[0], frames[-1]
+    if clip_name in ("Idle", "BlockStand", "Crouch", "Victory", "HitReact", "LightPunch", "HeavyPunch"):
+        return {f: "both" for f in frames}
+    if clip_name == "Special":
+        if style == "agile_striker":
+            return {f: ("both" if f in (first_f, last_f) else "right") for f in frames}
+        return {f: "both" for f in frames}
+    if clip_name in ("LightKick", "HeavyKick"):
+        return {f: ("both" if f in (first_f, last_f) else "right") for f in frames}
+    if clip_name in ("WalkForward", "WalkBackward"):
+        return {f: "min" for f in frames}
+    if clip_name == "Jump":
+        return {1: "both", 6: "both", 30: "both", 37: "both"}
+    if clip_name == "KnockDown":
+        return {1: "both", 10: "both", 24: "min", 36: "min", 46: "min"}
+    if clip_name == "GetUp":
+        return {1: "min", 18: "min", 32: "both", 41: "both"}
+    if clip_name == "Defeat":
+        return {1: "both", 18: "min", 36: "min", 51: "min"}
+    return {}
+
+
+def verify_and_report_grounding(arm_obj, mesh_obj, foot_vdata, name, framedata):
+    """Verify minimum world Z across Idle (all 61 frames) and key grounded action frames."""
+    if mesh_obj is None:
+        return {}
+    scene = bpy.context.scene
+    arm_obj.data.pose_position = 'POSE'
+    report = {}
+
+    # 1) All 61 frames of Idle
+    arm_obj.animation_data.action = bpy.data.actions["Idle"]
+    idle_zs = []
+    idle_lr_diffs = []
+    for f in range(1, 62):
+        scene.frame_set(f)
+        bpy.context.view_layer.update()
+        lz = _eval_mesh_min_z(mesh_obj, foot_vdata["Left"]["all"])
+        rz = _eval_mesh_min_z(mesh_obj, foot_vdata["Right"]["all"])
+        idle_zs.append(min(lz, rz))
+        idle_lr_diffs.append(abs(lz - rz))
+    report["Idle"] = (min(idle_zs), max(idle_zs), max(idle_lr_diffs))
+
+    # 2) Keyframes of other grounded clips + Special impact frame
+    sp_hit_f = 1 + framedata["Special"][0] + 1
+    hp_hit_f = 1 + framedata["HeavyPunch"][0] + 1
+    hk_hit_f = 1 + framedata["HeavyKick"][0] + 1
+    checks = [
+        ("BlockStand", 20),
+        ("Crouch", 20),
+        ("Victory", 50),
+        ("HeavyPunch", hp_hit_f),
+        ("HeavyKick", hk_hit_f),
+        ("Special", sp_hit_f),
+    ]
+    for cname, f in checks:
+        arm_obj.animation_data.action = bpy.data.actions[cname]
+        scene.frame_set(f)
+        bpy.context.view_layer.update()
+        mz = _eval_mesh_min_z(mesh_obj, None)
+        report[f"{cname}@{f}"] = mz
+
+    arm_obj.animation_data.action = None
+    reset_pose(arm_obj)
+    bpy.context.view_layer.update()
+    print(
+        f"[Grounding Check] {name}: Idle z=[{report['Idle'][0]:+.4f}, {report['Idle'][1]:+.4f}] m "
+        f"(L/R diff<={report['Idle'][2]:.4f} m), "
+        + ", ".join(f"{k}={v:+.4f}m" for k, v in report.items() if k != "Idle")
+    )
+    return report
+
+
 def generate_all_animations(arm_obj, config=None):
     config = config or {}
     set_scene_fps(config.get("fps", 60))
     arm_obj.data.pose_position = 'POSE'
 
-    style = config.get("fighting_style", "heavy_brawler")
-    weight_class = config.get("weight_class") or get_weight_class(config.get("weight_kg", 92.0))
-    framedata = WEIGHT_CLASS_FRAMEDATA[weight_class]
+    weight_class, style, framedata = get_fighter_framedata(config)
+    mesh_name = config.get("mesh_name")
+    mesh_obj = bpy.data.objects.get(mesh_name) if mesh_name else None
+    foot_vdata = _collect_foot_vertex_groups(mesh_obj)
 
     idle0 = get_idle_stance(0.0, style=style)
     idle_up = get_idle_stance(1.0, style=style)
-    idle_dn = get_idle_stance(-1.0) if style is None else get_idle_stance(-1.0, style=style)
+    idle_dn = get_idle_stance(-1.0, style=style)
 
     animations = {}
     animations["Idle"] = {1: idle0, 16: idle_up, 31: idle0, 46: idle_dn, 61: idle0}
@@ -1495,13 +1990,23 @@ def generate_all_animations(arm_obj, config=None):
 
     ordered_names = [
         "Idle", "WalkForward", "WalkBackward", "Jump", "Crouch", "BlockStand",
-        "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
+        "LightPunch", "HeavyPunch", "LightKick", "HeavyKick", "Special",
         "HitReact", "KnockDown", "GetUp", "Victory", "Defeat",
     ]
     for name in ordered_names:
         kf = animations[name]
-        build_action_from_keyframes(arm_obj, name, kf)
+        ground_modes = _get_clip_ground_modes(name, style, kf)
+        build_action_from_keyframes(
+            arm_obj,
+            name,
+            kf,
+            mesh_obj=mesh_obj,
+            foot_vdata=foot_vdata,
+            frame_ground_modes=ground_modes,
+        )
         print(f"Generated [{style}/{weight_class}] action '{name}' (frames {min(kf.keys())}..{max(kf.keys())}, len={max(kf.keys()) - min(kf.keys())})")
+
+    verify_and_report_grounding(arm_obj, mesh_obj, foot_vdata, config.get("name", "Fighter"), framedata)
 
     arm_obj.animation_data.action = bpy.data.actions["Idle"]
     bpy.context.scene.frame_set(1)
@@ -1524,7 +2029,7 @@ def export_character_fbx(config):
 
     # CRITICAL: Reset to pure Rest T-Pose before exporting FBX while keeping
     # pose_position='POSE' so Unity Humanoid Avatar reads pure T-Pose as Rest Pose
-    # and all 15 actions still bake via bake_anim_use_all_actions=True.
+    # and all 16 actions still bake via bake_anim_use_all_actions=True.
     arm_obj.data.pose_position = 'POSE'
     if arm_obj.animation_data:
         arm_obj.animation_data.action = None
@@ -2412,11 +2917,9 @@ def build_character_base(char_name="Tiago"):
 def write_frame_data_doc(config):
     """Write Docs/FrameData_<Name>.md automatically from weight_class and fighting_style."""
     name = config["name"]
-    style = config.get("fighting_style", "heavy_brawler")
+    weight_class, style, fd = get_fighter_framedata(config)
     weight_kg = config.get("weight_kg", 92.0)
-    weight_class = config.get("weight_class") or get_weight_class(weight_kg)
     height_m = config["target_height"]
-    fd = WEIGHT_CLASS_FRAMEDATA[weight_class]
     archetype_label = config.get("archetype_label", style)
 
     weight_pt = {"light": "Leve (<= 75 kg)", "medium": "Médio (75–90 kg)", "heavy": "Pesado (> 90 kg)"}[weight_class]
@@ -2426,6 +2929,7 @@ def write_frame_data_doc(config):
             "HeavyPunch": "Cruzado/gancho potente com grande preparação de quadril e extensão total (`RightHand`)",
             "LightKick": "Pisão/chute baixo pesado na altura da canela/joelho (`LeftFoot`)",
             "HeavyKick": "Chutão frontal/lateral empurrando com o calcanhar e recuo sólido (`LeftFoot`)",
+            "Special": "Especial **Martelo do Asfalto**: preparação profunda com as duas mãos e martelada dupla esmagadora (`RightHand`/`LeftHand`)",
             "Idle": "Base plantada e baixa, ombros firmes, guarda alta e fechada protegendo queixo/têmpora, respiração pesada",
             "Walk": "Passada firme e pesada mantendo guarda dupla fechada",
             "BlockStand": "Guarda dupla fechada e imóvel mantida até o último frame",
@@ -2436,6 +2940,7 @@ def write_frame_data_doc(config):
             "HeavyPunch": "Mata-cobra aberto e largo inclinando o tronco junto com o golpe (`RightHand`)",
             "LightKick": "Bico/chute baixo improvisado de rua (`LeftFoot`)",
             "HeavyKick": "Chute alto desengonçado erguendo o braço oposto para equilíbrio (`LeftFoot`)",
+            "Special": "Especial **Sequência de Rua**: cruzado apressado de esquerda emendando em mata-cobra descendente brutal (`LeftHand`+`RightHand`)",
             "Idle": "Base aberta e assimétrica, guarda mais baixa e solta, leve ginga irregular de rua",
             "Walk": "Passada solta e menos cadenciada, braços balançando fora da guarda padrão",
             "BlockStand": "Encolhe os ombros e cruza os antebraços em frente ao rosto de forma instintiva até o último frame",
@@ -2446,6 +2951,7 @@ def write_frame_data_doc(config):
             "HeavyPunch": "Golpe penetrante/cruzado firme com giro limpo de quadril (`RightHand`)",
             "LightKick": "Chute frontal/snap rápido na altura baixa/média (`LeftFoot`)",
             "HeavyKick": "Chute alto circular técnico com rotação de quadril e guarda fechada (`LeftFoot`)",
+            "Special": "Especial **Golpe Sombrio**: avanço baixo em postura fechada seguido de estocada/palma perfurante central (`RightHand`)",
             "Idle": "Guarda marcial disciplinada e fechada (mão da frente alta, mão de trás junto ao peito/queixo)",
             "Walk": "Deslocamento técnico compacto mantendo a guarda marcial travada",
             "BlockStand": "Bloqueio marcial peek-a-boo fechado até o último frame",
@@ -2456,6 +2962,7 @@ def write_frame_data_doc(config):
             "HeavyPunch": "Cruzado rápido com passo firme para frente (`RightHand`)",
             "LightKick": "Chute baixo/médio veloz e elástico (`LeftFoot`)",
             "HeavyKick": "Chute alto dinâmico/explosivo com contrapeso do braço (`LeftFoot`)",
+            "Special": "Especial **Tornado Relâmpago**: giro ágil com chute alto explosivo em arco (`LeftFoot`)",
             "Idle": "Postura atlética leve com ginga/bounce ágil e joelhos elásticos",
             "Walk": "Passada leve e saltitante mantendo guarda ágil",
             "BlockStand": "Guarda alta compacta mantida até o último frame",
@@ -2488,6 +2995,7 @@ def write_frame_data_doc(config):
         fmt_row("HeavyPunch"),
         fmt_row("LightKick"),
         fmt_row("HeavyKick"),
+        fmt_row("Special"),
         "",
         "---",
         "",
@@ -2535,15 +3043,16 @@ def render_style_poses(arm_obj, config, out_dir):
     direction = Vector((0.0, 0.0, 0.90)) - cam_obj.location
     cam_obj.rotation_euler = direction.to_track_quat('-Z', 'Y').to_euler()
 
-    weight_class = config.get("weight_class") or get_weight_class(config.get("weight_kg", 92.0))
-    fd = WEIGHT_CLASS_FRAMEDATA[weight_class]
+    _, _, fd = get_fighter_framedata(config)
     hp_hit_frame = 1 + fd["HeavyPunch"][0] + 1
     hk_hit_frame = 1 + fd["HeavyKick"][0] + 1
+    sp_hit_frame = 1 + fd["Special"][0] + 1
 
     samples = {
         "Idle": 1,
         "HeavyPunch": hp_hit_frame,
         "HeavyKick": hk_hit_frame,
+        "Special": sp_hit_frame,
         "BlockStand": 20,
         "Victory": 50,
     }

@@ -22,6 +22,7 @@ namespace UnDFight
         LightPunch = 1,
         HeavyPunch = 2,
         LightKick = 3,
-        HeavyKick = 4
+        HeavyKick = 4,
+        Special = 5
     }
 }

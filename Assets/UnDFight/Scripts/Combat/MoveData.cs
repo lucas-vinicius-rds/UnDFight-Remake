@@ -32,6 +32,9 @@ namespace UnDFight
         public Vector2 hitboxCenterOffset = new Vector2(0.68f, 1.18f);
         public Vector2 hitboxSize = new Vector2(0.78f, 0.42f);
 
+        [Header("Optional Forward Lunge")]
+        [Min(0f)] public float lungeSpeed = 0f;
+
         public int FirstActiveTick => startupTicks + 1;
         public int LastActiveTick => startupTicks + activeTicks;
         public int TotalTicks => startupTicks + activeTicks + recoveryTicks;
@@ -73,7 +76,8 @@ namespace UnDFight
             bool knockdown,
             Vector2 centerOffset,
             Vector2 size,
-            int chip = 0)
+            int chip = 0,
+            float lungeSpeedValue = 0f)
         {
             moveName = nameValue;
             attackType = type;
@@ -90,6 +94,7 @@ namespace UnDFight
             causesKnockdown = knockdown;
             hitboxCenterOffset = centerOffset;
             hitboxSize = size;
+            lungeSpeed = Mathf.Max(0f, lungeSpeedValue);
         }
     }
 }

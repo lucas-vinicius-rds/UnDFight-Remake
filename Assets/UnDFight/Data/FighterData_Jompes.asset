@@ -30,3 +30,4 @@ MonoBehaviour:
   heavyPunch: {fileID: 11400000, guid: bc0a8b8f0679dfe4686da51720d838b1, type: 2}
   lightKick: {fileID: 11400000, guid: 17f3f171abea95c489729fa9d03dd982, type: 2}
   heavyKick: {fileID: 11400000, guid: 4674c8d60f7806f40b77456c578bffca, type: 2}
+  specialMove: {fileID: 11400000, guid: 87876c63a2c598f4a862a8ceff9ba387, type: 2}

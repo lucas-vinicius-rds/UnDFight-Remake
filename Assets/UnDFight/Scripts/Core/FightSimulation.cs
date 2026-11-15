@@ -219,6 +219,8 @@ namespace UnDFight
             if (_hitstopTicksRemaining > 0)
             {
                 _hitstopTicksRemaining--;
+                fighter1?.InputHandler?.SyncSimulationTick(tick);
+                fighter2?.InputHandler?.SyncSimulationTick(tick);
                 fighter1?.HoldVisualForHitstop();
                 fighter2?.HoldVisualForHitstop();
                 return;
@@ -330,7 +332,31 @@ namespace UnDFight
                 strike.Attacker.FacingSign,
                 out HitOutcomeType outcome,
                 out int damageDealt,
-                out float knockbackVelocity);
+                out float knockbackVelocity,
+                out int comboCount,
+                out int comboDamage);
+
+            bool isSpecial = strike.Move.attackType == AttackType.Special;
+            int consumedStartBonus = strike.Attacker.ConsumeStartSuperBonus();
+            if (outcome == HitOutcomeType.Blocked)
+            {
+                if (!isSpecial)
+                {
+                    strike.Attacker.AddSuperGauge(Mathf.Max(0, FighterController.SuperGainBlockAttacker - consumedStartBonus));
+                }
+                strike.Defender.AddSuperGauge(FighterController.SuperGainBlockDefender);
+            }
+            else
+            {
+                if (!isSpecial)
+                {
+                    bool isHeavy = strike.Move.attackType == AttackType.HeavyPunch ||
+                                   strike.Move.attackType == AttackType.HeavyKick;
+                    int hitGain = isHeavy ? FighterController.SuperGainHeavyHitAttacker : FighterController.SuperGainLightHitAttacker;
+                    strike.Attacker.AddSuperGauge(Mathf.Max(0, hitGain - consumedStartBonus));
+                }
+                strike.Defender.AddSuperGauge(FighterController.SuperGainHitDefender);
+            }
 
             int hitstop = strike.Move.hitstopTicks;
             if (hitstop > maxHitstop)
@@ -342,7 +368,11 @@ namespace UnDFight
             {
                 if (outcome == HitOutcomeType.Blocked)
                 {
-                    fightCamera.TriggerImpactShake(0.03f, 0.06f);
+                    fightCamera.TriggerImpactShake(isSpecial ? 0.07f : 0.03f, isSpecial ? 0.09f : 0.06f);
+                }
+                else if (isSpecial)
+                {
+                    fightCamera.TriggerImpactShake(0.22f, 0.24f);
                 }
                 else if (outcome == HitOutcomeType.KnockDown ||
                          strike.Move.causesKnockdown ||
@@ -367,7 +397,10 @@ namespace UnDFight
                 DamageDealt = damageDealt,
                 HitstopTicks = hitstop,
                 KnockbackVelocity = knockbackVelocity,
-                WasTrade = isTrade
+                WasTrade = isTrade,
+                ComboCount = comboCount,
+                ComboDamage = comboDamage,
+                IsSpecial = isSpecial
             });
         }
 

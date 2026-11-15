@@ -6,7 +6,8 @@ namespace UnDFight
         HeavyPunch = 1,
         LightKick = 2,
         HeavyKick = 3,
-        Block = 4
+        Block = 4,
+        Special = 5
     }
 
     public enum InputAssignmentMode

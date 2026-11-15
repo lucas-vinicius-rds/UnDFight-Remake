@@ -15,6 +15,7 @@
 | **HeavyPunch** | 7 | 4 | 16 | 27 | 0,450 s | 8–11 | Mata-cobra aberto e largo inclinando o tronco junto com o golpe (`RightHand`) |
 | **LightKick** | 5 | 3 | 11 | 19 | 0,317 s | 6–8 | Bico/chute baixo improvisado de rua (`LeftFoot`) |
 | **HeavyKick** | 9 | 4 | 20 | 33 | 0,550 s | 10–13 | Chute alto desengonçado erguendo o braço oposto para equilíbrio (`LeftFoot`) |
+| **Special** | 8 | 5 | 15 | 28 | 0,467 s | 9–13 | Especial **Sequência de Rua**: cruzado apressado de esquerda emendando em mata-cobra descendente brutal (`LeftHand`+`RightHand`) |
 
 ---
 

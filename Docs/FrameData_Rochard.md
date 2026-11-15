@@ -15,6 +15,7 @@
 | **HeavyPunch** | 5 | 4 | 12 | 21 | 0,350 s | 6–9 | Cruzado rápido com passo firme para frente (`RightHand`) |
 | **LightKick** | 4 | 3 | 9 | 16 | 0,267 s | 5–7 | Chute baixo/médio veloz e elástico (`LeftFoot`) |
 | **HeavyKick** | 7 | 4 | 16 | 27 | 0,450 s | 8–11 | Chute alto dinâmico/explosivo com contrapeso do braço (`LeftFoot`) |
+| **Special** | 6 | 4 | 12 | 22 | 0,367 s | 7–10 | Especial **Tornado Relâmpago**: giro ágil com chute alto explosivo em arco (`LeftFoot`) |
 
 ---
 

@@ -20,8 +20,10 @@ namespace UnDFight
         private AudioClip _uiBackClip;
         private AudioClip _whooshLightClip;
         private AudioClip _whooshHeavyClip;
+        private AudioClip _whooshSpecialClip;
         private AudioClip _hitLightClip;
         private AudioClip _hitHeavyClip;
+        private AudioClip _hitSpecialClip;
         private AudioClip _blockImpactClip;
         private AudioClip _knockdownClip;
         private AudioClip _roundGongClip;
@@ -166,6 +168,11 @@ namespace UnDFight
 
         public void PlayAttackWhoosh(AttackType attack)
         {
+            if (attack == AttackType.Special)
+            {
+                PlaySfx(_whooshSpecialClip, 0.95f);
+                return;
+            }
             bool heavy = attack == AttackType.HeavyPunch || attack == AttackType.HeavyKick;
             PlaySfx(heavy ? _whooshHeavyClip : _whooshLightClip, 0.75f);
         }
@@ -174,7 +181,17 @@ namespace UnDFight
         {
             if (hit.Outcome == HitOutcomeType.Blocked)
             {
-                PlaySfx(_blockImpactClip, 0.90f);
+                PlaySfx(_blockImpactClip, hit.IsSpecial ? 0.98f : 0.90f);
+                return;
+            }
+
+            if (hit.IsSpecial || (hit.Move != null && hit.Move.attackType == AttackType.Special))
+            {
+                PlaySfx(_hitSpecialClip, 1.0f);
+                if (hit.Outcome == HitOutcomeType.KnockDown)
+                {
+                    PlaySfx(_knockdownClip, 0.85f);
+                }
                 return;
             }
 
@@ -237,8 +254,10 @@ namespace UnDFight
             _uiBackClip = ProceduralAudioFactory.CreateUiBackClip();
             _whooshLightClip = ProceduralAudioFactory.CreateWhooshLightClip();
             _whooshHeavyClip = ProceduralAudioFactory.CreateWhooshHeavyClip();
+            _whooshSpecialClip = ProceduralAudioFactory.CreateWhooshSpecialClip();
             _hitLightClip = ProceduralAudioFactory.CreateHitLightClip();
             _hitHeavyClip = ProceduralAudioFactory.CreateHitHeavyClip();
+            _hitSpecialClip = ProceduralAudioFactory.CreateHitSpecialClip();
             _blockImpactClip = ProceduralAudioFactory.CreateBlockImpactClip();
             _knockdownClip = ProceduralAudioFactory.CreateKnockdownClip();
             _roundGongClip = ProceduralAudioFactory.CreateRoundGongClip();

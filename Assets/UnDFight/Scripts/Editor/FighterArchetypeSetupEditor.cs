@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace UnDFight.Editor
 {
@@ -15,11 +17,13 @@ namespace UnDFight.Editor
     {
         public struct MoveSpec
         {
+            public string MoveName;
             public AttackType Type;
             public int Startup;
             public int Active;
             public int Recovery;
             public int Damage;
+            public int ChipDamage;
             public int Hitstun;
             public int Blockstun;
             public int Hitstop;
@@ -28,6 +32,7 @@ namespace UnDFight.Editor
             public bool CausesKnockdown;
             public Vector2 HitboxOffset;
             public Vector2 HitboxSize;
+            public float LungeSpeed;
 
             public int TotalTicks => Startup + Active + Recovery;
         }
@@ -65,7 +70,7 @@ namespace UnDFight.Editor
         private static readonly string[] RequiredClips =
         {
             "Idle", "WalkForward", "WalkBackward", "Jump", "Crouch", "BlockStand",
-            "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
+            "LightPunch", "HeavyPunch", "LightKick", "HeavyKick", "Special",
             "HitReact", "KnockDown", "GetUp", "Victory", "Defeat"
         };
 
@@ -121,18 +126,9 @@ namespace UnDFight.Editor
             AssignAnimatorControllerToPrefab(LucasPrefabPath, aocLucas);
             AssignAnimatorControllerToPrefab(TiagoPrefabPath, aocTiago);
 
-            // 5. Generate fighter-specific MoveData assets using weight-class presets + Tiago mata-cobra hitbox
-            MoveSpec[] lucasSpecs = GetWeightClassPresetSpecs(WeightClass.Heavy);
-            MoveSpec[] tiagoSpecs = GetWeightClassPresetSpecs(WeightClass.Medium);
-            // Tiago HeavyPunch: "mata-cobra" slightly wider hitbox
-            for (int i = 0; i < tiagoSpecs.Length; i++)
-            {
-                if (tiagoSpecs[i].Type == AttackType.HeavyPunch)
-                {
-                    tiagoSpecs[i].HitboxOffset = new Vector2(0.82f, 1.18f);
-                    tiagoSpecs[i].HitboxSize = new Vector2(1.06f, 0.50f);
-                }
-            }
+            // 5. Generate fighter-specific MoveData assets using archetype + Special moveset
+            MoveSpec[] lucasSpecs = BuildArchetypeMoveSpecs(WeightClass.Heavy, FightingArchetype.HeavyBrawler);
+            MoveSpec[] tiagoSpecs = BuildArchetypeMoveSpecs(WeightClass.Medium, FightingArchetype.StreetScrappy);
 
             CreateOrUpdateFighterMoveset("Lucas", FightingArchetype.HeavyBrawler, LucasDataPath, lucasSpecs);
             CreateOrUpdateFighterMoveset("Tiago", FightingArchetype.StreetScrappy, TiagoDataPath, tiagoSpecs);
@@ -145,6 +141,13 @@ namespace UnDFight.Editor
             int lucasBones = CountMappedHumanBones(LucasFbxPath);
             int tiagoBones = CountMappedHumanBones(TiagoFbxPath);
             return $"Phase 9.1 Unity setup complete: Lucas ({lucasBones}/52 human bones, Heavy/HeavyBrawler) & Tiago ({tiagoBones}/52 human bones, Medium/StreetScrappy) updated cleanly.";
+        }
+
+        [MenuItem("UnDFight/Setup Fase 11 - Pés no Chão & Especiais")]
+        public static void ApplyPhase11SetupMenu()
+        {
+            string summary = ApplyPhase10Setup();
+            Debug.Log("[FighterArchetypeSetupEditor] " + summary);
         }
 
         [MenuItem("UnDFight/Setup Fase 10 - Jompes & Rochard")]
@@ -191,13 +194,16 @@ namespace UnDFight.Editor
                 fighterDataPath: RochardDataPath);
 
             UpdateFighterRoster(LucasDataPath, TiagoDataPath, JompesDataPath, RochardDataPath);
+            SerializeFightHudInScenes();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
+            int lucasBones = CountMappedHumanBones(LucasFbxPath);
+            int tiagoBones = CountMappedHumanBones(TiagoFbxPath);
             int jompesBones = CountMappedHumanBones(JompesFbxPath);
             int rochardBones = CountMappedHumanBones(RochardFbxPath);
-            return $"Phase 10 Unity setup complete: Jompes ({jompesBones}/52 bones, 1.65m/70kg, Light/TechnicalStriker) & Rochard ({rochardBones}/52 bones, 1.75m/67kg, Light/AgileStriker) added to Roster (4 fighters).";
+            return $"Phase 11 setup complete: Lucas({lucasBones}), Tiago({tiagoBones}), Jompes({jompesBones}), Rochard({rochardBones}) [16 clips, heightFromFeet=false, Special ready].";
         }
 
         public static int CountMappedHumanBones(string fbxPath)
@@ -345,7 +351,7 @@ namespace UnDFight.Editor
                 match.keepOriginalOrientation = true;
                 match.keepOriginalPositionY = true;
                 match.keepOriginalPositionXZ = true;
-                match.heightFromFeet = true;
+                match.heightFromFeet = false;
                 configured.Add(match);
             }
 
@@ -368,7 +374,59 @@ namespace UnDFight.Editor
                 throw new InvalidOperationException("Idle state not found in AC_Fighter.controller");
             }
 
-            string[] attackStates = { "LightPunch", "HeavyPunch", "LightKick", "HeavyKick" };
+            AnimatorState specialState = FindState(sm, "Special");
+            if (specialState == null)
+            {
+                AnimationClip specialBaseClip = null;
+                foreach (UnityEngine.Object obj in AssetDatabase.LoadAllAssetsAtPath(LucasFbxPath))
+                {
+                    if (obj is AnimationClip clip && string.Equals(clip.name, "Special", StringComparison.Ordinal))
+                    {
+                        specialBaseClip = clip;
+                        break;
+                    }
+                }
+                specialState = sm.AddState("Special", new Vector3(480f, 260f, 0f));
+                specialState.motion = specialBaseClip;
+                specialState.writeDefaultValues = true;
+            }
+
+            (string stateName, AttackType atkType)[] attackAnyStates =
+            {
+                ("LightPunch", AttackType.LightPunch),
+                ("HeavyPunch", AttackType.HeavyPunch),
+                ("LightKick", AttackType.LightKick),
+                ("HeavyKick", AttackType.HeavyKick),
+                ("Special", AttackType.Special)
+            };
+
+            foreach (var (stateName, atkType) in attackAnyStates)
+            {
+                AnimatorState dst = FindState(sm, stateName);
+                if (dst == null) continue;
+
+                AnimatorStateTransition anyTr = null;
+                foreach (AnimatorStateTransition tr in sm.anyStateTransitions)
+                {
+                    if (tr.destinationState == dst)
+                    {
+                        anyTr = tr;
+                        break;
+                    }
+                }
+                if (anyTr == null)
+                {
+                    anyTr = sm.AddAnyStateTransition(dst);
+                    anyTr.AddCondition(AnimatorConditionMode.If, 0f, "AttackTrigger");
+                    anyTr.AddCondition(AnimatorConditionMode.Equals, (int)atkType, "AttackType");
+                }
+                anyTr.hasExitTime = false;
+                anyTr.duration = 0f;
+                anyTr.hasFixedDuration = true;
+                anyTr.canTransitionToSelf = true;
+            }
+
+            string[] attackStates = { "LightPunch", "HeavyPunch", "LightKick", "HeavyKick", "Special" };
             foreach (string stateName in attackStates)
             {
                 AnimatorState st = FindState(sm, stateName);
@@ -524,8 +582,9 @@ namespace UnDFight.Editor
 
             foreach (MoveSpec spec in specs)
             {
-                string moveName = spec.Type.ToString();
-                string assetPath = $"{folder}/MoveData_{fighterName}_{moveName}.asset";
+                string typeKey = spec.Type.ToString();
+                string displayName = string.IsNullOrEmpty(spec.MoveName) ? typeKey : spec.MoveName;
+                string assetPath = $"{folder}/MoveData_{fighterName}_{typeKey}.asset";
                 MoveData move = AssetDatabase.LoadAssetAtPath<MoveData>(assetPath);
                 if (move == null)
                 {
@@ -534,7 +593,7 @@ namespace UnDFight.Editor
                 }
 
                 move.Configure(
-                    moveName,
+                    displayName,
                     spec.Type,
                     spec.Startup,
                     spec.Active,
@@ -547,7 +606,9 @@ namespace UnDFight.Editor
                     spec.Height,
                     spec.CausesKnockdown,
                     spec.HitboxOffset,
-                    spec.HitboxSize);
+                    spec.HitboxSize,
+                    spec.ChipDamage,
+                    spec.LungeSpeed);
                 EditorUtility.SetDirty(move);
 
                 switch (spec.Type)
@@ -563,6 +624,9 @@ namespace UnDFight.Editor
                         break;
                     case AttackType.HeavyKick:
                         data.heavyKick = move;
+                        break;
+                    case AttackType.Special:
+                        data.specialMove = move;
                         break;
                 }
             }
@@ -638,44 +702,138 @@ namespace UnDFight.Editor
 
         private static MoveSpec[] BuildArchetypeMoveSpecs(WeightClass weightClass, FightingArchetype archetype)
         {
-            MoveSpec[] specs = GetWeightClassPresetSpecs(weightClass);
-            if (archetype == FightingArchetype.TechnicalStriker)
+            var list = new List<MoveSpec>(GetWeightClassPresetSpecs(weightClass));
+            MoveSpec[] specs = list.ToArray();
+
+            MoveSpec specialSpec;
+            switch (archetype)
             {
-                // Tight, disciplined boxing/low-kick precision within exact Light ticks (13/21/16/27)
-                for (int i = 0; i < specs.Length; i++)
-                {
-                    if (specs[i].Type == AttackType.LightPunch)
+                case FightingArchetype.HeavyBrawler:
+                    specialSpec = new MoveSpec
                     {
-                        specs[i].Damage = 44;
-                        specs[i].HitboxOffset = new Vector2(0.64f, 1.12f);
-                    }
-                    else if (specs[i].Type == AttackType.LightKick)
+                        MoveName = "Martelo do Asfalto",
+                        Type = AttackType.Special,
+                        Startup = 10,
+                        Active = 5,
+                        Recovery = 17,
+                        Damage = 240,
+                        ChipDamage = 35,
+                        Hitstun = 24,
+                        Blockstun = 16,
+                        Hitstop = 11,
+                        Knockback = 5.2f,
+                        Height = HitHeight.Mid,
+                        CausesKnockdown = true,
+                        HitboxOffset = new Vector2(0.92f, 1.16f),
+                        HitboxSize = new Vector2(1.18f, 0.72f),
+                        LungeSpeed = 1.6f
+                    };
+                    break;
+
+                case FightingArchetype.StreetScrappy:
+                    for (int i = 0; i < specs.Length; i++)
                     {
-                        specs[i].Damage = 54;
-                        specs[i].HitboxOffset = new Vector2(0.72f, 0.48f);
+                        if (specs[i].Type == AttackType.HeavyPunch)
+                        {
+                            specs[i].HitboxOffset = new Vector2(0.82f, 1.18f);
+                            specs[i].HitboxSize = new Vector2(1.06f, 0.50f);
+                        }
                     }
-                }
-            }
-            else if (archetype == FightingArchetype.AgileStriker)
-            {
-                // Extended kick reach & snappy aerial finish within exact Light ticks (13/21/16/27)
-                for (int i = 0; i < specs.Length; i++)
-                {
-                    if (specs[i].Type == AttackType.LightKick)
+                    specialSpec = new MoveSpec
                     {
-                        specs[i].HitboxOffset = new Vector2(0.78f, 0.54f);
-                        specs[i].HitboxSize = new Vector2(0.92f, 0.44f);
-                    }
-                    else if (specs[i].Type == AttackType.HeavyKick)
+                        MoveName = "Sequência de Rua",
+                        Type = AttackType.Special,
+                        Startup = 8,
+                        Active = 5,
+                        Recovery = 15,
+                        Damage = 220,
+                        ChipDamage = 30,
+                        Hitstun = 22,
+                        Blockstun = 15,
+                        Hitstop = 10,
+                        Knockback = 4.6f,
+                        Height = HitHeight.Mid,
+                        CausesKnockdown = true,
+                        HitboxOffset = new Vector2(0.88f, 1.18f),
+                        HitboxSize = new Vector2(1.16f, 0.66f),
+                        LungeSpeed = 2.0f
+                    };
+                    break;
+
+                case FightingArchetype.TechnicalStriker:
+                    for (int i = 0; i < specs.Length; i++)
                     {
-                        specs[i].Knockback = 3.0f;
-                        specs[i].HitboxOffset = new Vector2(0.88f, 1.24f);
-                        specs[i].HitboxSize = new Vector2(1.08f, 0.56f);
+                        if (specs[i].Type == AttackType.LightPunch)
+                        {
+                            specs[i].Damage = 44;
+                            specs[i].HitboxOffset = new Vector2(0.64f, 1.12f);
+                        }
+                        else if (specs[i].Type == AttackType.LightKick)
+                        {
+                            specs[i].Damage = 54;
+                            specs[i].HitboxOffset = new Vector2(0.72f, 0.48f);
+                        }
                     }
-                }
+                    specialSpec = new MoveSpec
+                    {
+                        MoveName = "Golpe Sombrio",
+                        Type = AttackType.Special,
+                        Startup = 7,
+                        Active = 4,
+                        Recovery = 13,
+                        Damage = 205,
+                        ChipDamage = 28,
+                        Hitstun = 22,
+                        Blockstun = 14,
+                        Hitstop = 9,
+                        Knockback = 4.3f,
+                        Height = HitHeight.Mid,
+                        CausesKnockdown = true,
+                        HitboxOffset = new Vector2(0.90f, 1.14f),
+                        HitboxSize = new Vector2(1.14f, 0.58f),
+                        LungeSpeed = 2.4f
+                    };
+                    break;
+
+                default: // AgileStriker (Rochard)
+                    for (int i = 0; i < specs.Length; i++)
+                    {
+                        if (specs[i].Type == AttackType.LightKick)
+                        {
+                            specs[i].HitboxOffset = new Vector2(0.78f, 0.54f);
+                            specs[i].HitboxSize = new Vector2(0.92f, 0.44f);
+                        }
+                        else if (specs[i].Type == AttackType.HeavyKick)
+                        {
+                            specs[i].Knockback = 3.0f;
+                            specs[i].HitboxOffset = new Vector2(0.88f, 1.24f);
+                            specs[i].HitboxSize = new Vector2(1.08f, 0.56f);
+                        }
+                    }
+                    specialSpec = new MoveSpec
+                    {
+                        MoveName = "Tornado Relâmpago",
+                        Type = AttackType.Special,
+                        Startup = 6,
+                        Active = 4,
+                        Recovery = 12,
+                        Damage = 195,
+                        ChipDamage = 25,
+                        Hitstun = 20,
+                        Blockstun = 14,
+                        Hitstop = 9,
+                        Knockback = 4.2f,
+                        Height = HitHeight.High,
+                        CausesKnockdown = true,
+                        HitboxOffset = new Vector2(0.92f, 1.24f),
+                        HitboxSize = new Vector2(1.22f, 0.68f),
+                        LungeSpeed = 2.2f
+                    };
+                    break;
             }
 
-            return specs;
+            list = new List<MoveSpec>(specs) { specialSpec };
+            return list.ToArray();
         }
 
         private static void SetPrebakedHeightFlag(string fighterDataPath, bool prebaked)
@@ -901,6 +1059,48 @@ namespace UnDFight.Editor
             }
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(roster);
+        }
+
+        /// <summary>
+        /// Ensures serialized Super Gauge and Combo Counter widgets exist in Arena_Favela and Training scenes,
+        /// then restores MainMenu as the active scene.
+        /// </summary>
+        public static void SerializeFightHudInScenes()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                return;
+            }
+
+            string[] fightScenePaths =
+            {
+                "Assets/UnDFight/Scenes/Arena_Favela.unity",
+                "Assets/UnDFight/Scenes/Training.unity"
+            };
+
+            foreach (string scenePath in fightScenePaths)
+            {
+                if (!File.Exists(scenePath))
+                {
+                    continue;
+                }
+
+                Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                FightHUD hud = UnityEngine.Object.FindAnyObjectByType<FightHUD>();
+                if (hud != null)
+                {
+                    hud.EnsureSuperAndComboWidgets();
+                    EditorUtility.SetDirty(hud);
+                    EditorSceneManager.MarkSceneDirty(scene);
+                    EditorSceneManager.SaveScene(scene);
+                }
+            }
+
+            const string mainMenuPath = "Assets/UnDFight/Scenes/MainMenu.unity";
+            if (File.Exists(mainMenuPath))
+            {
+                EditorSceneManager.OpenScene(mainMenuPath, OpenSceneMode.Single);
+            }
         }
 
         private static void EnsureFolderExists(string assetFolderPath)

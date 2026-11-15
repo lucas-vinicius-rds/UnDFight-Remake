@@ -28,3 +28,4 @@ MonoBehaviour:
   causesKnockdown: 0
   hitboxCenterOffset: {x: 0.72, y: 0.48}
   hitboxSize: {x: 0.88, y: 0.42}
+  lungeSpeed: 0

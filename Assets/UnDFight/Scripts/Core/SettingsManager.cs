@@ -28,6 +28,7 @@ namespace UnDFight
         public string lightKick;
         public string heavyKick;
         public string block;
+        public string special;
 
         public static PlayerKeyBindings CreateDefaultP1()
         {
@@ -37,7 +38,8 @@ namespace UnDFight
                 heavyPunch = Key.K.ToString(),
                 lightKick = Key.U.ToString(),
                 heavyKick = Key.I.ToString(),
-                block = Key.L.ToString()
+                block = Key.L.ToString(),
+                special = Key.O.ToString()
             };
         }
 
@@ -49,7 +51,8 @@ namespace UnDFight
                 heavyPunch = Key.Numpad5.ToString(),
                 lightKick = Key.Numpad1.ToString(),
                 heavyKick = Key.Numpad2.ToString(),
-                block = Key.Numpad6.ToString()
+                block = Key.Numpad6.ToString(),
+                special = Key.Numpad3.ToString()
             };
         }
 
@@ -61,7 +64,8 @@ namespace UnDFight
                 heavyPunch = heavyPunch,
                 lightKick = lightKick,
                 heavyKick = heavyKick,
-                block = block
+                block = block,
+                special = special
             };
         }
 
@@ -74,6 +78,7 @@ namespace UnDFight
                 FighterInputButton.LightKick => lightKick,
                 FighterInputButton.HeavyKick => heavyKick,
                 FighterInputButton.Block => block,
+                FighterInputButton.Special => special,
                 _ => string.Empty
             };
 
@@ -90,6 +95,7 @@ namespace UnDFight
                 FighterInputButton.LightKick => Enum.Parse<Key>(fallback.lightKick),
                 FighterInputButton.HeavyKick => Enum.Parse<Key>(fallback.heavyKick),
                 FighterInputButton.Block => Enum.Parse<Key>(fallback.block),
+                FighterInputButton.Special => Enum.Parse<Key>(fallback.special),
                 _ => Key.None
             };
         }
@@ -109,6 +115,7 @@ namespace UnDFight
                 case FighterInputButton.LightKick: lightKick = value; break;
                 case FighterInputButton.HeavyKick: heavyKick = value; break;
                 case FighterInputButton.Block: block = value; break;
+                case FighterInputButton.Special: special = value; break;
             }
         }
     }
@@ -165,6 +172,8 @@ namespace UnDFight
 
             if (p1Bindings == null) p1Bindings = PlayerKeyBindings.CreateDefaultP1();
             if (p2Bindings == null) p2Bindings = PlayerKeyBindings.CreateDefaultP2();
+            if (string.IsNullOrEmpty(p1Bindings.special)) p1Bindings.special = Key.O.ToString();
+            if (string.IsNullOrEmpty(p2Bindings.special)) p2Bindings.special = Key.Numpad3.ToString();
         }
 
         public PlayerKeyBindings GetBindingsForPlayer(int playerIndex)
