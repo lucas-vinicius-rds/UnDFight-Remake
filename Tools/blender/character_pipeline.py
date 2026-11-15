@@ -81,9 +81,32 @@ CHARACTER_CONFIGS = {
         "target_tris": 30000,
         "body_tris_target": 12000,
         "hair_z_threshold": 1.48,
-        "center_x": 0.0,
+        "center_x": 0.0025,
         "fps": 60,
-        "joints": {},
+        "joints": {
+            "Hips":          ((0.0038, -0.0110, 0.9668), (0.0032, -0.0022, 1.0948)),
+            "Spine":         ((0.0032, -0.0022, 1.0948), (0.0026,  0.0065, 1.2227)),
+            "Chest":         ((0.0026,  0.0065, 1.2227), (0.0019,  0.0153, 1.3507)),
+            "UpperChest":    ((0.0019,  0.0153, 1.3507), (0.0008,  0.0217, 1.4436)),
+            "Neck":          ((0.0008,  0.0217, 1.4436), (0.0000,  0.0266, 1.5152)),
+            "Head":          ((0.0000,  0.0266, 1.5152), (0.0000,  0.0100, 1.7750)),
+            "LeftShoulder":  ((0.0402,  0.0287, 1.4009), (0.1931,  0.0420, 1.4009)),
+            "LeftUpperArm":  ((0.1931,  0.0420, 1.4009), (0.4093,  0.0779, 1.3159)),
+            "LeftLowerArm":  ((0.4093,  0.0779, 1.3159), (0.6488,  0.0731, 1.2773)),
+            "LeftHand":      ((0.6488,  0.0731, 1.2773), (0.7450,  0.0680, 1.2680)),
+            "RightShoulder": ((-0.0371, 0.0285, 1.3970), (-0.1931, 0.0416, 1.3970)),
+            "RightUpperArm": ((-0.1931, 0.0416, 1.3970), (-0.3900, 0.0766, 1.3159)),
+            "RightLowerArm": ((-0.3900, 0.0766, 1.3159), (-0.6294, 0.0796, 1.2850)),
+            "RightHand":     ((-0.6294, 0.0796, 1.2850), (-0.7250, 0.0730, 1.2750)),
+            "LeftUpperLeg":  ((0.0882, -0.0093, 0.8737), (0.1236, -0.0025, 0.5011)),
+            "LeftLowerLeg":  ((0.1236, -0.0025, 0.5011), (0.1429,  0.0698, 0.1458)),
+            "LeftFoot":      ((0.1429,  0.0698, 0.1458), (0.1660, -0.0516, 0.0457)),
+            "LeftToes":      ((0.1660, -0.0516, 0.0457), (0.1957, -0.2079, 0.0457)),
+            "RightUpperLeg": ((-0.0778, -0.0098, 0.8729), (-0.1120, -0.0049, 0.4973)),
+            "RightLowerLeg": ((-0.1120, -0.0049, 0.4973), (-0.1313,  0.0654, 0.1458)),
+            "RightFoot":     ((-0.1313,  0.0654, 0.1458), (-0.1661, -0.0522, 0.0455)),
+            "RightToes":     ((-0.1661, -0.0522, 0.0455), (-0.2111, -0.2040, 0.0455)),
+        },
     },
 }
 
@@ -201,9 +224,9 @@ def get_idle_stance(breath=0.0):
         "LeftUpperLeg":  (-22.0, -4.0, 4.0),
         "LeftLowerLeg":  (28.0, 0.0, 0.0),
         "LeftFoot":      (-6.0, 0.0, 0.0),
-        "RightUpperLeg": (18.0, 5.0, -4.0),
-        "RightLowerLeg": (24.0, 0.0, 0.0),
-        "RightFoot":     (-28.0, 0.0, 0.0),
+        "RightUpperLeg": (12.0, 5.0, -4.0),
+        "RightLowerLeg": (18.0, 0.0, 0.0),
+        "RightFoot":     (-12.0, 0.0, 0.0),
     }
 
 
@@ -243,7 +266,7 @@ def generate_all_animations(arm_obj, config=None):
         "LeftFoot":      (8.0, 0.0, 0.0),
         "RightUpperLeg": (24.0, 4.0, -4.0),
         "RightLowerLeg": (20.0, 0.0, 0.0),
-        "RightFoot":     (-24.0, 0.0, 0.0),
+        "RightFoot":     (-14.0, 0.0, 0.0),
     })
     wf_mid1 = merge_pose(idle0, {
         "HipsOffset":    (0.0, 0.0, -0.032),
@@ -262,7 +285,7 @@ def generate_all_animations(arm_obj, config=None):
         "RightUpperArm": (-6.0, -50.0, 62.0),
         "LeftUpperLeg":  (24.0, -4.0, 4.0),
         "LeftLowerLeg":  (20.0, 0.0, 0.0),
-        "LeftFoot":      (-24.0, 0.0, 0.0),
+        "LeftFoot":      (-14.0, 0.0, 0.0),
         "RightUpperLeg": (-34.0, 4.0, -4.0),
         "RightLowerLeg": (24.0, 0.0, 0.0),
         "RightFoot":     (8.0, 0.0, 0.0),
@@ -359,7 +382,7 @@ def generate_all_animations(arm_obj, config=None):
         37: idle0,
     }
 
-    # 5. Crouch (30 frames: Idle -> low guard -> Idle)
+    # 5. Crouch (30 frames: Idle -> hold low guard through frame 31)
     crouch_pose = merge_pose(idle0, {
         "HipsOffset":    (0.0, 0.0, -0.35),
         "Hips":          (14.0, 0.0, 20.0),
@@ -376,12 +399,11 @@ def generate_all_animations(arm_obj, config=None):
     })
     animations["Crouch"] = {
         1: idle0,
-        7: crouch_pose,
-        24: crouch_pose,
-        31: idle0,
+        6: crouch_pose,
+        31: crouch_pose,
     }
 
-    # 6. BlockStand (24 frames: Idle -> tight high guard -> Idle)
+    # 6. BlockStand (24 frames: Idle -> hold tight high guard through frame 25)
     block_pose = merge_pose(idle0, {
         "HipsOffset":    (0.0, 0.0, -0.065),
         "Spine":         (8.0, 0.0, 2.0),
@@ -398,9 +420,8 @@ def generate_all_animations(arm_obj, config=None):
     })
     animations["BlockStand"] = {
         1: idle0,
-        5: block_pose,
-        19: block_pose,
-        25: idle0,
+        4: block_pose,
+        25: block_pose,
     }
 
     # 7. LightPunch (16 frames: Startup 4 [1..5], Active 3 [5..8], Recovery 9 [8..17])
@@ -638,7 +659,7 @@ def generate_all_animations(arm_obj, config=None):
         41: idle0,
     }
 
-    # 14. Victory (60 frames: Idle -> raised fist celebration -> Idle)
+    # 14. Victory (60 frames: Idle -> hold raised fist celebration through frame 61)
     vic_pose = merge_pose(idle0, {
         "HipsOffset":    (0.0, 0.0, -0.01),
         "Hips":          (0.0, 0.0, 10.0),
@@ -662,8 +683,7 @@ def generate_all_animations(arm_obj, config=None):
     animations["Victory"] = {
         1: idle0,
         16: vic_pose,
-        44: vic_pose,
-        61: idle0,
+        61: vic_pose,
     }
 
     # 15. Defeat (50 frames: Idle -> slump to knees -> collapsed)
@@ -713,6 +733,17 @@ def export_character_fbx(config):
     os.makedirs(os.path.dirname(out_fbx), exist_ok=True)
 
     bpy.ops.object.mode_set(mode='OBJECT')
+
+    # CRITICAL: Reset to pure Rest T-Pose before exporting FBX while keeping
+    # pose_position='POSE' so Unity Humanoid Avatar reads pure T-Pose as Rest Pose
+    # and all 15 actions still bake via bake_anim_use_all_actions=True.
+    arm_obj.data.pose_position = 'POSE'
+    if arm_obj.animation_data:
+        arm_obj.animation_data.action = None
+    reset_pose(arm_obj)
+    bpy.context.scene.frame_set(1)
+    bpy.context.view_layer.update()
+
     bpy.ops.object.select_all(action='DESELECT')
     arm_obj.select_set(True)
     mesh_obj.select_set(True)
@@ -746,6 +777,480 @@ def export_character_fbx(config):
         embed_textures=True,
     )
     print(f"Exported FBX to: {out_fbx}")
+
+
+# ---------------------------------------------------------------------------
+# Mesh Cleaning, Selective Decimation, 52-Bone Rig & Weight Refinement
+# ---------------------------------------------------------------------------
+
+BONE_PARENTS = {
+    "Hips": (None, False),
+    "Spine": ("Hips", True),
+    "Chest": ("Spine", True),
+    "UpperChest": ("Chest", True),
+    "Neck": ("UpperChest", True),
+    "Head": ("Neck", True),
+    "LeftShoulder": ("UpperChest", False),
+    "LeftUpperArm": ("LeftShoulder", True),
+    "LeftLowerArm": ("LeftUpperArm", True),
+    "LeftHand": ("LeftLowerArm", True),
+    "RightShoulder": ("UpperChest", False),
+    "RightUpperArm": ("RightShoulder", True),
+    "RightLowerArm": ("RightUpperArm", True),
+    "RightHand": ("RightLowerArm", True),
+    "LeftUpperLeg": ("Hips", False),
+    "LeftLowerLeg": ("LeftUpperLeg", True),
+    "LeftFoot": ("LeftLowerLeg", True),
+    "LeftToes": ("LeftFoot", True),
+    "RightUpperLeg": ("Hips", False),
+    "RightLowerLeg": ("RightUpperLeg", True),
+    "RightFoot": ("RightLowerLeg", True),
+    "RightToes": ("RightFoot", True),
+}
+
+FINGER_NAMES = ["Thumb", "Index", "Middle", "Ring", "Little"]
+FINGER_SEGMENTS = ["Proximal", "Intermediate", "Distal"]
+
+
+def setup_character_material(mesh_obj, config):
+    """Create or rebuild PBR material with basecolor, normal, and metallic/smoothness maps."""
+    mat_name = config["material_name"]
+    if mat_name in bpy.data.materials:
+        bpy.data.materials.remove(bpy.data.materials[mat_name])
+
+    mat = bpy.data.materials.new(name=mat_name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+
+    out_node = nt.nodes.new("ShaderNodeOutputMaterial")
+    out_node.location = (400, 0)
+    bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.location = (100, 0)
+    nt.links.new(bsdf.outputs["BSDF"], out_node.inputs["Surface"])
+
+    tex_dir = config["textures_dir"]
+    base_path = os.path.join(tex_dir, "meshy_basecolor.png")
+    norm_path = os.path.join(tex_dir, "meshy_normal.png")
+    met_path = os.path.join(tex_dir, "meshy_metallic_smoothness.png")
+
+    if os.path.exists(base_path):
+        img = bpy.data.images.load(base_path, check_existing=True)
+        img.colorspace_settings.name = 'sRGB'
+        tex = nt.nodes.new("ShaderNodeTexImage")
+        tex.image = img
+        tex.location = (-350, 260)
+        nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+
+    if os.path.exists(met_path):
+        img = bpy.data.images.load(met_path, check_existing=True)
+        img.colorspace_settings.name = 'Non-Color'
+        tex = nt.nodes.new("ShaderNodeTexImage")
+        tex.image = img
+        tex.location = (-350, 0)
+        nt.links.new(tex.outputs["Color"], bsdf.inputs["Metallic"])
+        inv = nt.nodes.new("ShaderNodeInvert")
+        inv.location = (-120, -120)
+        nt.links.new(tex.outputs["Alpha"], inv.inputs["Color"])
+        nt.links.new(inv.outputs["Color"], bsdf.inputs["Roughness"])
+
+    if os.path.exists(norm_path):
+        img = bpy.data.images.load(norm_path, check_existing=True)
+        img.colorspace_settings.name = 'Non-Color'
+        tex = nt.nodes.new("ShaderNodeTexImage")
+        tex.image = img
+        tex.location = (-350, -280)
+        nmap = nt.nodes.new("ShaderNodeNormalMap")
+        nmap.location = (-120, -280)
+        nt.links.new(tex.outputs["Color"], nmap.inputs["Color"])
+        nt.links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
+
+    mesh_obj.data.materials.clear()
+    mesh_obj.data.materials.append(mat)
+    return mat
+
+
+def clean_character_mesh(config):
+    """Import source FBX, strip old rig/actions, clean mesh, scale to target_height, save orig_blend."""
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=config["source_fbx"])
+
+    # Reset any old armatures to REST before baking/removing so we keep pure T-Pose
+    for obj in list(bpy.data.objects):
+        if obj.type == 'ARMATURE':
+            obj.data.pose_position = 'REST'
+    bpy.context.view_layer.update()
+
+    meshes = [o for o in bpy.data.objects if o.type == 'MESH']
+    if not meshes:
+        raise RuntimeError(f"No mesh found in {config['source_fbx']}")
+
+    for m in meshes:
+        world_mat = m.matrix_world.copy()
+        m.parent = None
+        m.matrix_world = world_mat
+        for mod in list(m.modifiers):
+            if mod.type == 'ARMATURE':
+                m.modifiers.remove(mod)
+        m.vertex_groups.clear()
+
+    for obj in list(bpy.data.objects):
+        if obj.type != 'MESH':
+            bpy.data.objects.remove(obj, do_unlink=True)
+    for act in list(bpy.data.actions):
+        bpy.data.actions.remove(act)
+    for arm in list(bpy.data.armatures):
+        bpy.data.armatures.remove(arm)
+
+    bpy.ops.object.select_all(action='DESELECT')
+    for m in meshes:
+        m.select_set(True)
+    bpy.context.view_layer.objects.active = meshes[0]
+    if len(meshes) > 1:
+        bpy.ops.object.join()
+
+    mesh_obj = bpy.context.view_layer.objects.active
+    mesh_obj.name = config["mesh_name"]
+    mesh_obj.data.name = config["mesh_name"] + "_Mesh"
+
+    # Apply rotation & scale first
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+
+    # Remove loose vertices and small disconnected floating islands
+    bm = bmesh.new()
+    bm.from_mesh(mesh_obj.data)
+    bm.verts.ensure_lookup_table()
+
+    # Remove completely loose verts
+    for v in [v for v in bm.verts if not v.link_edges]:
+        bm.verts.remove(v)
+    bm.verts.ensure_lookup_table()
+
+    # Keep only significant connected components (>1% of total verts)
+    visited = set()
+    components = []
+    for v in bm.verts:
+        if v.index in visited:
+            continue
+        stack = [v]
+        comp = []
+        visited.add(v.index)
+        while stack:
+            cur = stack.pop()
+            comp.append(cur)
+            for e in cur.link_edges:
+                ov = e.other_vert(cur)
+                if ov.index not in visited:
+                    visited.add(ov.index)
+                    stack.append(ov)
+        components.append(comp)
+
+    total_v = len(bm.verts)
+    for comp in components:
+        if len(comp) < max(8, int(total_v * 0.01)):
+            for v in comp:
+                if v.is_valid:
+                    bm.verts.remove(v)
+
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(mesh_obj.data)
+    bm.free()
+    mesh_obj.data.update()
+
+    # Ground feet at Z = 0.000 and scale cleanly to target_height
+    coords = [mesh_obj.matrix_world @ v.co for v in mesh_obj.data.vertices]
+    min_z = min(c.z for c in coords)
+    max_z = max(c.z for c in coords)
+    cur_h = max(1e-5, max_z - min_z)
+    scale_fac = config["target_height"] / cur_h
+
+    for v in mesh_obj.data.vertices:
+        w = mesh_obj.matrix_world @ v.co
+        w.z = (w.z - min_z) * scale_fac
+        w.x = w.x * scale_fac
+        w.y = w.y * scale_fac
+        v.co = mesh_obj.matrix_world.inverted() @ w
+    mesh_obj.location = (0.0, 0.0, 0.0)
+    mesh_obj.rotation_euler = (0.0, 0.0, 0.0)
+    mesh_obj.scale = (1.0, 1.0, 1.0)
+    mesh_obj.data.update()
+
+    setup_character_material(mesh_obj, config)
+    os.makedirs(os.path.dirname(config["orig_blend"]), exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(filepath=config["orig_blend"])
+
+    tris = sum(max(0, len(p.vertices) - 2) for p in mesh_obj.data.polygons)
+    print(f"Cleaned {config['mesh_name']}: height={config['target_height']:.3f}m, tris={tris}")
+    return mesh_obj
+
+
+def decimate_character_mesh(config):
+    """Selectively decimate mesh toward target_tris, preserving head/face/hair above hair_z_threshold."""
+    mesh_obj = bpy.data.objects[config["mesh_name"]]
+    bpy.context.view_layer.objects.active = mesh_obj
+
+    z_thresh = config.get("hair_z_threshold", 1.48)
+    target_tris = config.get("target_tris", 30000)
+
+    head_verts = {v.index for v in mesh_obj.data.vertices if v.co.z >= z_thresh}
+    head_tris = 0
+    body_tris = 0
+    for poly in mesh_obj.data.polygons:
+        ptris = max(0, len(poly.vertices) - 2)
+        if any(vi in head_verts for vi in poly.vertices):
+            head_tris += ptris
+        else:
+            body_tris += ptris
+
+    # Note: Blender's Decimate modifier ratio targets total mesh reduction while
+    # the vertex_group restricts which faces/edges are allowed to collapse.
+    total_tris = head_tris + body_tris
+    if total_tris <= target_tris:
+        print(f"No decimation needed: tris={total_tris}")
+        return mesh_obj
+
+    vg = mesh_obj.vertex_groups.get("BodyDecimate") or mesh_obj.vertex_groups.new(name="BodyDecimate")
+    body_indices = [v.index for v in mesh_obj.data.vertices if v.co.z < z_thresh]
+    vg.add(body_indices, 1.0, 'REPLACE')
+
+    ratio = max(0.15, min(1.0, target_tris / max(1, total_tris)))
+
+    mod = mesh_obj.modifiers.new(name="SelectiveDecimate", type='DECIMATE')
+    mod.decimate_type = 'COLLAPSE'
+    mod.vertex_group = "BodyDecimate"
+    mod.ratio = ratio
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+
+    if "BodyDecimate" in mesh_obj.vertex_groups:
+        mesh_obj.vertex_groups.remove(mesh_obj.vertex_groups["BodyDecimate"])
+
+    # Mild secondary pass on whole mesh if still > target_tris + 1500
+    cur_tris = sum(max(0, len(p.vertices) - 2) for p in mesh_obj.data.polygons)
+    if cur_tris > target_tris + 1500:
+        mod2 = mesh_obj.modifiers.new(name="BalanceDecimate", type='DECIMATE')
+        mod2.decimate_type = 'COLLAPSE'
+        mod2.ratio = target_tris / cur_tris
+        bpy.ops.object.modifier_apply(modifier=mod2.name)
+        cur_tris = sum(max(0, len(p.vertices) - 2) for p in mesh_obj.data.polygons)
+
+    # Ensure outward normals after decimation
+    bm = bmesh.new()
+    bm.from_mesh(mesh_obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(mesh_obj.data)
+    bm.free()
+    mesh_obj.data.update()
+
+    print(f"Decimated {config['mesh_name']}: head_tris~={head_tris}, final_tris={cur_tris}")
+    return mesh_obj
+
+
+def create_humanoid_rig(config):
+    """Build 52-bone Unity Humanoid rig (22 deforming + 30 non-deforming finger bones)."""
+    joints = config["joints"]
+    if not joints:
+        raise ValueError(f"Joints dictionary is empty for {config['name']}")
+
+    arm_name = config["armature_name"]
+    if arm_name in bpy.data.objects:
+        bpy.data.objects.remove(bpy.data.objects[arm_name], do_unlink=True)
+    if arm_name in bpy.data.armatures:
+        bpy.data.armatures.remove(bpy.data.armatures[arm_name])
+
+    arm_data = bpy.data.armatures.new(arm_name)
+    arm_data.display_type = 'STICK'
+    arm_obj = bpy.data.objects.new(arm_name, arm_data)
+    bpy.context.collection.objects.link(arm_obj)
+    arm_obj.location = (0.0, 0.0, 0.0)
+    arm_obj.rotation_euler = (0.0, 0.0, 0.0)
+    arm_obj.scale = (1.0, 1.0, 1.0)
+    arm_obj.show_in_front = True
+
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode='EDIT')
+    eb = arm_data.edit_bones
+
+    created = {}
+    for bname, (head, tail) in joints.items():
+        bone = eb.new(bname)
+        bone.head = Vector(head)
+        bone.tail = Vector(tail)
+        bone.use_deform = True
+        created[bname] = bone
+
+    for bname, (pname, connect) in BONE_PARENTS.items():
+        if pname is not None and pname in created:
+            created[bname].parent = created[pname]
+            created[bname].use_connect = connect
+
+    # Add 30 non-deforming finger chains (3 phalanges x 5 fingers x 2 hands) for Unity Humanoid
+    for side, sign in (("Left", 1.0), ("Right", -1.0)):
+        hand_bone = created[f"{side}Hand"]
+        hx, hy, hz = hand_bone.tail.x, hand_bone.tail.y, hand_bone.tail.z
+        for idx, fname in enumerate(FINGER_NAMES):
+            y_off = (2 - idx) * 0.015 if fname != "Thumb" else -0.028
+            z_off = 0.0 if fname != "Thumb" else -0.015
+            seg_len = 0.022 if fname != "Thumb" else 0.018
+            prev = hand_bone
+            cur_x = hx - sign * (0.015 if fname == "Thumb" else 0.0)
+            for s_idx, seg in enumerate(FINGER_SEGMENTS):
+                fb = eb.new(f"{side}{fname}{seg}")
+                fb.head = Vector((cur_x + sign * s_idx * seg_len, hy + y_off, hz + z_off))
+                fb.tail = Vector((cur_x + sign * (s_idx + 1) * seg_len, hy + y_off, hz + z_off))
+                fb.parent = prev
+                fb.use_connect = (s_idx > 0)
+                fb.use_deform = False
+                prev = fb
+
+    # Align bone rolls cleanly (recalculate Z+ for spine/legs, X/Z consistent for arms)
+    bpy.ops.armature.select_all(action='SELECT')
+    bpy.ops.armature.calculate_roll(type='GLOBAL_POS_Z')
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+    print(f"Created rig {arm_name}: total={len(arm_data.bones)}, deform={sum(1 for b in arm_data.bones if b.use_deform)}")
+    return arm_obj
+
+
+def bind_and_refine_weights(config):
+    """Bind mesh with automatic weights, strip cross-body leaks, limit to 4 influences, normalize."""
+    mesh_obj = bpy.data.objects[config["mesh_name"]]
+    arm_obj = bpy.data.objects[config["armature_name"]]
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.select_all(action='DESELECT')
+    mesh_obj.select_set(True)
+    arm_obj.select_set(True)
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+
+    center_x = config.get("center_x", 0.0)
+    neck_z = config["joints"]["Neck"][1][2]
+    hip_z = config["joints"]["Hips"][0][2]
+
+    # Clean non-deforming or stray vertex groups
+    deform_names = {b.name for b in arm_obj.data.bones if b.use_deform}
+    for vg in list(mesh_obj.vertex_groups):
+        if vg.name not in deform_names:
+            mesh_obj.vertex_groups.remove(vg)
+
+    # Remove cross-leg leakage below hip height and shoulder/neck leakage into upper head
+    left_leg_groups = {mesh_obj.vertex_groups[n] for n in ("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "LeftToes") if n in mesh_obj.vertex_groups}
+    right_leg_groups = {mesh_obj.vertex_groups[n] for n in ("RightUpperLeg", "RightLowerLeg", "RightFoot", "RightToes") if n in mesh_obj.vertex_groups}
+    upper_body_groups = {mesh_obj.vertex_groups[n] for n in ("LeftShoulder", "RightShoulder", "LeftUpperArm", "RightUpperArm", "UpperChest", "Chest") if n in mesh_obj.vertex_groups}
+    head_group = mesh_obj.vertex_groups.get("Head")
+
+    for v in mesh_obj.data.vertices:
+        # Prevent cross-leg bleeding below pelvis
+        if v.co.z < hip_z - 0.04:
+            if v.co.x > center_x + 0.015:
+                for g in right_leg_groups:
+                    g.remove([v.index])
+            elif v.co.x < center_x - 0.015:
+                for g in left_leg_groups:
+                    g.remove([v.index])
+        # Prevent torso/shoulders from pulling face/crown vertices
+        if v.co.z > neck_z + 0.05 and head_group is not None:
+            for g in upper_body_groups:
+                g.remove([v.index])
+            if v.co.z > neck_z + 0.08:
+                head_group.add([v.index], 1.0, 'REPLACE')
+
+    # Limit to max 4 bone influences per vertex and normalize
+    bpy.ops.object.select_all(action='DESELECT')
+    mesh_obj.select_set(True)
+    bpy.context.view_layer.objects.active = mesh_obj
+    bpy.ops.object.vertex_group_limit_total(group_select_mode='ALL', limit=4)
+    bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL', lock_active=False)
+
+    print(f"Weights bound and refined for {config['mesh_name']} (max 4 influences, normalized).")
+
+
+def render_pose_checks(arm_obj, mesh_obj, out_dir, prefix="test"):
+    """Render 3 extreme weight-validation poses (high kick, deep squat, punch) to PNGs."""
+    os.makedirs(out_dir, exist_ok=True)
+    scene = bpy.context.scene
+    scene.render.engine = 'BLENDER_WORKBENCH'
+    scene.display.shading.light = 'STUDIO'
+    scene.display.shading.color_type = 'TEXTURE'
+    scene.render.resolution_x = 960
+    scene.render.resolution_y = 720
+    scene.render.image_settings.file_format = 'PNG'
+
+    cam_data = bpy.data.cameras.get("CheckCam") or bpy.data.cameras.new("CheckCam")
+    cam_obj = bpy.data.objects.get("CheckCam") or bpy.data.objects.new("CheckCam", cam_data)
+    if cam_obj.name not in scene.collection.objects:
+        scene.collection.objects.link(cam_obj)
+    scene.camera = cam_obj
+
+    # 3/4 side-front camera framing whole character
+    cam_obj.location = Vector((-1.95, -2.55, 1.08))
+    direction = Vector((0.0, 0.0, 0.90)) - cam_obj.location
+    cam_obj.rotation_euler = direction.to_track_quat('-Z', 'Y').to_euler()
+
+    arm_obj.data.pose_position = 'POSE'
+    if arm_obj.animation_data:
+        arm_obj.animation_data.action = None
+
+    idle0 = get_idle_stance(0.0)
+    poses = {
+        "high_kick": merge_pose(idle0, {
+            "HipsOffset":   (0.0, 0.0, -0.02),
+            "Hips":         (-16.0, 8.0, -12.0),
+            "Spine":        (-10.0, 0.0, 5.0),
+            "LeftUpperLeg": (-108.0, -8.0, 8.0),
+            "LeftLowerLeg": (4.0, 0.0, 0.0),
+            "LeftFoot":     (22.0, 0.0, 0.0),
+        }),
+        "deep_squat": merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.40),
+            "Hips":          (16.0, 0.0, 18.0),
+            "Spine":         (12.0, 0.0, 4.0),
+            "LeftUpperLeg":  (-100.0, -8.0, 10.0),
+            "LeftLowerLeg":  (108.0, 0.0, 0.0),
+            "LeftFoot":      (-8.0, 0.0, 0.0),
+            "RightUpperLeg": (-96.0, 8.0, -10.0),
+            "RightLowerLeg": (106.0, 0.0, 0.0),
+            "RightFoot":     (-10.0, 0.0, 0.0),
+        }),
+        "punch": merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.075),
+            "Hips":          (8.0, 0.0, 14.0),
+            "Spine":         (8.0, 0.0, 12.0),
+            "Chest":         (8.0, 0.0, 14.0),
+            "UpperChest":    (6.0, 0.0, 10.0),
+            "Neck":          (-8.0, 0.0, -25.0),
+            "Head":          (-8.0, 0.0, -25.0),
+            "RightShoulder": (0.0, -6.0, 14.0),
+            "RightUpperArm": (-10.0, 0.0, 32.0),
+            "RightLowerArm": (0.0, 42.0, 4.0),
+            "RightHand":     (-22.0, 40.0, 0.0),
+        }),
+    }
+
+    paths = {}
+    for pname, pose_dict in poses.items():
+        apply_pose_dict(arm_obj, pose_dict)
+        bpy.context.view_layer.update()
+        out_path = os.path.join(out_dir, f"{prefix}_{pname}.png")
+        scene.render.filepath = out_path
+        bpy.ops.render.render(write_still=True)
+        paths[pname] = out_path
+
+    reset_pose(arm_obj)
+    bpy.context.view_layer.update()
+    return paths
+
+
+def build_character_base(char_name="Tiago"):
+    config = CHARACTER_CONFIGS[char_name]
+    clean_character_mesh(config)
+    decimate_character_mesh(config)
+    create_humanoid_rig(config)
+    bind_and_refine_weights(config)
+    os.makedirs(os.path.dirname(config["work_blend"]), exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(filepath=config["work_blend"])
+    return config
 
 
 def run_animations_and_export(char_name="Lucas"):
