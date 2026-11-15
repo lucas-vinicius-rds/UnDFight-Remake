@@ -519,10 +519,20 @@ def _get_segment_world_pitch_deg(arm_obj, bone_name):
     return math.degrees(math.atan2(v.y, -v.z))
 
 
+def _get_knee_flex_deg(arm_obj, side):
+    """
+    Anatomical sagittal knee flexion in degrees (shin_pitch - thigh_pitch):
+    >= 0 means knee bends naturally backward; < 0 indicates inverted hyperextension.
+    """
+    thigh_pitch = _get_segment_world_pitch_deg(arm_obj, f"{side}UpperLeg")
+    shin_pitch = _get_segment_world_pitch_deg(arm_obj, f"{side}LowerLeg")
+    return shin_pitch - thigh_pitch
+
+
 def _equalize_stance_feet(arm_obj, mesh_obj, foot_vdata):
     """
-    Level both soles horizontally and balance L/R shoe Z while keeping the front (Left) shin
-    near vertical ([-3 deg, +8 deg]) and both feet planted around the center of gravity.
+    Level both soles horizontally and balance L/R shoe Z while preserving natural anatomical knee flexion
+    (knee_flex >= MIN_KNEE_FLEX) on both legs and keeping both feet grounded at the same floor level.
     """
     if mesh_obj is None or not foot_vdata:
         return
@@ -531,10 +541,18 @@ def _equalize_stance_feet(arm_obj, mesh_obj, foot_vdata):
     if not left_vs or not right_vs:
         return
 
+    MIN_KNEE_FLEX = 4.0
+
+    # Clamp any starting negative/near-zero knee flexion before equalizing soles
+    for side in ("Left", "Right"):
+        kf = _get_knee_flex_deg(arm_obj, side)
+        if kf < MIN_KNEE_FLEX:
+            _add_bone_world_rx_deg(arm_obj, f"{side}LowerLeg", MIN_KNEE_FLEX - kf)
+
     level_foot_world_horizontal(arm_obj, "Left", mesh_obj, foot_vdata)
     level_foot_world_horizontal(arm_obj, "Right", mesh_obj, foot_vdata)
 
-    for _ in range(16):
+    for _ in range(24):
         lz = _eval_mesh_min_z(mesh_obj, left_vs)
         rz = _eval_mesh_min_z(mesh_obj, right_vs)
         diff = lz - rz
@@ -542,28 +560,47 @@ def _equalize_stance_feet(arm_obj, mesh_obj, foot_vdata):
             break
 
         step_deg = min(8.0, max(0.35, abs(diff) * 280.0))
+        left_flex = _get_knee_flex_deg(arm_obj, "Left")
+        right_flex = _get_knee_flex_deg(arm_obj, "Right")
         left_shin_pitch = _get_segment_world_pitch_deg(arm_obj, "LeftLowerLeg")
-        right_shin_pitch = _get_segment_world_pitch_deg(arm_obj, "RightLowerLeg")
+        left_thigh_pitch = _get_segment_world_pitch_deg(arm_obj, "LeftUpperLeg")
+        right_thigh_pitch = _get_segment_world_pitch_deg(arm_obj, "RightUpperLeg")
 
         if diff > 0:
-            # Left foot is higher than Right foot: flex Right knee gently to bring Right sole up,
-            # or bring Left shin closer to vertical without pulling LeftUpperLeg behind Hips.
-            if left_shin_pitch > 3.5:
-                _add_bone_world_rx_deg(arm_obj, "LeftLowerLeg", -step_deg * 0.85)
+            # Left foot is higher than Right foot: extend Left knee safely above MIN_KNEE_FLEX
+            # or flex Right knee gently to bring Right sole up to Left sole.
+            if left_flex > MIN_KNEE_FLEX + 1.5 and left_shin_pitch > 3.5:
+                ext = min(step_deg * 0.85, max(0.0, left_flex - MIN_KNEE_FLEX))
+                if ext > 0.05:
+                    _add_bone_world_rx_deg(arm_obj, "LeftLowerLeg", -ext)
             else:
-                _add_bone_world_rx_deg(arm_obj, "RightLowerLeg", step_deg * 0.9)
-                _add_bone_world_rx_deg(arm_obj, "RightUpperLeg", -step_deg * 0.15)
+                _add_bone_world_rx_deg(arm_obj, "RightLowerLeg", step_deg * 0.85)
+                if right_flex > 22.0:
+                    _add_bone_world_rx_deg(arm_obj, "RightUpperLeg", -step_deg * 0.30)
+                if left_flex > 26.0 and left_thigh_pitch < -14.0:
+                    _add_bone_world_rx_deg(arm_obj, "LeftUpperLeg", min(step_deg * 0.20, (-12.0) - left_thigh_pitch))
         else:
-            # Right foot is higher than Left foot: extend Right knee gently toward vertical,
-            # or bend LeftLowerLeg slightly within [+1 deg, +6.5 deg] shin pitch.
-            if right_shin_pitch > 12.0 + step_deg * 0.5:
-                _add_bone_world_rx_deg(arm_obj, "RightLowerLeg", -step_deg * 0.85)
-                _add_bone_world_rx_deg(arm_obj, "RightUpperLeg", -step_deg * 0.15)
-            elif left_shin_pitch < 6.5:
-                bend = min(step_deg * 0.8, 6.5 - left_shin_pitch)
-                _add_bone_world_rx_deg(arm_obj, "LeftLowerLeg", bend)
+            # Right foot is higher than Left foot: extend Right knee gently without crossing MIN_KNEE_FLEX,
+            # then bring RightUpperLeg closer to vertical, and flex Left leg cleanly to drop Hips.
+            if right_flex > MIN_KNEE_FLEX + 1.5:
+                ext = min(step_deg * 0.85, max(0.0, right_flex - MIN_KNEE_FLEX))
+                if ext > 0.05:
+                    _add_bone_world_rx_deg(arm_obj, "RightLowerLeg", -ext)
+                if right_thigh_pitch > 8.0:
+                    _add_bone_world_rx_deg(arm_obj, "RightUpperLeg", -min(step_deg * 0.20, right_thigh_pitch - 6.0))
             else:
-                _add_bone_world_rx_deg(arm_obj, "RightLowerLeg", -step_deg * 0.7)
+                if right_thigh_pitch > 5.0:
+                    _add_bone_world_rx_deg(arm_obj, "RightUpperLeg", -min(step_deg * 0.70, right_thigh_pitch - 4.0))
+                # Flex Left hip & knee equally so shin stays near vertical while Hips lowers cleanly
+                flex_step = step_deg * 0.50
+                _add_bone_world_rx_deg(arm_obj, "LeftUpperLeg", -flex_step)
+                _add_bone_world_rx_deg(arm_obj, "LeftLowerLeg", flex_step)
+
+        # Enforce hard anatomical knee flexion floor on both legs after each step
+        for side in ("Left", "Right"):
+            kf = _get_knee_flex_deg(arm_obj, side)
+            if kf < MIN_KNEE_FLEX:
+                _add_bone_world_rx_deg(arm_obj, f"{side}LowerLeg", MIN_KNEE_FLEX - kf)
 
         level_foot_world_horizontal(arm_obj, "Left", mesh_obj, foot_vdata)
         level_foot_world_horizontal(arm_obj, "Right", mesh_obj, foot_vdata)
@@ -1207,23 +1244,23 @@ def build_style_attacks(style, idle0, framedata):
         })
         hp_hit = merge_pose(idle0, {
             "HipsOffset":    (0.0, 0.0, -0.056),
-            "Hips":          (4.0, 8.0, 22.0),
-            "Spine":         (7.0, 12.0, 18.0),
-            "Chest":         (6.0, 10.0, 22.0),
-            "UpperChest":    (4.0, 6.0, 14.0),
-            "Neck":          (-6.0, -8.0, -26.0),
-            "Head":          (-5.0, -6.0, -24.0),
-            "RightShoulder": (0.0, 14.0, 18.0),
-            "RightUpperArm": (-28.0, -14.0, 52.0),
-            "RightLowerArm": (8.0, 22.0, 58.0),
+            "Hips":          (3.0, 3.0, 16.0),
+            "Spine":         (5.0, 3.0, 14.0),
+            "Chest":         (5.0, 3.0, 16.0),
+            "UpperChest":    (3.0, 2.0, 10.0),
+            "Neck":          (-5.0, -4.0, -22.0),
+            "Head":          (-4.0, -3.0, -20.0),
+            "RightShoulder": (0.0, 10.0, 14.0),
+            "RightUpperArm": (-18.0, -6.0, 22.0),
+            "RightLowerArm": (4.0, 34.0, 14.0),
             "RightHand":     (-18.0, 32.0, 0.0),
             "LeftShoulder":  (0.0, 10.0, -8.0),
             "LeftUpperArm":  (-8.0, 64.0, -28.0),
             "LeftLowerArm":  (8.0, -16.0, -64.0),
-            "LeftUpperLeg":  (-32.0, -6.0, 6.0),
-            "LeftLowerLeg":  (24.0, 0.0, 0.0),
-            "RightUpperLeg": (20.0, 8.0, -6.0),
-            "RightLowerLeg": (12.0, 0.0, 0.0),
+            "LeftUpperLeg":  (-30.0, -5.0, 6.0),
+            "LeftLowerLeg":  (20.0, 0.0, 0.0),
+            "RightUpperLeg": (14.0, 6.0, -5.0),
+            "RightLowerLeg": (10.0, 0.0, 0.0),
         })
 
         # LightKick: scrappy improvised low toe punt / street shin kick
@@ -1288,8 +1325,9 @@ def build_style_attacks(style, idle0, framedata):
         sp_hit1 = merge_pose(idle0, {
             "HipsOffset":    (0.0, 0.0, -0.046),
             "Hips":          (2.5, 3.0, 10.0),
-            "Spine":         (5.0, 4.0, 16.0),
-            "Chest":         (4.0, 4.0, 18.0),
+            "Spine":         (5.0, 3.0, 14.0),
+            "Chest":         (4.0, 3.0, 16.0),
+            "UpperChest":    (2.0, 1.0, 6.0),
             "Neck":          (-4.0, 0.0, -18.0),
             "LeftShoulder":  (0.0, 12.0, -18.0),
             "LeftUpperArm":  (-18.0, 12.0, -56.0),
@@ -1298,28 +1336,28 @@ def build_style_attacks(style, idle0, framedata):
             "RightUpperArm": (14.0, -22.0, -28.0),
             "RightLowerArm": (6.0, 14.0, 56.0),
             "LeftUpperLeg":  (-28.0, -6.0, 6.0),
-            "LeftLowerLeg":  (24.0, 0.0, 0.0),
-            "RightUpperLeg": (18.0, 7.0, -6.0),
+            "LeftLowerLeg":  (20.0, 0.0, 0.0),
+            "RightUpperLeg": (14.0, 6.0, -5.0),
             "RightLowerLeg": (10.0, 0.0, 0.0),
         })
         sp_hit2 = merge_pose(idle0, {
-            "HipsOffset":    (0.0, 0.0, -0.056),
-            "Hips":          (4.0, 5.0, 28.0),
-            "Spine":         (7.0, 8.0, 22.0),
-            "Chest":         (6.0, 8.0, 26.0),
-            "UpperChest":    (4.0, 4.0, 16.0),
-            "Neck":          (-7.0, -6.0, -30.0),
-            "Head":          (-6.0, -4.0, -26.0),
-            "RightShoulder": (0.0, 16.0, 20.0),
-            "RightUpperArm": (-34.0, -12.0, 54.0),
-            "RightLowerArm": (8.0, 26.0, 38.0),
+            "HipsOffset":    (0.0, 0.0, -0.052),
+            "Hips":          (3.5, 3.0, 18.0),
+            "Spine":         (5.5, 4.0, 16.0),
+            "Chest":         (5.0, 3.0, 18.0),
+            "UpperChest":    (3.5, 2.0, 10.0),
+            "Neck":          (-6.0, -4.0, -26.0),
+            "Head":          (-5.0, -3.0, -24.0),
+            "RightShoulder": (0.0, 12.0, 16.0),
+            "RightUpperArm": (-22.0, -8.0, 20.0),
+            "RightLowerArm": (6.0, 34.0, 12.0),
             "RightHand":     (-18.0, 34.0, 0.0),
             "LeftUpperArm":  (-6.0, 60.0, -24.0),
             "LeftLowerArm":  (10.0, -24.0, -86.0),
-            "LeftUpperLeg":  (-32.0, -6.0, 6.0),
-            "LeftLowerLeg":  (28.0, 0.0, 0.0),
-            "RightUpperLeg": (22.0, 8.0, -6.0),
-            "RightLowerLeg": (14.0, 0.0, 0.0),
+            "LeftUpperLeg":  (-30.0, -5.0, 6.0),
+            "LeftLowerLeg":  (20.0, 0.0, 0.0),
+            "RightUpperLeg": (14.0, 6.0, -5.0),
+            "RightLowerLeg": (10.0, 0.0, 0.0),
         })
         special_builder = ("multi", sp_ant, sp_hit1, sp_hit2)
 
@@ -1434,23 +1472,23 @@ def build_style_attacks(style, idle0, framedata):
             "RightLowerLeg": (14.0, 0.0, 0.0),
         })
         sp_hit = merge_pose(idle0, {
-            "HipsOffset":    (0.0, 0.0, -0.062),
-            "Hips":          (4.0, 0.0, 36.0),
-            "Spine":         (6.0, 0.0, 22.0),
-            "Chest":         (6.0, 0.0, 24.0),
-            "UpperChest":    (4.0, 0.0, 16.0),
-            "Neck":          (-8.0, 0.0, -34.0),
-            "Head":          (-6.0, 0.0, -32.0),
-            "RightShoulder": (0.0, -8.0, 20.0),
-            "RightUpperArm": (-16.0, 0.0, 28.0),
-            "RightLowerArm": (0.0, 50.0, 4.0),
+            "HipsOffset":    (0.0, 0.0, -0.058),
+            "Hips":          (3.0, 0.0, 26.0),
+            "Spine":         (5.0, 0.0, 16.0),
+            "Chest":         (5.0, 0.0, 16.0),
+            "UpperChest":    (3.0, 0.0, 10.0),
+            "Neck":          (-7.0, 0.0, -28.0),
+            "Head":          (-5.0, 0.0, -26.0),
+            "RightShoulder": (0.0, -8.0, 18.0),
+            "RightUpperArm": (-14.0, 0.0, 16.0),
+            "RightLowerArm": (0.0, 48.0, 4.0),
             "RightHand":     (-24.0, 44.0, 0.0),
             "LeftShoulder":  (0.0, 14.0, -14.0),
             "LeftUpperArm":  (-10.0, 50.0, -60.0),
             "LeftLowerArm":  (16.0, -42.0, -118.0),
             "LeftUpperLeg":  (-32.0, -5.0, 6.0),
-            "LeftLowerLeg":  (28.0, 0.0, 0.0),
-            "RightUpperLeg": (24.0, 6.0, -6.0),
+            "LeftLowerLeg":  (26.0, 0.0, 0.0),
+            "RightUpperLeg": (16.0, 6.0, -5.0),
             "RightLowerLeg": (12.0, 0.0, 0.0),
         })
         special_builder = ("standard", sp_ant, sp_hit)
