@@ -764,13 +764,21 @@ namespace UnDFight
                 StageData stage = _stageChoices[idx];
                 stagePreviewTitle.text = stage.displayName.ToUpperInvariant();
                 stagePreviewSubtitle.text = stage.subtitle;
-                if (stagePreviewBanner != null) stagePreviewBanner.color = stage.previewColor;
+                if (stagePreviewBanner != null)
+                {
+                    stagePreviewBanner.sprite = stage.previewImage != null ? stage.previewImage : whiteSprite;
+                    stagePreviewBanner.color = stage.previewImage != null ? Color.white : stage.previewColor;
+                }
             }
             else
             {
                 stagePreviewTitle.text = "ALEATÓRIO";
                 stagePreviewSubtitle.text = "Escolher uma arena aleatória para o combate";
-                if (stagePreviewBanner != null) stagePreviewBanner.color = new Color(0.28f, 0.22f, 0.14f, 1f);
+                if (stagePreviewBanner != null)
+                {
+                    stagePreviewBanner.sprite = whiteSprite;
+                    stagePreviewBanner.color = new Color(0.28f, 0.22f, 0.14f, 1f);
+                }
             }
         }
 
