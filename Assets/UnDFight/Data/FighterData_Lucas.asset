@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FighterData_Lucas
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.FighterData
   fighterName: Lucas
-  prefab: {fileID: 0}
+  prefab: {fileID: 6331032762305335928, guid: aefffce3177dba548ad6080324a38961, type: 3}
   portrait: {fileID: 0}
   heightMeters: 1.81
   weightKg: 92

@@ -13,6 +13,13 @@ namespace UnDFight
         [SerializeField] private FighterData fighterData;
         [SerializeField] private Transform visualRoot;
         [SerializeField] private CapsuleCollider hurtboxCollider;
+        [SerializeField] private Animator fighterAnimator;
+        [SerializeField] private bool squashVisualOnCrouch = false;
+
+        private static readonly int StateParamHash = Animator.StringToHash("State");
+        private static readonly int AttackTypeParamHash = Animator.StringToHash("AttackType");
+        private static readonly int AttackTriggerParamHash = Animator.StringToHash("AttackTrigger");
+        private static readonly int IsGroundedParamHash = Animator.StringToHash("IsGrounded");
 
         private FightSimulation _simulation;
         private PlayerInputHandler _inputHandler;
@@ -63,7 +70,22 @@ namespace UnDFight
             {
                 hurtboxCollider = GetComponentInChildren<CapsuleCollider>();
             }
+            if (fighterAnimator == null)
+            {
+                fighterAnimator = GetComponentInChildren<Animator>();
+            }
+            SetupAnimatorForFixedTick();
             ApplyFighterDataScaling();
+        }
+
+        private void SetupAnimatorForFixedTick()
+        {
+            if (fighterAnimator == null)
+            {
+                return;
+            }
+            fighterAnimator.applyRootMotion = false;
+            fighterAnimator.enabled = false;
         }
 
         public void SetFighterData(FighterData data)
@@ -87,7 +109,9 @@ namespace UnDFight
             _simVelocity = Vector2.zero;
             _isGrounded = _currSimPos.y <= (simulation != null ? simulation.GroundY : 0f) + 0.001f;
             _currentHealth = fighterData != null ? fighterData.maxHealth : 1000;
+            SetupAnimatorForFixedTick();
             ApplyFighterDataScaling();
+            StepAnimatorTick(0f);
         }
 
         private void ApplyFighterDataScaling()
@@ -142,6 +166,7 @@ namespace UnDFight
                     EnterState(FighterState.Idle);
                 }
                 UpdateHurtboxDimensions();
+                StepAnimatorTick(dt);
                 return;
             }
 
@@ -156,6 +181,7 @@ namespace UnDFight
                     EnterState(FighterState.Idle);
                 }
                 UpdateHurtboxDimensions();
+                StepAnimatorTick(dt);
                 return;
             }
 
@@ -165,8 +191,9 @@ namespace UnDFight
                 _simVelocity.x = 0f;
                 _currentAttack = attackType;
                 _stateTotalTicks = GetAttackTotalTicks(attackType);
-                EnterState(FighterState.Attack);
+                EnterState(FighterState.Attack, triggerAttack: true);
                 UpdateHurtboxDimensions();
+                StepAnimatorTick(dt);
                 return;
             }
 
@@ -180,28 +207,19 @@ namespace UnDFight
                 EnterState(FighterState.Jump);
                 ApplyGravityAndIntegrate(dt);
                 UpdateHurtboxDimensions();
+                StepAnimatorTick(dt);
                 return;
             }
 
             bool holdingBack = input.MoveX * _facingSign < -0.2f;
             if (input.HoldBlock || holdingBack)
             {
-                // Holding back acts as WalkBackward when opponent isn't attacking (Block button always forces Block;
-                // holding Back also enters Block when pressed with Block or stays WalkBackward -> Block if stationary?
-                // Prompt: "Bloquear = segurar para trás ou botão de guarda." Let's support Block on HoldBlock OR Back+Hold,
-                // Wait: if holding Back always blocks, how do you WalkBackward? If Block button -> Block; if holding Back ->
-                // WalkBackward while simultaneously guarding, OR let's make Block when HoldBlock OR Back while stationary?
-                // Wait: if holding Back enters WalkBackward (which is the standard SF back-walk + high guard!), let's check:
-                // if input.HoldBlock -> FighterState.Block; if holdingBack -> FighterState.WalkBackward (with IsGuarding = true)!
-                // Wait: the prompt lists states: Idle, WalkForward, WalkBackward, Jump, Crouch, Block, Attack, Hit, KnockDown,
-                // and says: "Bloquear = segurar para trás ou botão de guarda."
-                // So if HoldBlock is pressed -> FighterState.Block; if holdingBack without forward -> WalkBackward (which also counts as guarding),
-                // OR if holdingBack + HoldBlock -> Block. Let's expose IsBlocking => _state == FighterState.Block || _state == FighterState.WalkBackward!
                 if (input.HoldBlock)
                 {
                     _simVelocity.x = 0f;
                     EnterState(FighterState.Block);
                     UpdateHurtboxDimensions();
+                    StepAnimatorTick(dt);
                     return;
                 }
             }
@@ -211,6 +229,7 @@ namespace UnDFight
                 _simVelocity.x = 0f;
                 EnterState(FighterState.Crouch);
                 UpdateHurtboxDimensions();
+                StepAnimatorTick(dt);
                 return;
             }
 
@@ -235,6 +254,7 @@ namespace UnDFight
 
             ApplyGravityAndIntegrate(dt);
             UpdateHurtboxDimensions();
+            StepAnimatorTick(dt);
         }
 
         private void ApplyGravityAndIntegrate(float dt)
@@ -260,7 +280,7 @@ namespace UnDFight
             }
         }
 
-        private void EnterState(FighterState newState)
+        private void EnterState(FighterState newState, bool triggerAttack = false)
         {
             if (_state == newState && newState != FighterState.Attack)
             {
@@ -272,6 +292,24 @@ namespace UnDFight
             {
                 _currentAttack = AttackType.None;
             }
+            else if (triggerAttack && fighterAnimator != null)
+            {
+                fighterAnimator.SetInteger(AttackTypeParamHash, (int)_currentAttack);
+                fighterAnimator.SetTrigger(AttackTriggerParamHash);
+            }
+        }
+
+        private void StepAnimatorTick(float dt)
+        {
+            if (fighterAnimator == null || fighterAnimator.runtimeAnimatorController == null)
+            {
+                return;
+            }
+
+            fighterAnimator.SetInteger(StateParamHash, (int)_state);
+            fighterAnimator.SetInteger(AttackTypeParamHash, (int)_currentAttack);
+            fighterAnimator.SetBool(IsGroundedParamHash, _isGrounded);
+            fighterAnimator.Update(dt);
         }
 
         private static int GetAttackTotalTicks(AttackType attack)
@@ -302,7 +340,9 @@ namespace UnDFight
             if (visualRoot != null)
             {
                 float modelScale = fighterData.ModelScale;
-                float yScale = _state == FighterState.Crouch ? modelScale * fighterData.crouchHeightRatio : modelScale;
+                float yScale = (squashVisualOnCrouch && _state == FighterState.Crouch)
+                    ? modelScale * fighterData.crouchHeightRatio
+                    : modelScale;
                 visualRoot.localScale = new Vector3(modelScale, yScale, modelScale);
             }
         }
