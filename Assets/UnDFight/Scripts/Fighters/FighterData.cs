@@ -10,6 +10,7 @@ namespace UnDFight
     {
         [Header("Identity")]
         public string fighterName = "Fighter";
+        public FightingArchetype archetype = FightingArchetype.HeavyBrawler;
         public GameObject prefab;
         public Sprite portrait;
 
@@ -34,6 +35,7 @@ namespace UnDFight
         public MoveData lightKick;
         public MoveData heavyKick;
 
+        public WeightClass WeightCategory => FighterScaling.GetWeightClass(weightKg);
         public float ModelScale => FighterScaling.ComputeModelScale(heightMeters);
         public float HurtboxScale => FighterScaling.ComputeHurtboxScale(heightMeters);
         public float EffectiveGravity => FighterScaling.ComputeEffectiveGravity(baseGravity, weightKg);

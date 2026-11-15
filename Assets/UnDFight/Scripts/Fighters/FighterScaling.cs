@@ -2,6 +2,21 @@ using UnityEngine;
 
 namespace UnDFight
 {
+    public enum WeightClass
+    {
+        Light = 0,
+        Medium = 1,
+        Heavy = 2
+    }
+
+    public enum FightingArchetype
+    {
+        HeavyBrawler = 0,
+        StreetScrappy = 1,
+        AgileStriker = 2,
+        TechnicalStriker = 3
+    }
+
     /// <summary>
     /// Single source of truth for height and weight scaling formulas across models, hurtboxes, and physics.
     /// </summary>
@@ -9,6 +24,8 @@ namespace UnDFight
     {
         public const float ReferenceHeightMeters = 1.81f;
         public const float ReferenceWeightKg = 92.0f;
+        public const float LightMaxWeightKg = 75.0f;
+        public const float MediumMaxWeightKg = 90.0f;
 
         // Adjustable formula exponents & clamps
         public const float GravityWeightExponent = 0.35f;
@@ -16,6 +33,44 @@ namespace UnDFight
         public const float KnockbackWeightExponent = -0.60f;
         public const float MinScaleFactor = 0.5f;
         public const float MaxScaleFactor = 2.0f;
+
+        /// <summary>
+        /// Classifies fighter into Light (<= 75 kg), Medium (75–90 kg), or Heavy (> 90 kg).
+        /// </summary>
+        public static WeightClass GetWeightClass(float weightKg)
+        {
+            if (weightKg <= LightMaxWeightKg)
+            {
+                return WeightClass.Light;
+            }
+            if (weightKg <= MediumMaxWeightKg)
+            {
+                return WeightClass.Medium;
+            }
+            return WeightClass.Heavy;
+        }
+
+        public static string GetWeightClassLabel(WeightClass weightClass)
+        {
+            return weightClass switch
+            {
+                WeightClass.Light => "LEVE",
+                WeightClass.Medium => "MÉDIO",
+                _ => "PESADO"
+            };
+        }
+
+        public static string GetArchetypeLabel(FightingArchetype archetype)
+        {
+            return archetype switch
+            {
+                FightingArchetype.HeavyBrawler => "BRUTAMONTES",
+                FightingArchetype.StreetScrappy => "BRIGUENTO DE RUA",
+                FightingArchetype.AgileStriker => "ÁGIL",
+                FightingArchetype.TechnicalStriker => "TÉCNICO",
+                _ => "LUTADOR"
+            };
+        }
 
         /// <summary>
         /// Visual model uniform scale relative to ReferenceHeightMeters (1.81 m = 1.0).

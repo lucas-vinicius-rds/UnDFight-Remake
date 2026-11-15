@@ -417,7 +417,11 @@ namespace UnDFight
             heightTmp = MenuUiFactory.CreateText("Height", card, "ALTURA: 1,81 M", 19f, FontStyles.Normal, align, new Color(0.80f, 0.78f, 0.74f, 1f), characterSpacing: 2f);
             PlaceRow(heightTmp.rectTransform, -96f, 28f);
 
-            weightTmp = MenuUiFactory.CreateText("Weight", card, "PESO: 92 KG", 19f, FontStyles.Normal, align, new Color(0.80f, 0.78f, 0.74f, 1f), characterSpacing: 2f);
+            weightTmp = MenuUiFactory.CreateText("Weight", card, "92 KG • PESADO • BRUTAMONTES", 16f, FontStyles.Normal, align, new Color(0.80f, 0.78f, 0.74f, 1f), characterSpacing: 1.2f);
+            weightTmp.enableAutoSizing = true;
+            weightTmp.fontSizeMin = 11f;
+            weightTmp.fontSizeMax = 16f;
+            weightTmp.textWrappingMode = TextWrappingModes.NoWrap;
             PlaceRow(weightTmp.rectTransform, -126f, 28f);
 
             statusTmp = MenuUiFactory.CreateText("Status", card, "SELECIONANDO...", 20f, FontStyles.Bold, align, MenuUiFactory.AccentAmber, characterSpacing: 4f);
@@ -937,7 +941,16 @@ namespace UnDFight
 
             if (nameTmp != null) nameTmp.text = data.fighterName.ToUpperInvariant();
             if (heightTmp != null) heightTmp.text = $"ALTURA: {data.heightMeters.ToString("0.00").Replace('.', ',')} M";
-            if (weightTmp != null) weightTmp.text = $"PESO: {Mathf.RoundToInt(data.weightKg)} KG";
+            if (weightTmp != null)
+            {
+                string weightLabel = FighterScaling.GetWeightClassLabel(data.WeightCategory);
+                string styleLabel = FighterScaling.GetArchetypeLabel(data.archetype);
+                weightTmp.enableAutoSizing = true;
+                weightTmp.fontSizeMin = 11f;
+                weightTmp.fontSizeMax = 16f;
+                weightTmp.textWrappingMode = TextWrappingModes.NoWrap;
+                weightTmp.text = $"{Mathf.RoundToInt(data.weightKg)} KG • {weightLabel} • {styleLabel}";
+            }
             if (statusTmp != null)
             {
                 bool waitingForP1 = slotIndex == 1 && GameSessionState.P1SelectsBothFighters && !_p1Confirmed;
