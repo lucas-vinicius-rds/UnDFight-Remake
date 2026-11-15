@@ -4,8 +4,8 @@ using UnityEngine;
 namespace UnDFight
 {
     /// <summary>
-    /// Debug HUD for the Training scene showing simulation tick (60 Hz), render FPS,
-    /// and each fighter's state, X/Y position, and active input device.
+    /// Discreet footer debug strip for the Training scene showing 60 Hz tick, render FPS,
+    /// fighter states/HP/positions, and F1 debug hitbox/hurtbox toggle status.
     /// </summary>
     public class TrainingDebugHUD : MonoBehaviour
     {
@@ -15,11 +15,17 @@ namespace UnDFight
         private float _fpsTimer;
         private int _fpsFrames;
         private float _currentFps;
+        private bool _debugBoxesOn;
 
         public void Configure(FightSimulation sim, TextMeshProUGUI text)
         {
             simulation = sim;
             debugText = text;
+        }
+
+        public void SetDebugBoxesIndicator(bool enabled)
+        {
+            _debugBoxesOn = enabled;
         }
 
         private void Update()
@@ -40,15 +46,19 @@ namespace UnDFight
 
             FighterController p1 = simulation.Fighter1;
             FighterController p2 = simulation.Fighter2;
+            MatchManager match = simulation.MatchManager;
+
+            string matchLabel = match != null
+                ? $"R{match.CurrentRound} [{match.Phase}] ({match.P1RoundsWon}-{match.P2RoundsWon}) | T={match.RemainingSeconds:00}"
+                : "Free";
 
             string p1Info = FormatFighterLine("P1", p1);
             string p2Info = FormatFighterLine("P2", p2);
+            string boxes = _debugBoxesOn ? "<color=#55FF66>ON</color>" : "OFF";
 
             debugText.text =
-                $"<b>UnDFight Training Debug</b> | Sim: 60 Hz | Tick: {simulation.CurrentTick} | Render FPS: {_currentFps:F1}\n" +
-                $"{p1Info}\n" +
-                $"{p2Info}\n" +
-                $"<size=80%>P1: WASD + J/K/U/I/L | P2: Setas + Num4/5/1/2/6 | Gamepad Hot-Plug Ativo</size>";
+                $"<b>Sim 60Hz</b> #{simulation.CurrentTick} | FPS {_currentFps:F0} | {matchLabel} | Hitstop={simulation.HitstopTicksRemaining} | [F1] Boxes: {boxes}\n" +
+                $"{p1Info}   ||   {p2Info}   |   <color=#B8C2CC>P1: WASD+JKUI/L | P2: Arrows+Num4512/6</color>";
         }
 
         private static string FormatFighterLine(string label, FighterController f)
@@ -59,9 +69,8 @@ namespace UnDFight
             }
 
             string name = f.Data != null ? f.Data.fighterName : f.name;
-            string dev = f.InputHandler != null ? f.InputHandler.ActiveDeviceLabel : "-";
-            string atk = f.State == FighterState.Attack ? $" ({f.CurrentAttack})" : string.Empty;
-            return $"{label} [{name}]: State=<b>{f.State}{atk}</b> (t={f.StateTicks}) | X={f.SimPosition.x:F2} Y={f.SimPosition.y:F2} | Dir={(f.FacingSign > 0 ? "R" : "L")} | {dev}";
+            string atk = f.State == FighterState.Attack ? $"({f.CurrentAttack})" : string.Empty;
+            return $"{label} {name}: HP={f.CurrentHealth}/{f.MaxHealth} <b>{f.State}{atk}</b>(t={f.StateTicks}) X={f.SimPosition.x:F2}";
         }
     }
 }

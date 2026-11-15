@@ -28,11 +28,29 @@ namespace UnDFight
         [Range(0.3f, 0.9f)] public float crouchHeightRatio = 0.62f;
         [Min(0.1f)] public float pushboxRadius = 0.36f;
 
+        [Header("Moveset (60 Hz Frame Data)")]
+        public MoveData lightPunch;
+        public MoveData heavyPunch;
+        public MoveData lightKick;
+        public MoveData heavyKick;
+
         public float ModelScale => FighterScaling.ComputeModelScale(heightMeters);
         public float HurtboxScale => FighterScaling.ComputeHurtboxScale(heightMeters);
         public float EffectiveGravity => FighterScaling.ComputeEffectiveGravity(baseGravity, weightKg);
         public float EffectiveWalkForwardSpeed => FighterScaling.ComputeEffectiveWalkSpeed(walkForwardSpeed, weightKg);
         public float EffectiveWalkBackwardSpeed => FighterScaling.ComputeEffectiveWalkSpeed(walkBackwardSpeed, weightKg);
         public float KnockbackMultiplier => FighterScaling.ComputeKnockbackMultiplier(weightKg);
+
+        public MoveData GetMoveData(AttackType attackType)
+        {
+            return attackType switch
+            {
+                AttackType.LightPunch => lightPunch,
+                AttackType.HeavyPunch => heavyPunch,
+                AttackType.LightKick => lightKick,
+                AttackType.HeavyKick => heavyKick,
+                _ => null
+            };
+        }
     }
 }

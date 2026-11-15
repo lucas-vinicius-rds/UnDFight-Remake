@@ -22,6 +22,7 @@ namespace UnDFight
         private FighterInputState _currentInput;
         private Gamepad _activeGamepad;
         private int _currentSimTick;
+        private bool _useSimulatedInput;
 
         public int PlayerIndex => playerIndex;
         public InputAssignmentMode AssignmentMode => assignmentMode;
@@ -92,12 +93,37 @@ namespace UnDFight
 
         private void Update()
         {
-            SampleDevices();
+            if (!_useSimulatedInput)
+            {
+                SampleDevices();
+            }
         }
 
         public void SyncSimulationTick(int currentTick)
         {
             _currentSimTick = currentTick;
+        }
+
+        /// <summary>
+        /// Overrides live device polling with deterministic input state for Edit Mode or scripted verification.
+        /// </summary>
+        public void SetSimulatedInput(FighterInputState state, bool enabled = true)
+        {
+            _useSimulatedInput = enabled;
+            _currentInput = state;
+            _currentInput.LastTickSampled = _currentSimTick;
+        }
+
+        public void ClearSimulatedInput()
+        {
+            _useSimulatedInput = false;
+            _currentInput = default;
+            _bufferedButtonExpireTick.Clear();
+        }
+
+        public void ClearBufferedInputs()
+        {
+            _bufferedButtonExpireTick.Clear();
         }
 
         private void SampleDevices()

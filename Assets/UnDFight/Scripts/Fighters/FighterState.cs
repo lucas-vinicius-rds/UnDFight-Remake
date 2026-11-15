@@ -10,7 +10,10 @@ namespace UnDFight
         Block = 5,
         Attack = 6,
         Hit = 7,
-        KnockDown = 8
+        KnockDown = 8,
+        GetUp = 9,
+        Victory = 10,
+        Defeat = 11
     }
 
     public enum AttackType
