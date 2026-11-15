@@ -1,0 +1,4 @@
+﻿REGRAS GERAIS: Projeto Unity em D:\Programas SSD\Unity\Unity Projects\UnDFight Remake. Leia Docs/PROGRESSO.md antes. Ao final: marque a fase em PROGRESSO.md, registre em CHANGELOG.md, faca git commit. Nao altere nada fora do escopo da fase.
+
+FASE 7 - Mapa
+Palco 3D para luta 2.5D baseado na imagem de referencia (favela carioca ao por do sol). Arena plana ~20 m com paralelepipedo PBR; a esquerda Bar do Jorge com mesas/cadeiras de plastico e caixas de cerveja; a direita muro de tijolo e casas. Fundo em camadas: casas empilhadas, caixas d'agua azuis, postes e fios, escadaria, palmeiras, morro e mar ao longe, skybox de por do sol. Luz direcional laranja baixa, bloom leve, props low-poly, colisores invisiveis nas laterais, spawns P1/P2, paralaxe sutil. Salvar a imagem de referencia em Docs/Referencias/mapa.jpg.

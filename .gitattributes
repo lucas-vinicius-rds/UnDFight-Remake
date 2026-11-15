@@ -105,6 +105,7 @@ Packages/packages-lock.json linguist-generated
 *.mp3                   lfs
 *.ogg                   lfs
 *.s3m                   lfs
+*.WAV                   lfs
 *.wav                   lfs
 *.xm                    lfs
 
@@ -128,6 +129,7 @@ Packages/packages-lock.json linguist-generated
 *.jpeg                  lfs
 *.jpg                   lfs
 *.pict                  lfs
+*.PNG                   lfs
 *.png                   lfs
 *.psd                   lfs
 *.tga                   lfs
