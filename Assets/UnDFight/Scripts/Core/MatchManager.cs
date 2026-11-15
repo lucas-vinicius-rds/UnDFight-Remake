@@ -20,6 +20,7 @@ namespace UnDFight
         [SerializeField] private FighterData defaultFighterP1;
         [SerializeField] private FighterData defaultFighterP2;
         [SerializeField] private CpuAiController cpuAiController;
+        [SerializeField] private StageInteractableManager stageInteractableManager;
 
         [Header("Match Rules (60 Hz Ticks)")]
         [SerializeField, Min(1)] private int roundsToWin = 2;
@@ -53,6 +54,7 @@ namespace UnDFight
         public bool CombatActive => Phase == MatchPhase.Fighting;
 
         public event Action<MatchManager> OnMatchStateChanged;
+        public event Action OnRoundStarted;
 
         private void Awake()
         {
@@ -170,6 +172,12 @@ namespace UnDFight
             RoundTimerTicks = roundDurationSeconds * FightSimulation.TickRate;
 
             ResetFightersForRound();
+            if (stageInteractableManager == null)
+            {
+                stageInteractableManager = FindAnyObjectByType<StageInteractableManager>();
+            }
+            stageInteractableManager?.ResetAllProps();
+            OnRoundStarted?.Invoke();
 
             if (IsTrainingMode)
             {

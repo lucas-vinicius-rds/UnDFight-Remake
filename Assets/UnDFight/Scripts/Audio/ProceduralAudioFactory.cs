@@ -135,6 +135,49 @@ namespace UnDFight
             });
         }
 
+        public static AudioClip CreatePropImpactClip()
+        {
+            return BuildClip("SFX_Prop_Impact", 0.16f, (t, dur, rng) =>
+            {
+                float bodyEnv = FastAttackDecay(t, 0.002f, dur, 14f);
+                float body = (Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(240f, 115f, t / dur) * t) * 0.55f +
+                              Mathf.Sin(2f * Mathf.PI * 390f * t) * 0.30f) * bodyEnv;
+                float knock = ((float)rng.NextDouble() * 2f - 1f) * FastAttackDecay(t, 0.001f, 0.045f, 22f) * 0.32f;
+                return body * 0.65f + knock;
+            });
+        }
+
+        public static AudioClip CreatePropBreakWoodPlasticClip()
+        {
+            return BuildClip("SFX_Prop_Break_Crate", 0.38f, (t, dur, rng) =>
+            {
+                float crack1 = ((float)rng.NextDouble() * 2f - 1f) * FastAttackDecay(t, 0.001f, 0.09f, 16f) * 0.55f;
+                float crack2 = t >= 0.055f
+                    ? ((float)rng.NextDouble() * 2f - 1f) * FastAttackDecay(t - 0.055f, 0.002f, 0.14f, 11f) * 0.42f
+                    : 0f;
+                float clatter = t >= 0.11f
+                    ? (Mathf.Sin(2f * Mathf.PI * 310f * t) * 0.35f + Mathf.Sin(2f * Mathf.PI * 520f * t) * 0.25f) *
+                      FastAttackDecay(t - 0.11f, 0.003f, 0.24f, 9f) * 0.35f
+                    : 0f;
+                float thump = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(155f, 52f, Mathf.Min(1f, t / 0.16f)) * t) *
+                              FastAttackDecay(t, 0.002f, 0.18f, 12f) * 0.48f;
+                return crack1 + crack2 + clatter + thump;
+            });
+        }
+
+        public static AudioClip CreatePropBreakGlassClip()
+        {
+            return BuildClip("SFX_Prop_Break_Glass", 0.34f, (t, dur, rng) =>
+            {
+                float env = FastAttackDecay(t, 0.001f, dur, 9.5f);
+                float shimmer = (Mathf.Sin(2f * Mathf.PI * 1920f * t) * 0.32f +
+                                 Mathf.Sin(2f * Mathf.PI * 2840f * t) * 0.28f +
+                                 Mathf.Sin(2f * Mathf.PI * 4110f * t) * 0.20f) * env;
+                float burst = ((float)rng.NextDouble() * 2f - 1f) * FastAttackDecay(t, 0.001f, 0.16f, 13f) * 0.40f;
+                return shimmer * 0.65f + burst;
+            });
+        }
+
         public static AudioClip CreateRoundGongClip()
         {
             return BuildClip("SFX_Round_Gong", 0.95f, (t, dur, rng) =>

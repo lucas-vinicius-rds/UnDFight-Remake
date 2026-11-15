@@ -26,6 +26,9 @@ namespace UnDFight
         private AudioClip _hitSpecialClip;
         private AudioClip _blockImpactClip;
         private AudioClip _knockdownClip;
+        private AudioClip _propImpactClip;
+        private AudioClip _propBreakWoodPlasticClip;
+        private AudioClip _propBreakGlassClip;
         private AudioClip _roundGongClip;
         private AudioClip _ambientMusicClip;
 
@@ -166,6 +169,19 @@ namespace UnDFight
         public void PlayUiBack() => PlaySfx(_uiBackClip, 0.85f);
         public void PlayRoundGong() => PlaySfx(_roundGongClip, 0.85f);
 
+        public void PlayPropImpact(StagePropMaterialType materialType = StagePropMaterialType.WoodOrCrate)
+        {
+            PlaySfx(_propImpactClip, materialType == StagePropMaterialType.Glass ? 0.72f : 0.80f);
+        }
+
+        public void PlayPropBreak(StagePropMaterialType materialType = StagePropMaterialType.WoodOrCrate)
+        {
+            AudioClip clip = materialType == StagePropMaterialType.Glass
+                ? _propBreakGlassClip
+                : _propBreakWoodPlasticClip;
+            PlaySfx(clip, 0.92f);
+        }
+
         public void PlayAttackWhoosh(AttackType attack)
         {
             if (attack == AttackType.Special)
@@ -260,6 +276,9 @@ namespace UnDFight
             _hitSpecialClip = ProceduralAudioFactory.CreateHitSpecialClip();
             _blockImpactClip = ProceduralAudioFactory.CreateBlockImpactClip();
             _knockdownClip = ProceduralAudioFactory.CreateKnockdownClip();
+            _propImpactClip = ProceduralAudioFactory.CreatePropImpactClip();
+            _propBreakWoodPlasticClip = ProceduralAudioFactory.CreatePropBreakWoodPlasticClip();
+            _propBreakGlassClip = ProceduralAudioFactory.CreatePropBreakGlassClip();
             _roundGongClip = ProceduralAudioFactory.CreateRoundGongClip();
             _ambientMusicClip = ProceduralAudioFactory.CreateAmbientMusicLoopClip();
             _clipsGenerated = true;

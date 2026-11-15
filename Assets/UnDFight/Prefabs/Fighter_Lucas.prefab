@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 9195165139704075872}
   - component: {fileID: 3132993066650118835}
   - component: {fileID: 7207157870675071955}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Fighter_Lucas
   m_TagString: Untagged
   m_Icon: {fileID: 0}

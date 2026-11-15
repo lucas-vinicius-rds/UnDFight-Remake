@@ -99,7 +99,7 @@ namespace UnDFight
         private int _manualTickCounter;
         private bool _isPaused;
 
-        public int CurrentTick => _clock != null ? _clock.CurrentTick : _manualTickCounter;
+        public int CurrentTick => _clock != null && _clock.CurrentTick > 0 ? _clock.CurrentTick : _manualTickCounter;
         public float InterpolationAlpha => _clock != null ? _clock.InterpolationAlpha : 1f;
         public float StageMinX => stageMinX;
         public float StageMaxX => stageMaxX;
@@ -113,6 +113,7 @@ namespace UnDFight
         public bool IsPaused => _isPaused;
 
         public event Action<CombatHitEvent> OnCombatHit;
+        public event Action<FighterController> OnFighterGroundImpact;
         public event Action<FighterController, FighterController> OnParticipantsChanged;
 
         private void Awake()
@@ -232,6 +233,9 @@ namespace UnDFight
                 cpuAiController.StepAiTick(tick);
             }
 
+            bool f1WasGrounded = fighter1 != null && fighter1.IsGrounded;
+            bool f2WasGrounded = fighter2 != null && fighter2.IsGrounded;
+
             if (fighter1 != null) fighter1.StepTick(tick, dt);
             if (fighter2 != null) fighter2.StepTick(tick, dt);
 
@@ -243,6 +247,9 @@ namespace UnDFight
             {
                 ResolveCombatHits();
             }
+
+            CheckFighterGroundImpact(fighter1, f1WasGrounded);
+            CheckFighterGroundImpact(fighter2, f2WasGrounded);
 
             if (cpuAiController != null && cpuAiController.IsEnabled)
             {
@@ -476,6 +483,19 @@ namespace UnDFight
             if (force || fighter2.IsGrounded)
             {
                 fighter2.SetFacing(p2Facing, force);
+            }
+        }
+
+        private void CheckFighterGroundImpact(FighterController fighter, bool wasGrounded)
+        {
+            if (fighter == null || fighter.State != FighterState.KnockDown || !fighter.IsGrounded)
+            {
+                return;
+            }
+
+            if (!wasGrounded || fighter.StateTicks == 10)
+            {
+                OnFighterGroundImpact?.Invoke(fighter);
             }
         }
     }

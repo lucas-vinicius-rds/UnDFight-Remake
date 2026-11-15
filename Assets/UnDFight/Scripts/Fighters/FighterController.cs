@@ -162,6 +162,10 @@ namespace UnDFight
         public void InitializeSimulation(FightSimulation simulation, int playerIndex)
         {
             _simulation = simulation;
+            if (StagePhysicsLayers.HasDedicatedLayers && gameObject.layer == 0)
+            {
+                gameObject.layer = StagePhysicsLayers.FighterHurtboxLayer;
+            }
             if (visualRoot == null && transform.childCount > 0)
             {
                 visualRoot = transform.GetChild(0);
