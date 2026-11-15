@@ -22,9 +22,16 @@ namespace UnDFight.Tests
             public MoveData HeavyKick;
         }
 
+        [SetUp]
+        public void SetUp()
+        {
+            GameSessionState.CurrentMode = GameMode.LocalVersus;
+        }
+
         [TearDown]
         public void TearDown()
         {
+            GameSessionState.CurrentMode = GameMode.LocalVersus;
             for (int i = _createdObjects.Count - 1; i >= 0; i--)
             {
                 if (_createdObjects[i] != null)

@@ -126,7 +126,91 @@ namespace UnDFight.Editor
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            return "Phase 9 Unity setup complete: Lucas (Heavy/HeavyBrawler) & Tiago (Medium/StreetScrappy) FBXs, AOCs, Prefabs, AC_Fighter transitions, and MoveData assets updated.";
+
+            int lucasBones = CountMappedHumanBones(LucasFbxPath);
+            int tiagoBones = CountMappedHumanBones(TiagoFbxPath);
+            return $"Phase 9.1 Unity setup complete: Lucas ({lucasBones}/52 human bones, Heavy/HeavyBrawler) & Tiago ({tiagoBones}/52 human bones, Medium/StreetScrappy) updated cleanly.";
+        }
+
+        public static int CountMappedHumanBones(string fbxPath)
+        {
+            var importer = AssetImporter.GetAtPath(fbxPath) as ModelImporter;
+            return importer != null && importer.humanDescription.human != null
+                ? importer.humanDescription.human.Length
+                : 0;
+        }
+
+        private static HumanDescription BuildFullHumanoidDescription(GameObject fbxRoot, HumanDescription existing)
+        {
+            var transforms = fbxRoot.GetComponentsInChildren<Transform>(true);
+            var availableNames = new HashSet<string>(StringComparer.Ordinal);
+            foreach (Transform t in transforms)
+            {
+                availableNames.Add(t.name);
+            }
+
+            var humanList = new List<HumanBone>(52);
+            foreach (string traitBoneName in HumanTrait.BoneName)
+            {
+                string rigBoneName = traitBoneName.Replace(" ", string.Empty);
+                if (!availableNames.Contains(rigBoneName))
+                {
+                    continue;
+                }
+
+                bool isFinger = traitBoneName.Contains("Thumb", StringComparison.Ordinal) ||
+                                traitBoneName.Contains("Index", StringComparison.Ordinal) ||
+                                traitBoneName.Contains("Middle", StringComparison.Ordinal) ||
+                                traitBoneName.Contains("Ring", StringComparison.Ordinal) ||
+                                traitBoneName.Contains("Little", StringComparison.Ordinal);
+
+                // Symmetric [-125, +125] bounds around T-pose zero avoid -45/-50 default clamping regardless of bone roll
+                HumanLimit boneLimit = isFinger
+                    ? new HumanLimit
+                    {
+                        useDefaultValues = false,
+                        min = new Vector3(-90f, -60f, -125f),
+                        max = new Vector3(90f, 60f, 125f),
+                        center = Vector3.zero,
+                        axisLength = 0f
+                    }
+                    : new HumanLimit { useDefaultValues = true };
+
+                humanList.Add(new HumanBone
+                {
+                    humanName = traitBoneName,
+                    boneName = rigBoneName,
+                    limit = boneLimit
+                });
+            }
+
+            HumanDescription desc = existing;
+            desc.human = humanList.ToArray();
+            if (desc.skeleton == null || desc.skeleton.Length == 0)
+            {
+                var skeletonList = new List<SkeletonBone>(transforms.Length);
+                foreach (Transform t in transforms)
+                {
+                    skeletonList.Add(new SkeletonBone
+                    {
+                        name = t.name,
+                        position = t.localPosition,
+                        rotation = t.localRotation,
+                        scale = t.localScale
+                    });
+                }
+                desc.skeleton = skeletonList.ToArray();
+            }
+
+            desc.upperArmTwist = 0.5f;
+            desc.lowerArmTwist = 0.5f;
+            desc.upperLegTwist = 0.5f;
+            desc.lowerLegTwist = 0.5f;
+            desc.armStretch = 0.05f;
+            desc.legStretch = 0.05f;
+            desc.feetSpacing = 0.0f;
+            desc.hasTranslationDoF = false;
+            return desc;
         }
 
         public static void ReimportAndConfigureFbxClips(string fbxPath, string expectedTakePrefix)
@@ -138,7 +222,25 @@ namespace UnDFight.Editor
                 throw new InvalidOperationException($"ModelImporter not found at {fbxPath}");
             }
 
+            // Reset humanDescription once so Unity regenerates the pure T-Pose bind skeleton
+            importer.humanDescription = new HumanDescription();
             importer.animationType = ModelImporterAnimationType.Human;
+            importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+            importer.SaveAndReimport();
+
+            var fbxRoot = AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath);
+            if (fbxRoot == null)
+            {
+                throw new InvalidOperationException($"FBX root GameObject not found at {fbxPath}");
+            }
+
+            HumanDescription fullDesc = BuildFullHumanoidDescription(fbxRoot, importer.humanDescription);
+            if (fullDesc.human.Length != 52)
+            {
+                throw new InvalidOperationException($"Expected 52 mapped Humanoid bones in {fbxPath}, got {fullDesc.human.Length}");
+            }
+
+            importer.humanDescription = fullDesc;
             ModelImporterClipAnimation[] defaults = importer.defaultClipAnimations;
             var configured = new List<ModelImporterClipAnimation>();
 

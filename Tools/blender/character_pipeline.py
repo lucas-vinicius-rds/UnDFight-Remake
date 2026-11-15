@@ -169,10 +169,10 @@ def reset_pose(arm_obj):
         pb.scale = (1.0, 1.0, 1.0)
 
 
-def set_bone_world_rot(arm_obj, bone_name, rx=0.0, ry=0.0, rz=0.0):
-    """Apply world-space XYZ Euler rotation (degrees) relative to bone rest pose."""
+def set_bone_world_rot(arm_obj, bone_name, rx=0.0, ry=0.0, rz=0.0, order='XYZ'):
+    """Apply world-space Euler rotation (degrees) relative to bone rest pose."""
     pb = arm_obj.pose.bones[bone_name]
-    r_world = Euler((math.radians(rx), math.radians(ry), math.radians(rz)), 'XYZ').to_matrix()
+    r_world = Euler((math.radians(rx), math.radians(ry), math.radians(rz)), order).to_matrix()
     m_rest = pb.bone.matrix_local.to_3x3()
     r_local = m_rest.inverted() @ r_world @ m_rest
     pb.rotation_mode = 'QUATERNION'
@@ -194,17 +194,67 @@ def apply_pose_dict(arm_obj, pose_dict):
     for bone_name, rot in pose_dict.items():
         if bone_name == "HipsOffset":
             continue
-        set_bone_world_rot(arm_obj, bone_name, rot[0], rot[1], rot[2])
+        order = rot[3] if len(rot) > 3 else 'XYZ'
+        set_bone_world_rot(arm_obj, bone_name, rot[0], rot[1], rot[2], order=order)
 
 
 def key_all_deform_bones(arm_obj, frame):
     for pb in arm_obj.pose.bones:
         if not pb.bone.use_deform:
-            continue  # Skip non-deforming finger bones so fused hands aren't keyed
+            continue
         pb.rotation_mode = 'QUATERNION'
         pb.keyframe_insert(data_path="rotation_quaternion", frame=frame)
         if pb.name == "Hips":
             pb.keyframe_insert(data_path="location", frame=frame)
+
+
+def _finger_curl_pose(finger_angles, thumb_angles, intensity=1.0):
+    """Build 30 finger bone rotations for both hands using ZYX order (adduct Z first, then curl Y)."""
+    pose = {}
+    scale = max(0.0, float(intensity))
+    for side, sign in (("Left", 1.0), ("Right", -1.0)):
+        for fname, (p_curl, i_curl, d_curl, adduct_z) in finger_angles.items():
+            # Positive ry on Left (+X arm) and negative ry on Right (-X arm) curls palmward (-Z)
+            pose[f"{side}{fname}Proximal"] = (0.0, sign * p_curl * scale, sign * adduct_z * scale, 'ZYX')
+            pose[f"{side}{fname}Intermediate"] = (0.0, sign * i_curl * scale, 0.0, 'ZYX')
+            pose[f"{side}{fname}Distal"] = (0.0, sign * d_curl * scale, 0.0, 'ZYX')
+        for seg, (tx, ty, tz) in zip(("Proximal", "Intermediate", "Distal"), thumb_angles):
+            pose[f"{side}Thumb{seg}"] = (tx * scale, sign * ty * scale, sign * tz * scale, 'ZYX')
+    return pose
+
+
+def closed_fist(intensity=1.0):
+    """Anatomical closed combat fist pose for all 30 finger bones."""
+    # Adduct fingers side-by-side around Z first, then curl tightly into the palm
+    fingers = {
+        "Index":  (95.0, 112.0, 80.0,  9.5),
+        "Middle": (96.0, 114.0, 82.0,  2.5),
+        "Ring":   (96.0, 114.0, 82.0, -4.5),
+        "Little": (95.0, 112.0, 80.0, -9.5),
+    }
+    # Thumb reaches forward/inward at CMC then wraps its IP joints across Index/Middle phalanges
+    thumb = [
+        (12.0, 28.0, 38.0),
+        (6.0,  30.0, 50.0),
+        (2.0,  24.0, 38.0),
+    ]
+    return _finger_curl_pose(fingers, thumb, intensity=intensity)
+
+
+def relaxed_grip(intensity=0.45):
+    """Semi-open natural hand pose for HitReact, KnockDown, GetUp and Defeat."""
+    fingers = {
+        "Index":  (34.0, 44.0, 30.0,  3.0),
+        "Middle": (38.0, 48.0, 34.0,  0.5),
+        "Ring":   (42.0, 52.0, 38.0, -2.0),
+        "Little": (46.0, 56.0, 42.0, -4.0),
+    }
+    thumb = [
+        (8.0,  10.0, 14.0),
+        (4.0,  12.0, 22.0),
+        (2.0,  10.0, 16.0),
+    ]
+    return _finger_curl_pose(fingers, thumb, intensity=intensity / 0.45)
 
 
 def build_action_from_keyframes(arm_obj, action_name, keyframes):
@@ -1114,6 +1164,18 @@ def generate_all_animations(arm_obj, config=None):
         else:
             animations[clip_name] = override_val
 
+    # Apply closed combat fists (or relaxed grip on hit/fall states) across all keyframes
+    loose_clips = {"HitReact", "KnockDown", "GetUp", "Defeat"}
+    for clip_name, kf in animations.items():
+        if clip_name in loose_clips:
+            hand_pose = relaxed_grip(0.45)
+        elif style == "street_scrappy" and clip_name == "Idle":
+            hand_pose = closed_fist(0.97)
+        else:
+            hand_pose = closed_fist(1.0)
+        for frame_idx, pose_dict in kf.items():
+            kf[frame_idx] = merge_pose(hand_pose, pose_dict)
+
     ordered_names = [
         "Idle", "WalkForward", "WalkBackward", "Jump", "Crouch", "BlockStand",
         "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
@@ -1455,13 +1517,383 @@ def decimate_character_mesh(config):
     return mesh_obj
 
 
+def _seg_dist_and_t(p, a, b):
+    """Return (closest_distance, clamped_t [0..1], unclamped_t) from point p to segment ab."""
+    ab = b - a
+    len_sq = ab.length_squared
+    if len_sq < 1e-10:
+        return (p - a).length, 0.0, 0.0
+    raw_t = (p - a).dot(ab) / len_sq
+    t = max(0.0, min(1.0, raw_t))
+    closest = a + ab * t
+    return (p - closest).length, t, raw_t
+
+
+def _smoothstep01(t):
+    t = max(0.0, min(1.0, t))
+    return t * t * (3.0 - 2.0 * t)
+
+
+def detect_hand_fingers(mesh_obj, hand_head, hand_tail, sign):
+    """Detect real finger chains (Thumb, Index, Middle, Ring, Little) from T-Pose mesh geometry."""
+    mw = mesh_obj.matrix_world
+    verts = mesh_obj.data.vertices
+    co = {v.index: (mw @ v.co) for v in verts}
+
+    h_head = Vector(hand_head)
+    h_tail = Vector(hand_tail)
+    wrist_along = h_head.x * sign
+
+    hand_indices = {
+        v.index for v in verts
+        if co[v.index].x * sign >= wrist_along - 0.020
+        and abs(co[v.index].y - h_head.y) < 0.22
+        and abs(co[v.index].z - h_head.z) < 0.18
+    }
+    if not hand_indices:
+        hand_indices = {
+            v.index for v in verts
+            if co[v.index].x * sign >= wrist_along - 0.01
+        }
+
+    adj = {vi: [] for vi in hand_indices}
+    for e in mesh_obj.data.edges:
+        a, b = e.vertices[0], e.vertices[1]
+        if a in adj and b in adj:
+            adj[a].append(b)
+            adj[b].append(a)
+
+    max_along = max((co[vi].x * sign for vi in hand_indices), default=wrist_along + 0.20)
+    hand_len = max(0.08, max_along - wrist_along)
+
+    # Scan longitudinal slices past webbing to isolate the 4 parallel fingers
+    best_comps = []
+    best_thresh = wrist_along + 0.68 * hand_len
+    for t in (0.58, 0.62, 0.66, 0.70, 0.74, 0.78, 0.82):
+        thresh = wrist_along + t * hand_len
+        active = {vi for vi in hand_indices if co[vi].x * sign >= thresh}
+        visited = set()
+        comps = []
+        for start in active:
+            if start in visited:
+                continue
+            stack = [start]
+            visited.add(start)
+            comp = []
+            while stack:
+                cur = stack.pop()
+                comp.append(cur)
+                for nb in adj[cur]:
+                    if nb in active and nb not in visited:
+                        visited.add(nb)
+                        stack.append(nb)
+            if len(comp) >= 6:
+                comps.append(comp)
+        if len(comps) == 4:
+            best_comps = comps
+            best_thresh = thresh
+            break
+        if len(comps) <= 4 and len(comps) > len(best_comps):
+            best_comps = comps
+            best_thresh = thresh
+
+    # Order components strictly from thumb side (-Y) to pinky side (+Y)
+    best_comps.sort(key=lambda c: sum(co[vi].y for vi in c) / len(c))
+
+    fingers = {}
+    comp_map = {}
+    finger_u = (0.0, 0.46, 0.76, 1.0)
+    knuckle_ratios = {"Index": 0.34, "Middle": 0.36, "Ring": 0.34, "Little": 0.29}
+    main_names = ["Index", "Middle", "Ring", "Little"]
+
+    if len(best_comps) == 4:
+        for fname, comp in zip(main_names, best_comps):
+            for vi in comp:
+                comp_map[vi] = fname
+            tip_along = max(co[vi].x * sign for vi in comp)
+            tip_vs = [vi for vi in comp if co[vi].x * sign >= tip_along - 0.012]
+            tip_y = sum(co[vi].y for vi in tip_vs) / len(tip_vs)
+            tip_z = sum(co[vi].z for vi in tip_vs) / len(tip_vs)
+            tip_pt = Vector((sign * (tip_along - 0.004), tip_y, tip_z))
+
+            web_vs = [vi for vi in comp if co[vi].x * sign <= best_thresh + 0.014] or comp
+            web_y = sum(co[vi].y for vi in web_vs) / len(web_vs)
+            web_z = sum(co[vi].z for vi in web_vs) / len(web_vs)
+
+            k_along = min(best_thresh - 0.010, tip_along - knuckle_ratios[fname] * hand_len)
+            k_along = max(wrist_along + 0.45 * hand_len, k_along)
+            k_y = 0.90 * web_y + 0.10 * h_head.y
+            k_z = 0.80 * web_z + 0.20 * h_tail.z
+            k_pt = Vector((sign * k_along, k_y, k_z))
+
+            pts = [k_pt.lerp(tip_pt, u) for u in finger_u]
+            fingers[fname] = pts
+        index_min_y = min(co[vi].y for vi in best_comps[0])
+    else:
+        # Proportional fallback for fused or low-detail future hand meshes
+        distal_vs = [vi for vi in hand_indices if co[vi].x * sign >= wrist_along + 0.55 * hand_len] or list(hand_indices)
+        min_y = min(co[vi].y for vi in distal_vs)
+        max_y = max(co[vi].y for vi in distal_vs)
+        mean_z = sum(co[vi].z for vi in distal_vs) / len(distal_vs)
+        span_y = max(0.05, max_y - min_y)
+        tip_fracs = (0.94, 1.00, 0.93, 0.82)
+        for i, fname in enumerate(main_names):
+            fy = min_y + span_y * (0.14 + 0.24 * i)
+            k_pt = Vector((sign * (wrist_along + 0.50 * hand_len), fy, mean_z))
+            t_pt = Vector((sign * (wrist_along + tip_fracs[i] * hand_len), fy, mean_z))
+            fingers[fname] = [k_pt.lerp(t_pt, u) for u in finger_u]
+        index_min_y = min_y + 0.05 * span_y
+
+    # Detect ventral (-Y) Thumb cluster proximal to main fingers
+    thumb_vs = [
+        vi for vi in hand_indices
+        if 0.12 * hand_len <= (co[vi].x * sign - wrist_along) <= 0.64 * hand_len
+        and co[vi].y < index_min_y - 0.005
+    ]
+    thumb_u = (0.0, 0.40, 0.73, 1.0)
+    if len(thumb_vs) >= 6:
+        scored = sorted(
+            thumb_vs,
+            key=lambda vi: (co[vi].x * sign - wrist_along) * 0.55 + (index_min_y - co[vi].y),
+            reverse=True,
+        )
+        top_n = max(4, min(10, len(scored) // 8))
+        tip_cluster = scored[:top_n]
+        raw_tip = Vector((
+            sum(co[vi].x for vi in tip_cluster) / len(tip_cluster),
+            sum(co[vi].y for vi in tip_cluster) / len(tip_cluster),
+            sum(co[vi].z for vi in tip_cluster) / len(tip_cluster),
+        ))
+        base_vs = [
+            vi for vi in thumb_vs
+            if wrist_along + 0.16 * hand_len <= co[vi].x * sign <= wrist_along + 0.34 * hand_len
+        ]
+        if base_vs:
+            raw_base = Vector((
+                sum(co[vi].x for vi in base_vs) / len(base_vs),
+                sum(co[vi].y for vi in base_vs) / len(base_vs),
+                sum(co[vi].z for vi in base_vs) / len(base_vs),
+            ))
+            # Pull base slightly inward into the thenar pad
+            t_base = Vector((
+                raw_base.x + sign * 0.004,
+                0.60 * raw_base.y + 0.40 * (index_min_y - 0.002),
+                0.70 * raw_base.z + 0.30 * (h_tail.z - 0.006),
+            ))
+        else:
+            t_base = Vector((sign * (wrist_along + 0.22 * hand_len), index_min_y - 0.008, h_tail.z - 0.008))
+        axis = raw_tip - t_base
+        if axis.length > 0.01:
+            t_tip = raw_tip - axis.normalized() * 0.004
+        else:
+            t_tip = raw_tip
+        fingers["Thumb"] = [t_base.lerp(t_tip, u) for u in thumb_u]
+    else:
+        t_base = Vector((sign * (wrist_along + 0.18 * hand_len), h_head.y - 0.025, h_tail.z - 0.010))
+        t_tip = Vector((sign * (wrist_along + 0.50 * hand_len), h_head.y - 0.075, h_tail.z - 0.025))
+        fingers["Thumb"] = [t_base.lerp(t_tip, u) for u in thumb_u]
+
+    return {
+        "fingers": fingers,
+        "comp_map": comp_map,
+        "hand_indices": hand_indices,
+        "wrist_along": wrist_along,
+        "hand_len": hand_len,
+        "split_along": best_thresh,
+        "index_min_y": index_min_y,
+    }
+
+
+def _populate_finger_bones_edit_mode(arm_obj, mesh_obj):
+    """Create or reposition the 30 deformable finger bones inside arm_obj (EDIT mode expected)."""
+    eb = arm_obj.data.edit_bones
+    for side, sign in (("Left", 1.0), ("Right", -1.0)):
+        hand_bone = eb[f"{side}Hand"]
+        if mesh_obj is not None:
+            det = detect_hand_fingers(mesh_obj, hand_bone.head.copy(), hand_bone.tail.copy(), sign)
+            finger_pts = det["fingers"]
+        else:
+            hx, hy, hz = hand_bone.tail.x, hand_bone.tail.y, hand_bone.tail.z
+            finger_pts = {}
+            for idx, fname in enumerate(FINGER_NAMES):
+                y_off = (-0.026 + (idx - 1) * 0.022) if fname != "Thumb" else -0.055
+                z_off = -0.012 if fname == "Thumb" else 0.0
+                sx = hx - sign * (0.025 if fname == "Thumb" else 0.0)
+                seg_len = 0.018 if fname == "Thumb" else 0.022
+                finger_pts[fname] = [
+                    Vector((sx + sign * i * seg_len, hy + y_off, hz + z_off)) for i in range(4)
+                ]
+
+        for fname in FINGER_NAMES:
+            pts = finger_pts[fname]
+            prev = hand_bone
+            for s_idx, seg in enumerate(FINGER_SEGMENTS):
+                bname = f"{side}{fname}{seg}"
+                fb = eb.get(bname) or eb.new(bname)
+                fb.head = pts[s_idx]
+                fb.tail = pts[s_idx + 1]
+                fb.parent = prev
+                fb.use_connect = (s_idx > 0)
+                fb.use_deform = True
+                prev = fb
+
+
+def assign_hand_finger_weights(mesh_obj, arm_obj, config=None):
+    """Assign clean per-phalanx weights with zero cross-finger bleeding and palm/wrist preservation."""
+    mw = mesh_obj.matrix_world
+    verts = mesh_obj.data.vertices
+
+    finger_vg = {}
+    for side in ("Left", "Right"):
+        for fname in FINGER_NAMES:
+            for seg in FINGER_SEGMENTS:
+                gname = f"{side}{fname}{seg}"
+                vg = mesh_obj.vertex_groups.get(gname) or mesh_obj.vertex_groups.new(name=gname)
+                finger_vg[gname] = vg
+
+    for side, sign in (("Left", 1.0), ("Right", -1.0)):
+        hand_bone = arm_obj.data.bones[f"{side}Hand"]
+        hand_vg = mesh_obj.vertex_groups.get(f"{side}Hand") or mesh_obj.vertex_groups.new(name=f"{side}Hand")
+        det = detect_hand_fingers(mesh_obj, hand_bone.head_local, hand_bone.tail_local, sign)
+        fingers = det["fingers"]
+        comp_map = det["comp_map"]
+        hand_indices = det["hand_indices"]
+        wrist_along = det["wrist_along"]
+        index_min_y = det["index_min_y"]
+
+        side_finger_vgs = [
+            finger_vg[f"{side}{fname}{seg}"]
+            for fname in FINGER_NAMES
+            for seg in FINGER_SEGMENTS
+        ]
+        for vg in side_finger_vgs:
+            vg.remove(list(hand_indices))
+
+        # Keep smooth wrist blend below +0.015; assign everything distal cleanly
+        distal_hand = [vi for vi in hand_indices if (mw @ verts[vi].co).x * sign >= wrist_along + 0.015]
+        for vg in mesh_obj.vertex_groups:
+            if vg.name != f"{side}Hand":
+                vg.remove(distal_hand)
+
+        thumb_pts = fingers["Thumb"]
+        thumb_u = (0.0, 0.40, 0.73, 1.0)
+        finger_u = (0.0, 0.46, 0.76, 1.0)
+
+        def apply_chain_weights(vi, fname, t_val, joints_u):
+            g_prox = finger_vg[f"{side}{fname}Proximal"]
+            g_int = finger_vg[f"{side}{fname}Intermediate"]
+            g_dist = finger_vg[f"{side}{fname}Distal"]
+            u1, u2 = joints_u[1], joints_u[2]
+
+            if t_val <= -0.09:
+                hand_vg.add([vi], 1.0, 'REPLACE')
+            elif t_val < 0.12:
+                w = _smoothstep01((t_val + 0.09) / 0.21)
+                hand_vg.add([vi], 1.0 - w, 'REPLACE')
+                g_prox.add([vi], w, 'REPLACE')
+            elif t_val <= u1 - 0.11:
+                hand_vg.remove([vi])
+                g_prox.add([vi], 1.0, 'REPLACE')
+            elif t_val < u1 + 0.11:
+                w = _smoothstep01((t_val - (u1 - 0.11)) / 0.22)
+                hand_vg.remove([vi])
+                g_prox.add([vi], 1.0 - w, 'REPLACE')
+                g_int.add([vi], w, 'REPLACE')
+            elif t_val <= u2 - 0.09:
+                hand_vg.remove([vi])
+                g_int.add([vi], 1.0, 'REPLACE')
+            elif t_val < u2 + 0.09:
+                w = _smoothstep01((t_val - (u2 - 0.09)) / 0.18)
+                hand_vg.remove([vi])
+                g_int.add([vi], 1.0 - w, 'REPLACE')
+                g_dist.add([vi], w, 'REPLACE')
+            else:
+                hand_vg.remove([vi])
+                g_dist.add([vi], 1.0, 'REPLACE')
+
+        for vi in distal_hand:
+            p = mw @ verts[vi].co
+            d_thumb, _, raw_t_thumb = _seg_dist_and_t(p, thumb_pts[0], thumb_pts[3])
+
+            best_main = None
+            best_d_main = 1e9
+            best_raw_main = 0.0
+            for fname in ("Index", "Middle", "Ring", "Little"):
+                pts = fingers[fname]
+                d_f, _, raw_t = _seg_dist_and_t(p, pts[0], pts[3])
+                if d_f < best_d_main:
+                    best_d_main = d_f
+                    best_main = fname
+                    best_raw_main = raw_t
+
+            is_thumb = (
+                raw_t_thumb >= -0.05
+                and d_thumb < 0.028
+                and d_thumb < best_d_main * 1.12
+                and vi not in comp_map
+            )
+            if is_thumb:
+                apply_chain_weights(vi, "Thumb", raw_t_thumb, thumb_u)
+                continue
+
+            if vi in comp_map:
+                chosen = comp_map[vi]
+                pts = fingers[chosen]
+                _, _, raw_t = _seg_dist_and_t(p, pts[0], pts[3])
+                apply_chain_weights(vi, chosen, raw_t, finger_u)
+            else:
+                if best_raw_main <= -0.07:
+                    hand_vg.add([vi], 1.0, 'REPLACE')
+                else:
+                    apply_chain_weights(vi, best_main, best_raw_main, finger_u)
+
+
+def update_existing_rig_with_fingers(config):
+    """Upgrade an existing character .blend in-place to a 52-bone deformable finger rig."""
+    bpy.ops.wm.open_mainfile(filepath=config["work_blend"])
+    arm_obj = bpy.data.objects[config["armature_name"]]
+    mesh_obj = bpy.data.objects[config["mesh_name"]]
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+    arm_obj.data.pose_position = 'POSE'
+    if arm_obj.animation_data:
+        arm_obj.animation_data.action = None
+    reset_pose(arm_obj)
+    bpy.context.view_layer.update()
+
+    bpy.ops.object.select_all(action='DESELECT')
+    arm_obj.select_set(True)
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode='EDIT')
+
+    _populate_finger_bones_edit_mode(arm_obj, mesh_obj)
+
+    bpy.ops.armature.select_all(action='SELECT')
+    bpy.ops.armature.calculate_roll(type='GLOBAL_POS_Z')
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    assign_hand_finger_weights(mesh_obj, arm_obj, config)
+
+    bpy.ops.object.select_all(action='DESELECT')
+    mesh_obj.select_set(True)
+    bpy.context.view_layer.objects.active = mesh_obj
+    bpy.ops.object.vertex_group_limit_total(group_select_mode='ALL', limit=4)
+    bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL', lock_active=False)
+
+    deform_count = sum(1 for b in arm_obj.data.bones if b.use_deform)
+    print(f"Updated rig {config['armature_name']}: total={len(arm_obj.data.bones)}, deform={deform_count}")
+    bpy.ops.wm.save_as_mainfile(filepath=config["work_blend"])
+    return arm_obj, mesh_obj
+
+
 def create_humanoid_rig(config):
-    """Build 52-bone Unity Humanoid rig (22 deforming + 30 non-deforming finger bones)."""
+    """Build 52-bone Unity Humanoid rig (all 52 bones deformable with detected phalanges)."""
     joints = config["joints"]
     if not joints:
         raise ValueError(f"Joints dictionary is empty for {config['name']}")
 
     arm_name = config["armature_name"]
+    mesh_obj = bpy.data.objects.get(config["mesh_name"])
     if arm_name in bpy.data.objects:
         bpy.data.objects.remove(bpy.data.objects[arm_name], do_unlink=True)
     if arm_name in bpy.data.armatures:
@@ -1493,26 +1925,9 @@ def create_humanoid_rig(config):
             created[bname].parent = created[pname]
             created[bname].use_connect = connect
 
-    # Add 30 non-deforming finger chains (3 phalanges x 5 fingers x 2 hands) for Unity Humanoid
-    for side, sign in (("Left", 1.0), ("Right", -1.0)):
-        hand_bone = created[f"{side}Hand"]
-        hx, hy, hz = hand_bone.tail.x, hand_bone.tail.y, hand_bone.tail.z
-        for idx, fname in enumerate(FINGER_NAMES):
-            y_off = (2 - idx) * 0.015 if fname != "Thumb" else -0.028
-            z_off = 0.0 if fname != "Thumb" else -0.015
-            seg_len = 0.022 if fname != "Thumb" else 0.018
-            prev = hand_bone
-            cur_x = hx - sign * (0.015 if fname == "Thumb" else 0.0)
-            for s_idx, seg in enumerate(FINGER_SEGMENTS):
-                fb = eb.new(f"{side}{fname}{seg}")
-                fb.head = Vector((cur_x + sign * s_idx * seg_len, hy + y_off, hz + z_off))
-                fb.tail = Vector((cur_x + sign * (s_idx + 1) * seg_len, hy + y_off, hz + z_off))
-                fb.parent = prev
-                fb.use_connect = (s_idx > 0)
-                fb.use_deform = False
-                prev = fb
+    _populate_finger_bones_edit_mode(arm_obj, mesh_obj)
 
-    # Align bone rolls cleanly (recalculate Z+ for spine/legs, X/Z consistent for arms)
+    # Align bone rolls cleanly (recalculate Z+ for spine/legs, X/Z consistent for arms/fingers)
     bpy.ops.armature.select_all(action='SELECT')
     bpy.ops.armature.calculate_roll(type='GLOBAL_POS_Z')
 
@@ -1522,7 +1937,7 @@ def create_humanoid_rig(config):
 
 
 def bind_and_refine_weights(config):
-    """Bind mesh with automatic weights, strip cross-body leaks, limit to 4 influences, normalize."""
+    """Bind mesh with automatic weights, strip cross-body leaks, refine hands, limit to 4, normalize."""
     mesh_obj = bpy.data.objects[config["mesh_name"]]
     arm_obj = bpy.data.objects[config["armature_name"]]
 
@@ -1564,6 +1979,8 @@ def bind_and_refine_weights(config):
                 g.remove([v.index])
             if v.co.z > neck_z + 0.08:
                 head_group.add([v.index], 1.0, 'REPLACE')
+
+    assign_hand_finger_weights(mesh_obj, arm_obj, config)
 
     # Limit to max 4 bone influences per vertex and normalize
     bpy.ops.object.select_all(action='DESELECT')
@@ -1809,12 +2226,70 @@ def render_style_poses(arm_obj, config, out_dir):
     return paths
 
 
-def run_animations_and_export(char_name="Lucas", render_dir=None):
+def render_hand_closeups(arm_obj, config, out_dir):
+    """Render tight close-ups of Left & Right hands in Idle and HeavyPunch for visual inspection."""
+    os.makedirs(out_dir, exist_ok=True)
+    scene = bpy.context.scene
+    scene.render.engine = 'BLENDER_WORKBENCH'
+    scene.display.shading.light = 'STUDIO'
+    scene.display.shading.color_type = 'TEXTURE'
+    scene.render.resolution_x = 640
+    scene.render.resolution_y = 640
+    scene.render.image_settings.file_format = 'PNG'
+
+    cam_data = bpy.data.cameras.get("HandCam") or bpy.data.cameras.new("HandCam")
+    cam_data.lens = 50.0
+    cam_obj = bpy.data.objects.get("HandCam") or bpy.data.objects.new("HandCam", cam_data)
+    if cam_obj.name not in scene.collection.objects:
+        scene.collection.objects.link(cam_obj)
+    scene.camera = cam_obj
+
+    weight_class = config.get("weight_class") or get_weight_class(config.get("weight_kg", 92.0))
+    hp_hit_frame = 1 + WEIGHT_CLASS_FRAMEDATA[weight_class]["HeavyPunch"][0] + 1
+
+    checks = [
+        ("Idle", 1, "Left", Vector((-0.24, -0.26, 0.10))),
+        ("Idle", 1, "Right", Vector((-0.24, -0.26, 0.10))),
+        ("HeavyPunch", hp_hit_frame, "Right", Vector((0.20, -0.24, -0.10))),
+        ("BlockStand", 20, "Left", Vector((-0.24, -0.26, 0.08))),
+    ]
+
+    arm_obj.data.pose_position = 'POSE'
+    paths = {}
+    prefix = config["name"]
+    for act_name, frame, side, cam_offset in checks:
+        arm_obj.animation_data.action = bpy.data.actions[act_name]
+        scene.frame_set(frame)
+        bpy.context.view_layer.update()
+
+        pb_hand = arm_obj.pose.bones[f"{side}Hand"]
+        pb_mid = arm_obj.pose.bones[f"{side}MiddleProximal"]
+        target = (arm_obj.matrix_world @ pb_hand.head).lerp(arm_obj.matrix_world @ pb_mid.tail, 0.55)
+
+        cam_obj.location = target + cam_offset
+        direction = target - cam_obj.location
+        cam_obj.rotation_euler = direction.to_track_quat('-Z', 'Y').to_euler()
+
+        key = f"{act_name}_{side}"
+        out_path = os.path.join(out_dir, f"hand_{prefix}_{key}.png")
+        scene.render.filepath = out_path
+        bpy.ops.render.render(write_still=True)
+        paths[key] = out_path
+
+    arm_obj.animation_data.action = None
+    reset_pose(arm_obj)
+    bpy.context.view_layer.update()
+    return paths
+
+
+def run_animations_and_export(char_name="Lucas", render_dir=None, render_hands_dir=None):
     config = CHARACTER_CONFIGS[char_name]
     arm_obj = bpy.data.objects[config["armature_name"]]
     generate_all_animations(arm_obj, config)
     write_frame_data_doc(config)
     if render_dir:
         render_style_poses(arm_obj, config, render_dir)
+    if render_hands_dir:
+        render_hand_closeups(arm_obj, config, render_hands_dir)
     bpy.ops.wm.save_as_mainfile(filepath=config["work_blend"])
     export_character_fbx(config)
