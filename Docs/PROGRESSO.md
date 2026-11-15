@@ -26,5 +26,6 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 - [x] Fase 9.1 - Rig de dedos 52 ossos Humanoid e punhos fechados (Lucas e Tiago)
 - [x] Fase 10 - Lutadores leves Jompes (1,65 m / 70 kg, TechnicalStriker) e Rochard (1,75 m / 67 kg, AgileStriker) com 52 ossos e 60 fps
 - [x] Fase 11 - Pes plantados no chao, chain combos, barra de especial e golpe especial
+- [x] Fase 11.1 - Correcao da postura e centro de gravidade dos 4 lutadores
 
 - Decisao: animacoes em 60 fps (1 frame anim = 1 tick de simulacao)
