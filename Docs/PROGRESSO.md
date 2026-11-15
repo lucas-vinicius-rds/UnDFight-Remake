@@ -15,7 +15,7 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 ## Fases
 - [x] Fase 0 - Organizacao do projeto, pacotes e docs
 - [x] Fase 1 - Blender: Lucas (limpeza, rig, 14 animacoes, FBX)
-- [ ] Fase 2 - Base Unity: camera 2.5D, movimento, FighterData, input
+- [x] Fase 2 - Base Unity: camera 2.5D, movimento, FighterData, input
 - [ ] Fase 3 - Importar Lucas no Unity + Animator
 - [ ] Fase 4 - Blender: Tiago (reuso do script)
 - [ ] Fase 5 - Combate: hitbox/hurtbox, vida, rounds, HUD

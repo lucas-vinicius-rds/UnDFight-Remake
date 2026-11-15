@@ -1,0 +1,24 @@
+namespace UnDFight
+{
+    public enum FighterState
+    {
+        Idle = 0,
+        WalkForward = 1,
+        WalkBackward = 2,
+        Jump = 3,
+        Crouch = 4,
+        Block = 5,
+        Attack = 6,
+        Hit = 7,
+        KnockDown = 8
+    }
+
+    public enum AttackType
+    {
+        None = 0,
+        LightPunch = 1,
+        HeavyPunch = 2,
+        LightKick = 3,
+        HeavyKick = 4
+    }
+}

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28ae1d8b8b5fc5d4f9e46675799d4ca7, type: 3}
+  m_Name: FighterData_Tiago
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.FighterData
+  fighterName: Tiago
+  prefab: {fileID: 0}
+  portrait: {fileID: 0}
+  heightMeters: 1.79
+  weightKg: 87
+  maxHealth: 1000
+  walkForwardSpeed: 4.2
+  walkBackwardSpeed: 3.2
+  jumpForce: 12.5
+  baseGravity: 34
+  crouchHeightRatio: 0.62
+  pushboxRadius: 0.36
