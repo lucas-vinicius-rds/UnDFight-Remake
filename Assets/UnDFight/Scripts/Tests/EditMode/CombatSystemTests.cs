@@ -512,5 +512,81 @@ namespace UnDFight.Tests
             Assert.AreNotEqual(FighterState.Attack, rig.P1.State);
             Assert.AreEqual(100, rig.P1.SuperGauge);
         }
+
+        [Test]
+        public void VisualTurn180_FlipsFacingImmediately_TurnsSmoothlyThroughFront_AndSnapsOnResetOrAttack()
+        {
+            var simGo = Track(new GameObject("Test_TurnSim"));
+            var sim = simGo.AddComponent<FightSimulation>();
+
+            var lucasData = CreateFighterData("Lucas", 1.81f, 92f, new FighterRig
+            {
+                LightPunch = Track(ScriptableObject.CreateInstance<MoveData>()),
+                HeavyPunch = Track(ScriptableObject.CreateInstance<MoveData>()),
+                LightKick = Track(ScriptableObject.CreateInstance<MoveData>()),
+                HeavyKick = Track(ScriptableObject.CreateInstance<MoveData>()),
+                Special = Track(ScriptableObject.CreateInstance<MoveData>()),
+            });
+            lucasData.lightPunch.Configure("LP", AttackType.LightPunch, 4, 3, 9, 50, 12, 8, 4, 1.4f, HitHeight.Mid, false, new Vector2(0.68f, 1.18f), new Vector2(0.78f, 0.42f));
+
+            var p1Go = Track(new GameObject("Test_TurnP1"));
+            p1Go.transform.position = new Vector3(-1f, 0f, 0f);
+            var p1Vis = Track(new GameObject("Visual"));
+            p1Vis.transform.SetParent(p1Go.transform, false);
+            p1Go.AddComponent<PlayerInputHandler>();
+            var p1 = p1Go.AddComponent<FighterController>();
+            p1.SetFighterData(lucasData);
+
+            var p2Go = Track(new GameObject("Test_TurnP2"));
+            p2Go.transform.position = new Vector3(1f, 0f, 0f);
+            var p2Vis = Track(new GameObject("Visual"));
+            p2Vis.transform.SetParent(p2Go.transform, false);
+            p2Go.AddComponent<PlayerInputHandler>();
+            var p2 = p2Go.AddComponent<FighterController>();
+            p2.SetFighterData(lucasData);
+
+            sim.SetParticipants(p1, p2);
+            p1.InputHandler.SetSimulatedInput(default, true);
+            p2.InputHandler.SetSimulatedInput(default, true);
+
+            // Round init snapped P1 facing +1 (yaw = +90 deg)
+            Assert.AreEqual(1, p1.FacingSign);
+            Assert.AreEqual(90f, p1.VisualYaw, 0.01f);
+            Assert.Less(Mathf.Abs(Mathf.DeltaAngle(p1Vis.transform.localEulerAngles.y, 90f)), 0.05f);
+
+            // Side-swap: P1 crosses past P2 (to x=2.0, right of P2 at x=1.0) so UpdateFacing flips P1 to -1
+            p1.SetSimPositionX(2.0f);
+            sim.StepSimulationTicks(1);
+            Assert.AreEqual(-1, p1.FacingSign, "Logical FacingSign must flip immediately with zero input delay");
+            Assert.IsTrue(p1.IsTurnAnimActive, "Turn180 animation flag should activate while grounded & Idle");
+
+            // At tick 4 of the 8-tick turn, visual yaw must pass through ~180 deg (chest/face toward camera), never 0 deg (back)
+            sim.StepSimulationTicks(4);
+            Assert.Less(Mathf.Abs(Mathf.DeltaAngle(p1.VisualYaw, 180f)), 10f, "Mid-turn visual yaw should cross 180 deg (facing camera)");
+            Assert.Less(Mathf.Abs(Mathf.DeltaAngle(p1Vis.transform.localEulerAngles.y, 180f)), 10f);
+            Assert.Greater(Mathf.Abs(Mathf.DeltaAngle(p1Vis.transform.localEulerAngles.y, 0f)), 165f);
+
+            // After full 8+ ticks, visual yaw reaches 270 deg (-90 deg) and turn ends
+            sim.StepSimulationTicks(6);
+            Assert.AreEqual(270f, p1.VisualYaw, 0.01f);
+            Assert.Less(Mathf.Abs(Mathf.DeltaAngle(p1Vis.transform.localEulerAngles.y, 270f)), 0.05f);
+            Assert.IsFalse(p1.IsTurnAnimActive);
+
+            // Attack during an active turn must snap yaw immediately without delaying attack startup
+            p1.SetSimPositionX(0.0f);
+            sim.StepSimulationTicks(2);
+            Assert.AreEqual(1, p1.FacingSign);
+            Assert.Greater(p1.VisualYaw, 95f);
+            p1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            sim.StepSimulationTicks(1);
+            Assert.AreEqual(FighterState.Attack, p1.State);
+            Assert.AreEqual(90f, p1.VisualYaw, 0.01f);
+            Assert.IsFalse(p1.IsTurnAnimActive);
+
+            // ResetForRound must snap immediately without triggering turn animation
+            p1.ResetForRound(-2.2f, 1);
+            Assert.AreEqual(90f, p1.VisualYaw, 0.01f);
+            Assert.IsFalse(p1.IsTurnAnimActive);
+        }
     }
 }

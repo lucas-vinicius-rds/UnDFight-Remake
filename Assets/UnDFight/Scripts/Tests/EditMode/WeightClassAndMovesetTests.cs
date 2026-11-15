@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEngine;
 
 namespace UnDFight.Tests
@@ -160,7 +161,11 @@ namespace UnDFight.Tests
                 }
             }
 
-            Assert.AreEqual(16, clips.Count, $"Expected 16 clips in {fbxPath}");
+            Assert.AreEqual(17, clips.Count, $"Expected 17 clips in {fbxPath}");
+            Assert.IsTrue(clips.TryGetValue("Turn180", out AnimationClip turnClip), $"Missing Turn180 clip in {fbxPath}");
+            Assert.IsFalse(turnClip.isLooping, $"{fbxPath} Turn180 must not loop");
+            Assert.AreEqual(60, Mathf.RoundToInt(turnClip.frameRate), $"Turn180 clip must be 60 fps in {fbxPath}");
+            Assert.AreEqual(8, Mathf.RoundToInt(turnClip.length * 60f), $"Turn180 clip must be 8 frames in {fbxPath}");
 
             foreach (AttackType attackType in new[]
                      { AttackType.LightPunch, AttackType.HeavyPunch, AttackType.LightKick, AttackType.HeavyKick, AttackType.Special })
@@ -242,6 +247,53 @@ namespace UnDFight.Tests
 
             damageDealt = p2.MaxHealth - p2.CurrentHealth;
             knockbackDistance = p2.SimPosition.x - defStartX;
+        }
+
+        [Test]
+        public void AnimatorController_ContainsTurn180StateAndCancelTransitions()
+        {
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>("Assets/UnDFight/Art/Animations/AC_Fighter.controller");
+            Assert.IsNotNull(controller, "AC_Fighter.controller missing");
+
+            bool hasIsTurning = false;
+            foreach (var p in controller.parameters)
+            {
+                if (p.name == "IsTurning" && p.type == AnimatorControllerParameterType.Bool)
+                {
+                    hasIsTurning = true;
+                    break;
+                }
+            }
+            Assert.IsTrue(hasIsTurning, "AC_Fighter must expose Bool parameter 'IsTurning'");
+
+            AnimatorStateMachine sm = controller.layers[0].stateMachine;
+            AnimatorState turnState = null;
+            foreach (var cs in sm.states)
+            {
+                if (cs.state.name == "Turn180")
+                {
+                    turnState = cs.state;
+                    break;
+                }
+            }
+            Assert.IsNotNull(turnState, "AC_Fighter must contain Turn180 state");
+            Assert.IsNotNull(turnState.motion, "Turn180 state must have an AnimationClip assigned");
+            Assert.IsTrue(turnState.writeDefaultValues, "Turn180 state must keep writeDefaultValues=true");
+
+            var transitionTargets = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var tr in turnState.transitions)
+            {
+                if (tr.destinationState != null)
+                {
+                    transitionTargets.Add(tr.destinationState.name);
+                }
+            }
+
+            foreach (string requiredTarget in new[]
+                     { "Idle", "WalkForward", "WalkBackward", "Crouch", "Jump", "Block", "HitReact", "KnockDown", "GetUp", "Victory", "Defeat" })
+            {
+                Assert.IsTrue(transitionTargets.Contains(requiredTarget), $"Turn180 missing exit transition to {requiredTarget}");
+            }
         }
     }
 }

@@ -31,13 +31,17 @@ namespace UnDFight
         [SerializeField] private Animator fighterAnimator;
         [SerializeField] private bool squashVisualOnCrouch = false;
 
+        private const float TurnDurationSeconds = 8f / 60f;
+
         private static readonly int StateParamHash = Animator.StringToHash("State");
         private static readonly int AttackTypeParamHash = Animator.StringToHash("AttackType");
         private static readonly int AttackTriggerParamHash = Animator.StringToHash("AttackTrigger");
         private static readonly int IsGroundedParamHash = Animator.StringToHash("IsGrounded");
+        private static readonly int IsTurningParamHash = Animator.StringToHash("IsTurning");
         private static readonly int HitReactStateHash = Animator.StringToHash("HitReact");
         private static readonly int BlockStateHash = Animator.StringToHash("Block");
         private static readonly int IdleStateHash = Animator.StringToHash("Idle");
+        private static readonly int Turn180StateHash = Animator.StringToHash("Turn180");
 
         private FightSimulation _simulation;
         private PlayerInputHandler _inputHandler;
@@ -66,6 +70,13 @@ namespace UnDFight
         private bool _grantedStartSuperOnCurrentMove;
         private float _baseHurtboxHeight = 1.81f;
         private float _baseHurtboxCenterY = 0.905f;
+        private float _visualYaw = 90f;
+        private float _prevVisualYaw = 90f;
+        private float _turnStartYaw = 90f;
+        private float _turnTargetYaw = 90f;
+        private float _turnElapsed = TurnDurationSeconds;
+        private bool _isTurnAnimActive;
+        private FighterState _turnStartState;
 
         public FighterData Data => fighterData;
         public FighterState State => _state;
@@ -76,6 +87,8 @@ namespace UnDFight
         public Vector2 SimPosition => _currSimPos;
         public Vector2 SimVelocity => _simVelocity;
         public int FacingSign => _facingSign;
+        public float VisualYaw => _visualYaw;
+        public bool IsTurnAnimActive => _isTurnAnimActive;
         public bool IsGrounded => _isGrounded;
         public int CurrentHealth => _currentHealth;
         public int MaxHealth => fighterData != null ? fighterData.maxHealth : 1000;
@@ -149,6 +162,10 @@ namespace UnDFight
         public void InitializeSimulation(FightSimulation simulation, int playerIndex)
         {
             _simulation = simulation;
+            if (visualRoot == null && transform.childCount > 0)
+            {
+                visualRoot = transform.GetChild(0);
+            }
             if (_inputHandler == null)
             {
                 _inputHandler = GetComponent<PlayerInputHandler>();
@@ -177,6 +194,7 @@ namespace UnDFight
             _grantedStartSuperOnCurrentMove = false;
             SetupAnimatorForFixedTick();
             ApplyFighterDataScaling();
+            SnapVisualYaw();
             StepAnimatorTick(0f);
         }
 
@@ -208,6 +226,7 @@ namespace UnDFight
 
             transform.position = new Vector3(_currSimPos.x, _currSimPos.y, 0f);
             UpdateHurtboxDimensions();
+            SnapVisualYaw();
 
             if (fighterAnimator != null && fighterAnimator.runtimeAnimatorController != null)
             {
@@ -241,6 +260,7 @@ namespace UnDFight
         public void HoldVisualForHitstop()
         {
             _prevSimPos = _currSimPos;
+            _prevVisualYaw = _visualYaw;
         }
 
         /// <summary>
@@ -276,8 +296,7 @@ namespace UnDFight
             float modelScale = fighterData.VisualScale;
             if (visualRoot != null)
             {
-                float signX = _facingSign >= 0 ? 1f : -1f;
-                visualRoot.localScale = new Vector3(modelScale * signX, modelScale, modelScale);
+                visualRoot.localScale = new Vector3(modelScale, modelScale, modelScale);
             }
 
             if (hurtboxCollider != null)
@@ -291,9 +310,52 @@ namespace UnDFight
             }
         }
 
-        public void SetFacing(int sign)
+        public void SetFacing(int sign) => SetFacing(sign, false);
+
+        /// <summary>
+        /// Flips logical facing immediately and either snaps visual yaw (round init)
+        /// or triggers a smooth 8-tick 180-degree front-facing visual pivot.
+        /// </summary>
+        public void SetFacing(int sign, bool immediate)
         {
-            _facingSign = sign >= 0 ? 1 : -1;
+            int newSign = sign >= 0 ? 1 : -1;
+            bool changed = newSign != _facingSign;
+            _facingSign = newSign;
+
+            if (immediate)
+            {
+                SnapVisualYaw();
+                return;
+            }
+
+            if (!changed)
+            {
+                return;
+            }
+
+            _turnStartYaw = _visualYaw;
+            _turnTargetYaw = GetTargetYawForFacing(_facingSign);
+            _turnElapsed = 0f;
+
+            bool canPlayTurnAnim = _isGrounded &&
+                                   (_state == FighterState.Idle ||
+                                    _state == FighterState.WalkForward ||
+                                    _state == FighterState.WalkBackward ||
+                                    _state == FighterState.Crouch);
+            if (canPlayTurnAnim)
+            {
+                _turnStartState = _state;
+                _isTurnAnimActive = true;
+                if (fighterAnimator != null && fighterAnimator.runtimeAnimatorController != null)
+                {
+                    fighterAnimator.SetBool(IsTurningParamHash, true);
+                    fighterAnimator.CrossFadeInFixedTime(Turn180StateHash, 0.02f, 0, 0f);
+                }
+            }
+            else if (ShouldSnapVisualTurnForState(_state))
+            {
+                SnapVisualYaw();
+            }
         }
 
         public void SetSimPositionX(float x)
@@ -538,6 +600,7 @@ namespace UnDFight
         public void StepTick(int tick, float dt)
         {
             _prevSimPos = _currSimPos;
+            AdvanceVisualTurn(dt);
             _inputHandler?.SyncSimulationTick(tick);
             FighterInputState input = _inputHandler != null ? _inputHandler.CurrentInput : default;
 
@@ -810,6 +873,15 @@ namespace UnDFight
             _state = newState;
             _stateTicks = 0;
 
+            if (ShouldSnapVisualTurnForState(newState))
+            {
+                SnapVisualYaw();
+            }
+            else if (_isTurnAnimActive && newState != _turnStartState)
+            {
+                _isTurnAnimActive = false;
+            }
+
             if (newState == FighterState.Idle || newState == FighterState.Block || newState == FighterState.GetUp)
             {
                 _receivedComboHits = 0;
@@ -834,6 +906,64 @@ namespace UnDFight
             }
         }
 
+        private static bool ShouldSnapVisualTurnForState(FighterState state)
+        {
+            return state == FighterState.Attack ||
+                   state == FighterState.Hit ||
+                   state == FighterState.Block ||
+                   state == FighterState.KnockDown ||
+                   state == FighterState.GetUp ||
+                   state == FighterState.Victory ||
+                   state == FighterState.Defeat;
+        }
+
+        private static float GetTargetYawForFacing(int facingSign)
+        {
+            return facingSign >= 0 ? 90f : 270f;
+        }
+
+        private void SnapVisualYaw()
+        {
+            float targetYaw = GetTargetYawForFacing(_facingSign);
+            _visualYaw = targetYaw;
+            _prevVisualYaw = targetYaw;
+            _turnStartYaw = targetYaw;
+            _turnTargetYaw = targetYaw;
+            _turnElapsed = TurnDurationSeconds;
+            _isTurnAnimActive = false;
+            ApplyVisualYawToRoot(_visualYaw);
+        }
+
+        private void AdvanceVisualTurn(float dt)
+        {
+            _prevVisualYaw = _visualYaw;
+            if (_turnElapsed < TurnDurationSeconds)
+            {
+                _turnElapsed = Mathf.Min(TurnDurationSeconds, _turnElapsed + dt);
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(_turnElapsed / TurnDurationSeconds));
+                // Interpolating linearly in [90, 270] always passes through 180 deg (chest/face toward camera), never 0 deg (back).
+                _visualYaw = Mathf.Lerp(_turnStartYaw, _turnTargetYaw, t);
+                if (_turnElapsed >= TurnDurationSeconds)
+                {
+                    _isTurnAnimActive = false;
+                }
+            }
+            else
+            {
+                _visualYaw = _turnTargetYaw;
+                _isTurnAnimActive = false;
+            }
+            ApplyVisualYawToRoot(_visualYaw);
+        }
+
+        private void ApplyVisualYawToRoot(float yaw)
+        {
+            if (visualRoot != null)
+            {
+                visualRoot.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            }
+        }
+
         private void StepAnimatorTick(float dt)
         {
             if (fighterAnimator == null || fighterAnimator.runtimeAnimatorController == null)
@@ -844,6 +974,7 @@ namespace UnDFight
             fighterAnimator.SetInteger(StateParamHash, (int)_state);
             fighterAnimator.SetInteger(AttackTypeParamHash, (int)_currentAttack);
             fighterAnimator.SetBool(IsGroundedParamHash, _isGrounded);
+            fighterAnimator.SetBool(IsTurningParamHash, _isTurnAnimActive);
             fighterAnimator.Update(dt);
         }
 
@@ -891,8 +1022,8 @@ namespace UnDFight
 
             if (visualRoot != null)
             {
-                float targetYaw = _facingSign >= 0 ? 90f : -90f;
-                visualRoot.localRotation = Quaternion.Euler(0f, targetYaw, 0f);
+                float yaw = Mathf.Lerp(_prevVisualYaw, _visualYaw, alpha);
+                ApplyVisualYawToRoot(yaw);
             }
         }
     }

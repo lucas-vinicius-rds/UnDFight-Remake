@@ -34,3 +34,4 @@
 | **GetUp** | 40 (1–41) | 0,667 s | Não | Não | Levantamento a partir do chão até `Idle` |
 | **Victory** | 60 (1–61) | 1,000 s | Não | Não | Comemoração descontraída de rua erguendo o braço e mantendo a pose até o último frame |
 | **Defeat** | 50 (1–51) | 0,833 s | Não | Não | Queda de joelhos e colapso final no chão |
+| **Turn180** | 8 (1–9) | 0,133 s | Não | Não | Pivô de troca de lado em pé: flexão leve nos joelhos, giro de tronco/cabeça, passo curto e retorno ao `Idle` |

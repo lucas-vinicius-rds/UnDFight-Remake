@@ -71,7 +71,7 @@ namespace UnDFight.Editor
         {
             "Idle", "WalkForward", "WalkBackward", "Jump", "Crouch", "BlockStand",
             "LightPunch", "HeavyPunch", "LightKick", "HeavyKick", "Special",
-            "HitReact", "KnockDown", "GetUp", "Victory", "Defeat"
+            "HitReact", "KnockDown", "GetUp", "Victory", "Defeat", "Turn180"
         };
 
         public static MoveSpec[] GetWeightClassPresetSpecs(WeightClass weightClass)
@@ -476,7 +476,152 @@ namespace UnDFight.Editor
                 }
             }
 
+            EnsureTurn180StateAndTransitions(controller, sm, idleState);
+
             EditorUtility.SetDirty(controller);
+        }
+
+        private static void EnsureTurn180StateAndTransitions(
+            AnimatorController controller,
+            AnimatorStateMachine sm,
+            AnimatorState idleState)
+        {
+            const string isTurningParam = "IsTurning";
+            bool hasIsTurningParam = false;
+            foreach (AnimatorControllerParameter p in controller.parameters)
+            {
+                if (string.Equals(p.name, isTurningParam, StringComparison.Ordinal))
+                {
+                    hasIsTurningParam = true;
+                    break;
+                }
+            }
+            if (!hasIsTurningParam)
+            {
+                controller.AddParameter(new AnimatorControllerParameter
+                {
+                    name = isTurningParam,
+                    type = AnimatorControllerParameterType.Bool,
+                    defaultBool = false
+                });
+            }
+
+            // Guard AnyState grounded-locomotion transitions on IsTurning == false so Turn180 is not immediately aborted
+            var guardedAnyTargets = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "Idle", "WalkForward", "WalkBackward", "Crouch"
+            };
+            foreach (AnimatorStateTransition tr in sm.anyStateTransitions)
+            {
+                if (tr.destinationState == null || !guardedAnyTargets.Contains(tr.destinationState.name))
+                {
+                    continue;
+                }
+                bool hasGuard = false;
+                foreach (AnimatorCondition cond in tr.conditions)
+                {
+                    if (string.Equals(cond.parameter, isTurningParam, StringComparison.Ordinal))
+                    {
+                        hasGuard = true;
+                        break;
+                    }
+                }
+                if (!hasGuard)
+                {
+                    tr.AddCondition(AnimatorConditionMode.IfNot, 0f, isTurningParam);
+                }
+            }
+
+            AnimatorState turnState = FindState(sm, "Turn180");
+            if (turnState == null)
+            {
+                turnState = sm.AddState("Turn180", new Vector3(480f, -120f, 0f));
+            }
+
+            AnimationClip turnBaseClip = null;
+            foreach (UnityEngine.Object obj in AssetDatabase.LoadAllAssetsAtPath(LucasFbxPath))
+            {
+                if (obj is AnimationClip clip && string.Equals(clip.name, "Turn180", StringComparison.Ordinal))
+                {
+                    turnBaseClip = clip;
+                    break;
+                }
+            }
+            if (turnBaseClip != null)
+            {
+                turnState.motion = turnBaseClip;
+            }
+            turnState.writeDefaultValues = true;
+
+            // Natural completion back to Idle
+            bool hasIdleExitTime = false;
+            foreach (AnimatorStateTransition tr in turnState.transitions)
+            {
+                if (tr.destinationState == idleState && tr.hasExitTime && tr.conditions.Length == 0)
+                {
+                    tr.exitTime = 1f;
+                    tr.duration = 0.04f;
+                    tr.hasFixedDuration = true;
+                    hasIdleExitTime = true;
+                    break;
+                }
+            }
+            if (!hasIdleExitTime)
+            {
+                AnimatorStateTransition tr = turnState.AddTransition(idleState);
+                tr.hasExitTime = true;
+                tr.exitTime = 1f;
+                tr.duration = 0.04f;
+                tr.hasFixedDuration = true;
+            }
+
+            // Immediate exits (duration 0.04s) for locomotion & action states
+            (string stateName, FighterState fState, bool requireTurnEnd)[] cancelExits =
+            {
+                ("Idle", FighterState.Idle, true),
+                ("WalkForward", FighterState.WalkForward, true),
+                ("WalkBackward", FighterState.WalkBackward, true),
+                ("Crouch", FighterState.Crouch, true),
+                ("Jump", FighterState.Jump, false),
+                ("Block", FighterState.Block, false),
+                ("HitReact", FighterState.Hit, false),
+                ("KnockDown", FighterState.KnockDown, false),
+                ("GetUp", FighterState.GetUp, false),
+                ("Victory", FighterState.Victory, false),
+                ("Defeat", FighterState.Defeat, false),
+            };
+
+            foreach (var (dstName, fState, requireTurnEnd) in cancelExits)
+            {
+                AnimatorState dst = FindState(sm, dstName);
+                if (dst == null) continue;
+
+                AnimatorStateTransition existing = null;
+                foreach (AnimatorStateTransition tr in turnState.transitions)
+                {
+                    if (tr.destinationState != dst || tr.hasExitTime) continue;
+                    existing = tr;
+                    break;
+                }
+                if (existing == null)
+                {
+                    existing = turnState.AddTransition(dst);
+                }
+
+                existing.hasExitTime = false;
+                existing.duration = 0.04f;
+                existing.hasFixedDuration = true;
+                existing.conditions = requireTurnEnd
+                    ? new[]
+                    {
+                        new AnimatorCondition { mode = AnimatorConditionMode.Equals, parameter = "State", threshold = (int)fState },
+                        new AnimatorCondition { mode = AnimatorConditionMode.IfNot, parameter = isTurningParam, threshold = 0f },
+                    }
+                    : new[]
+                    {
+                        new AnimatorCondition { mode = AnimatorConditionMode.Equals, parameter = "State", threshold = (int)fState },
+                    };
+            }
         }
 
         private static AnimatorState FindState(AnimatorStateMachine sm, string name)

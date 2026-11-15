@@ -471,11 +471,11 @@ namespace UnDFight
 
             if (force || fighter1.IsGrounded)
             {
-                fighter1.SetFacing(p1Facing);
+                fighter1.SetFacing(p1Facing, force);
             }
             if (force || fighter2.IsGrounded)
             {
-                fighter2.SetFacing(p2Facing);
+                fighter2.SetFacing(p2Facing, force);
             }
         }
     }

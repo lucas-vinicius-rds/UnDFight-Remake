@@ -1929,6 +1929,53 @@ def build_common_actions(idle0):
     })
     anims["Defeat"] = {1: idle0, 18: def_knees, 36: def_knees, 51: kd_ground}
 
+    # Turn180 (8 frames: quick planted foot-pivot turn for 180-deg cross-up side swap)
+    base_hz = idle0.get("HipsOffset", (0.0, 0.0, 0.0))[2]
+    hips_rz = idle0.get("Hips", (0.0, 0.0, 22.0))[2]
+    turn_start = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, base_hz - 0.018),
+        "Hips":          (1.5, 0.0, hips_rz - 14.0),
+        "Spine":         (2.5, 0.0, 0.0),
+        "Chest":         (2.0, 0.0, -4.0),
+        "Neck":          (-2.5, 0.0, -14.0),
+        "Head":          (-2.0, 0.0, -16.0),
+        "LeftUpperLeg":  (-31.0, -5.0, 5.0),
+        "LeftLowerLeg":  (16.0, 0.0, 0.0),
+        "LeftFoot":      (15.0, 0.0, 0.0),
+        "RightUpperLeg": (-2.0, 5.0, -5.0),
+        "RightLowerLeg": (24.0, 0.0, 0.0),
+        "RightFoot":     (-18.0, 0.0, 0.0),
+    })
+    turn_mid = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, base_hz - 0.025),
+        "Hips":          (2.0, 0.0, hips_rz - 22.0),
+        "Spine":         (3.5, 0.0, -6.0),
+        "Chest":         (2.5, 0.0, -6.0),
+        "Neck":          (-3.0, 0.0, -22.0),
+        "Head":          (-2.5, 0.0, -22.0),
+        "LeftUpperLeg":  (-32.0, -4.0, 4.0),
+        "LeftLowerLeg":  (18.0, 0.0, 0.0),
+        "LeftFoot":      (14.0, 0.0, 0.0),
+        "RightUpperLeg": (-24.0, 4.0, -4.0),
+        "RightLowerLeg": (44.0, 0.0, 0.0),
+        "RightFoot":     (-12.0, 0.0, 0.0),
+    })
+    turn_end = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, base_hz - 0.012),
+        "Hips":          (1.5, 0.0, hips_rz - 8.0),
+        "Spine":         (2.5, 0.0, 0.0),
+        "Chest":         (2.0, 0.0, 0.0),
+        "Neck":          (-2.5, 0.0, -12.0),
+        "Head":          (-2.0, 0.0, -12.0),
+        "LeftUpperLeg":  (-30.0, -5.0, 5.0),
+        "LeftLowerLeg":  (13.0, 0.0, 0.0),
+        "LeftFoot":      (17.0, 0.0, 0.0),
+        "RightUpperLeg": (0.0, 5.0, -5.0),
+        "RightLowerLeg": (22.0, 0.0, 0.0),
+        "RightFoot":     (-20.0, 0.0, 0.0),
+    })
+    anims["Turn180"] = {1: idle0, 3: turn_start, 5: turn_mid, 7: turn_end, 9: idle0}
+
     return anims
 
 
@@ -1953,6 +2000,8 @@ def _get_clip_ground_modes(clip_name, style, keyframes):
         return {1: "min", 18: "min", 32: "both", 41: "both"}
     if clip_name == "Defeat":
         return {1: "both", 18: "min", 36: "min", 51: "min"}
+    if clip_name == "Turn180":
+        return {1: "both", 3: "both", 5: "min", 7: "both", 9: "both"}
     return {}
 
 
@@ -1985,6 +2034,7 @@ def verify_and_report_grounding(arm_obj, mesh_obj, foot_vdata, name, framedata):
         ("BlockStand", 20),
         ("Crouch", 20),
         ("Victory", 50),
+        ("Turn180", 5),
         ("HeavyPunch", hp_hit_f),
         ("HeavyKick", hk_hit_f),
         ("Special", sp_hit_f),
@@ -2051,7 +2101,7 @@ def generate_all_animations(arm_obj, config=None):
     ordered_names = [
         "Idle", "WalkForward", "WalkBackward", "Jump", "Crouch", "BlockStand",
         "LightPunch", "HeavyPunch", "LightKick", "HeavyKick", "Special",
-        "HitReact", "KnockDown", "GetUp", "Victory", "Defeat",
+        "HitReact", "KnockDown", "GetUp", "Victory", "Defeat", "Turn180",
     ]
     for name in ordered_names:
         kf = animations[name]
@@ -3074,6 +3124,7 @@ def write_frame_data_doc(config):
         "| **GetUp** | 40 (1–41) | 0,667 s | Não | Não | Levantamento a partir do chão até `Idle` |",
         f"| **Victory** | 60 (1–61) | 1,000 s | Não | Não | {style_notes['Victory']} |",
         "| **Defeat** | 50 (1–51) | 0,833 s | Não | Não | Queda de joelhos e colapso final no chão |",
+        "| **Turn180** | 8 (1–9) | 0,133 s | Não | Não | Pivô de troca de lado em pé: flexão leve nos joelhos, giro de tronco/cabeça, passo curto e retorno ao `Idle` |",
     ]
     os.makedirs(os.path.dirname(doc_path), exist_ok=True)
     with open(doc_path, "w", encoding="utf-8") as f:
