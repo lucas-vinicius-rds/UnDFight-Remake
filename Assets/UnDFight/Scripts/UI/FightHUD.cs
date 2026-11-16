@@ -9,9 +9,18 @@ namespace UnDFight
     /// </summary>
     public class FightHUD : MonoBehaviour
     {
+        private sealed class StagePromptWidget
+        {
+            public RectTransform Root;
+            public UnityEngine.UI.Image Border;
+            public UnityEngine.UI.Image Background;
+            public TextMeshProUGUI Label;
+        }
+
         [Header("Simulation & Match")]
         [SerializeField] private FightSimulation simulation;
         [SerializeField] private MatchManager matchManager;
+        [SerializeField] private StageInteractableManager stageInteractableManager;
 
         [Header("P1 Widgets (Left)")]
         [SerializeField] private UnityEngine.UI.Image p1HealthFill;
@@ -66,6 +75,24 @@ namespace UnDFight
         private float _p1ComboTimer;
         private float _p2ComboTimer;
         private Sprite _fallbackWhiteSprite;
+        private StagePromptWidget _p1StagePrompt;
+        private StagePromptWidget _p2StagePrompt;
+        private readonly Color _p1PromptColor = new Color(1.0f, 0.78f, 0.16f, 1f);
+        private readonly Color _p2PromptColor = new Color(1.0f, 0.36f, 0.24f, 1f);
+
+        public void Configure(FightSimulation sim, MatchManager manager = null)
+        {
+            if (simulation != null) simulation.OnCombatHit -= HandleCombatHit;
+            simulation = sim;
+            matchManager = manager;
+            if (simulation != null && isActiveAndEnabled)
+            {
+                simulation.OnCombatHit += HandleCombatHit;
+            }
+            EnsureSuperAndComboWidgets();
+            EnsureStagePromptWidgets();
+            RefreshImmediate();
+        }
 
         public void Configure(
             FightSimulation sim,
@@ -116,7 +143,9 @@ namespace UnDFight
         {
             if (simulation == null) simulation = FindAnyObjectByType<FightSimulation>();
             if (matchManager == null) matchManager = FindAnyObjectByType<MatchManager>();
+            if (stageInteractableManager == null) stageInteractableManager = FindAnyObjectByType<StageInteractableManager>();
             EnsureSuperAndComboWidgets();
+            EnsureStagePromptWidgets();
         }
 
         private void OnEnable()
@@ -127,6 +156,7 @@ namespace UnDFight
                 simulation.OnCombatHit += HandleCombatHit;
             }
             EnsureSuperAndComboWidgets();
+            EnsureStagePromptWidgets();
             RefreshImmediate();
         }
 
@@ -144,6 +174,25 @@ namespace UnDFight
             UpdateFighterBars(dt);
             UpdateRoundAndTimerUI();
             UpdateCallouts(dt);
+            UpdateStageInteractionPrompts();
+        }
+
+        public bool IsStagePromptVisible(int playerIndex)
+        {
+            StagePromptWidget widget = playerIndex == 0 ? _p1StagePrompt : _p2StagePrompt;
+            return widget != null && widget.Root != null && widget.Root.gameObject.activeSelf;
+        }
+
+        public string GetStagePromptText(int playerIndex)
+        {
+            StagePromptWidget widget = playerIndex == 0 ? _p1StagePrompt : _p2StagePrompt;
+            return widget != null && widget.Label != null ? widget.Label.text : string.Empty;
+        }
+
+        public void RefreshStagePromptsNow()
+        {
+            EnsureStagePromptWidgets();
+            UpdateStageInteractionPrompts();
         }
 
         public void RefreshImmediate()
@@ -168,6 +217,7 @@ namespace UnDFight
             if (p2ComboText != null) p2ComboText.text = string.Empty;
             _p1ComboTimer = 0f;
             _p2ComboTimer = 0f;
+            UpdateStageInteractionPrompts();
         }
 
         private void HandleCombatHit(CombatHitEvent hit)
@@ -662,6 +712,184 @@ namespace UnDFight
                 return 1f;
             }
             return Mathf.Clamp01(fighter.CurrentHealth / (float)fighter.MaxHealth);
+        }
+
+        private void EnsureStagePromptWidgets()
+        {
+            Sprite barSprite = GetHudSprite();
+            TMP_FontAsset fontAsset = p1NameText != null ? p1NameText.font : (p2NameText != null ? p2NameText.font : null);
+
+            if (_p1StagePrompt == null)
+            {
+                _p1StagePrompt = CreateOrReusePromptWidget("StagePrompt_P1", _p1PromptColor, barSprite, fontAsset);
+            }
+            if (_p2StagePrompt == null)
+            {
+                _p2StagePrompt = CreateOrReusePromptWidget("StagePrompt_P2", _p2PromptColor, barSprite, fontAsset);
+            }
+        }
+
+        private StagePromptWidget CreateOrReusePromptWidget(string widgetName, Color accentColor, Sprite sprite, TMP_FontAsset fontAsset)
+        {
+            Transform existing = transform.Find(widgetName);
+            if (existing != null)
+            {
+                var existingBorder = existing.GetComponent<UnityEngine.UI.Image>();
+                Transform bgTr = existing.Find("Bg");
+                var existingBg = bgTr != null ? bgTr.GetComponent<UnityEngine.UI.Image>() : null;
+                Transform labelTr = bgTr != null ? bgTr.Find("Label") : existing.Find("Label");
+                var existingLabel = labelTr != null ? labelTr.GetComponent<TextMeshProUGUI>() : null;
+                return new StagePromptWidget
+                {
+                    Root = (RectTransform)existing,
+                    Border = existingBorder,
+                    Background = existingBg,
+                    Label = existingLabel
+                };
+            }
+
+            var rootGo = new GameObject(widgetName, typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            rootGo.transform.SetParent(transform, false);
+            var rootRt = (RectTransform)rootGo.transform;
+            rootRt.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRt.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRt.pivot = new Vector2(0.5f, 0.5f);
+            rootRt.sizeDelta = new Vector2(238f, 34f);
+
+            var borderImg = rootGo.GetComponent<UnityEngine.UI.Image>();
+            borderImg.sprite = sprite;
+            borderImg.color = accentColor;
+            borderImg.raycastTarget = false;
+
+            var bgGo = new GameObject("Bg", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            bgGo.transform.SetParent(rootGo.transform, false);
+            var bgRt = (RectTransform)bgGo.transform;
+            bgRt.anchorMin = Vector2.zero;
+            bgRt.anchorMax = Vector2.one;
+            bgRt.offsetMin = new Vector2(2f, 2f);
+            bgRt.offsetMax = new Vector2(-2f, -2f);
+
+            var bgImg = bgGo.GetComponent<UnityEngine.UI.Image>();
+            bgImg.sprite = sprite;
+            bgImg.color = new Color(0.06f, 0.07f, 0.10f, 0.90f);
+            bgImg.raycastTarget = false;
+
+            var labelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            labelGo.transform.SetParent(bgGo.transform, false);
+            var labelRt = (RectTransform)labelGo.transform;
+            labelRt.anchorMin = Vector2.zero;
+            labelRt.anchorMax = Vector2.one;
+            labelRt.offsetMin = new Vector2(6f, 2f);
+            labelRt.offsetMax = new Vector2(-6f, -2f);
+
+            var tmp = labelGo.GetComponent<TextMeshProUGUI>();
+            if (fontAsset != null) tmp.font = fontAsset;
+            tmp.fontSize = 14f;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.characterSpacing = 1.5f;
+            tmp.color = accentColor;
+            tmp.text = "[DEF + LP] ARREMESSAR";
+            tmp.raycastTarget = false;
+
+            rootGo.SetActive(false);
+
+            return new StagePromptWidget
+            {
+                Root = rootRt,
+                Border = borderImg,
+                Background = bgImg,
+                Label = tmp
+            };
+        }
+
+        private void UpdateStageInteractionPrompts()
+        {
+            if (_p1StagePrompt == null && _p2StagePrompt == null)
+            {
+                return;
+            }
+
+            if (simulation == null || (matchManager != null && !matchManager.InputsAllowed) || simulation.IsPaused)
+            {
+                SetPromptVisible(_p1StagePrompt, false);
+                SetPromptVisible(_p2StagePrompt, false);
+                return;
+            }
+
+            if (stageInteractableManager == null)
+            {
+                stageInteractableManager = FindAnyObjectByType<StageInteractableManager>();
+            }
+
+            StageThrowableProp p1Prop = FindPromptPropForFighter(simulation.Fighter1);
+            bool hideP2ForCpu = simulation.CpuAi != null && simulation.CpuAi.IsEnabled;
+            StageThrowableProp p2Prop = hideP2ForCpu ? null : FindPromptPropForFighter(simulation.Fighter2);
+
+            bool sameProp = p1Prop != null && p1Prop == p2Prop;
+            UpdateSinglePromptWidget(_p1StagePrompt, p1Prop, _p1PromptColor, isP1: true, extraOffsetY: sameProp ? 22f : 0f);
+            UpdateSinglePromptWidget(_p2StagePrompt, p2Prop, _p2PromptColor, isP1: false, extraOffsetY: sameProp ? -20f : 0f);
+        }
+
+        private StageThrowableProp FindPromptPropForFighter(FighterController fighter)
+        {
+            if (fighter == null || !fighter.CanAttemptStageInteract())
+            {
+                return null;
+            }
+
+            return stageInteractableManager != null
+                ? stageInteractableManager.FindNearestReadyThrowable(fighter)
+                : StageInteractableManager.FindNearestReadyThrowableInScene(fighter);
+        }
+
+        private void UpdateSinglePromptWidget(StagePromptWidget widget, StageThrowableProp prop, Color color, bool isP1, float extraOffsetY)
+        {
+            if (widget == null || widget.Root == null)
+            {
+                return;
+            }
+
+            if (prop == null)
+            {
+                SetPromptVisible(widget, false);
+                return;
+            }
+
+            SetPromptVisible(widget, true);
+            if (widget.Border != null) widget.Border.color = color;
+            if (widget.Label != null)
+            {
+                widget.Label.color = color;
+                widget.Label.text = $"[DEF + LP] {prop.PromptLabel.ToUpperInvariant()}";
+            }
+
+            Camera cam = Camera.main;
+            var canvasRt = transform as RectTransform;
+            if (cam != null && canvasRt != null)
+            {
+                Vector3 screenPos = cam.WorldToScreenPoint(prop.GetPromptWorldPosition());
+                if (screenPos.z > 0f && RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRt, screenPos, null, out Vector2 localPt))
+                {
+                    Rect rect = canvasRt.rect;
+                    float halfW = widget.Root.sizeDelta.x * 0.5f + 16f;
+                    float halfH = widget.Root.sizeDelta.y * 0.5f + 16f;
+                    float clampedX = Mathf.Clamp(localPt.x, rect.xMin + halfW, rect.xMax - halfW);
+                    float clampedY = Mathf.Clamp(localPt.y + 28f + extraOffsetY, rect.yMin + halfH, rect.yMax - 150f);
+                    widget.Root.anchoredPosition = new Vector2(clampedX, clampedY);
+                    return;
+                }
+            }
+
+            widget.Root.anchoredPosition = new Vector2(isP1 ? -260f : 260f, -150f + extraOffsetY);
+        }
+
+        private static void SetPromptVisible(StagePromptWidget widget, bool visible)
+        {
+            if (widget != null && widget.Root != null && widget.Root.gameObject.activeSelf != visible)
+            {
+                widget.Root.gameObject.SetActive(visible);
+            }
         }
     }
 }

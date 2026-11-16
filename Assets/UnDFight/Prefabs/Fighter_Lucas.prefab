@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 9195165139704075872}
   - component: {fileID: 3132993066650118835}
   - component: {fileID: 7207157870675071955}
+  - component: {fileID: 1412576956564876623}
   m_Layer: 10
   m_Name: Fighter_Lucas
   m_TagString: Untagged
@@ -91,6 +92,33 @@ MonoBehaviour:
   hurtboxCollider: {fileID: 9195165139704075872}
   fighterAnimator: {fileID: 235636703830371299}
   squashVisualOnCrouch: 0
+--- !u!54 &1412576956564876623
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6331032762305335928}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 3
 --- !u!1001 &5922149932346300018
 PrefabInstance:
   m_ObjectHideFlags: 0

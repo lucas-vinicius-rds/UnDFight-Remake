@@ -50,6 +50,8 @@ namespace UnDFight
         [SerializeField] private bool aiEnabled;
         [SerializeField] private int randomSeed = 1337;
         [SerializeField] private bool allowTrainingF2Toggle = true;
+        [SerializeField] private bool allowStagePropThrows = false;
+        [SerializeField, Range(0f, 1f)] private float stagePropThrowChance = 0.08f;
 
         private readonly List<ObservedSnapshot> _history = new List<ObservedSnapshot>(MaxObservationHistory);
         private System.Random _rng;
@@ -68,7 +70,13 @@ namespace UnDFight
         private int _attackCooldownTicks;
 
         public bool IsEnabled => aiEnabled;
+        public bool AllowStagePropThrows => allowStagePropThrows;
         public CpuDifficulty Difficulty => difficulty;
+
+        public void SetAllowStagePropThrows(bool enabled)
+        {
+            allowStagePropThrows = enabled;
+        }
         public DifficultyProfile ActiveProfile => _profile;
         public FighterController ControlledFighter => controlledFighter;
         public FighterController OpponentFighter => opponentFighter;
@@ -314,6 +322,22 @@ namespace UnDFight
 
             float absDx = Mathf.Abs(observed.OpponentSimX - controlledFighter.SimPosition.x);
             bool canAct = IsControlledActionable();
+
+            if (allowStagePropThrows &&
+                canAct &&
+                _attackCooldownTicks <= 0 &&
+                absDx > PointBlankRange &&
+                controlledFighter.GetInteractableStagePropInRange() != null &&
+                _rng.NextDouble() < stagePropThrowChance)
+            {
+                _plannedInput = new FighterInputState { HoldBlock = true, LastTickSampled = currentTick };
+                inputHandler.SetSimulatedInput(_plannedInput, true);
+                if (controlledFighter.TryUseNearestStageProp())
+                {
+                    _attackCooldownTicks = Mathf.Max(22, _profile.DecisionIntervalTicks * 3);
+                    return;
+                }
+            }
 
             // 0. Chain cancel follow-ups on hit during Medium & Hard difficulties
             if (controlledFighter.State == FighterState.Attack &&

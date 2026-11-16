@@ -162,7 +162,7 @@ MonoBehaviour:
   triggerRadiusX: 1.65
   maxZDistanceFromFightPlane: 1.85
   fightPlaneZ: 0
-  impactCooldownSeconds: 0.08
+  impactCooldownTicks: 2
   materialType: 1
   intactVisualRoot: {fileID: 4238802234734606920}
   intactCollider: {fileID: 4331041062021118500}

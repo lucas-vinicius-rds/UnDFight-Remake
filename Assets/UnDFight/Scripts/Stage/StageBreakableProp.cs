@@ -11,8 +11,6 @@ namespace UnDFight
     /// </summary>
     public class StageBreakableProp : StagePropBase
     {
-        private static Mesh s_sharedCubeMesh;
-
         [Header("Integrity & Combat Trigger")]
         [SerializeField, Min(1)] private int maxIntegrity = 2;
         [SerializeField, Min(0.2f)] private float triggerRadiusX = 1.55f;
@@ -41,8 +39,6 @@ namespace UnDFight
         [SerializeField, Min(1f)] private float trainingRespawnSeconds = 7.5f;
 
         private readonly List<StageDebrisFragment> _fragments = new List<StageDebrisFragment>();
-        private readonly List<Renderer> _cachedIntactRenderers = new List<Renderer>();
-        private readonly List<Collider> _cachedIntactColliders = new List<Collider>();
 
         private int _currentIntegrity;
         private bool _isBroken;
@@ -52,7 +48,6 @@ namespace UnDFight
         private float _wobbleTimer;
         private float _wobbleDir = 1f;
         private Quaternion _initialIntactLocalRot = Quaternion.identity;
-        private CombatVfxController _vfxController;
 
         public override bool IsBroken => _isBroken;
         public int CurrentIntegrity => _currentIntegrity;
@@ -77,8 +72,8 @@ namespace UnDFight
             }
 
             _currentIntegrity = Mathf.Max(1, maxIntegrity);
-            CacheIntactVisuals();
-            EnsureDebrisPool();
+            CacheIntactVisuals(intactVisualRoot, debrisPoolRoot, out _initialIntactLocalRot);
+            EnsureDebrisPoolFragments(intactVisualRoot, ref debrisPoolRoot, _fragments, generatedFragmentCount);
 
             for (int i = 0; i < _fragments.Count; i++)
             {
@@ -88,7 +83,7 @@ namespace UnDFight
                 }
             }
 
-            SetIntactVisible(true);
+            SetIntactVisualsVisible(intactVisualRoot, intactCollider, true);
             _initialized = true;
         }
 
@@ -200,7 +195,7 @@ namespace UnDFight
                 }
             }
 
-            SetIntactVisible(true);
+            SetIntactVisualsVisible(intactVisualRoot, intactCollider, true);
         }
 
         private void Update()
@@ -232,7 +227,7 @@ namespace UnDFight
             _wobbleTimer = 0.24f;
             _wobbleDir = dirSign;
 
-            Vector3 burstPos = GetWorldVisualCenter();
+            Vector3 burstPos = GetWorldVisualCenter(intactVisualRoot);
             CombatVfxController vfx = ResolveVfxController();
             if (vfx != null)
             {
@@ -255,36 +250,25 @@ namespace UnDFight
                 intactVisualRoot.transform.localRotation = _initialIntactLocalRot;
             }
 
-            SetIntactVisible(false);
+            SetIntactVisualsVisible(intactVisualRoot, intactCollider, false);
 
-            Vector3 worldCenter = GetWorldVisualCenter();
+            Vector3 worldCenter = GetWorldVisualCenter(intactVisualRoot);
             Vector3 explosionOrigin = new Vector3(
                 Mathf.Lerp(impactOrigin2D.x, worldCenter.x, 0.35f),
                 Mathf.Max(transform.position.y + 0.1f, worldCenter.y - 0.15f),
                 worldCenter.z - 0.15f);
-            Vector3 pushVec = new Vector3(pushDirX * directionalImpulse, upwardImpulse, UnityEngine.Random.Range(0.2f, 0.8f));
 
-            for (int i = 0; i < _fragments.Count; i++)
-            {
-                StageDebrisFragment frag = _fragments[i];
-                if (frag == null)
-                {
-                    continue;
-                }
-
-                Vector3 jitter = new Vector3(
-                    UnityEngine.Random.Range(-0.55f, 0.55f),
-                    UnityEngine.Random.Range(0.1f, 0.65f),
-                    UnityEngine.Random.Range(-0.45f, 0.65f));
-                frag.Launch(
-                    explosionOrigin,
-                    explosionForce,
-                    explosionRadius,
-                    pushVec + jitter,
-                    torqueStrength,
-                    fragmentFreezeSeconds,
-                    fragmentHideSeconds);
-            }
+            LaunchDebrisBurst(
+                _fragments,
+                explosionOrigin,
+                pushDirX,
+                explosionForce,
+                explosionRadius,
+                directionalImpulse,
+                upwardImpulse,
+                torqueStrength,
+                fragmentFreezeSeconds,
+                fragmentHideSeconds);
 
             CombatVfxController vfx = ResolveVfxController();
             if (vfx != null)
@@ -298,229 +282,6 @@ namespace UnDFight
             }
 
             OnPropBroken?.Invoke(this);
-        }
-
-        private void CacheIntactVisuals()
-        {
-            _cachedIntactRenderers.Clear();
-            _cachedIntactColliders.Clear();
-
-            if (intactVisualRoot != null)
-            {
-                _initialIntactLocalRot = intactVisualRoot.transform.localRotation;
-                return;
-            }
-
-            Transform poolTransform = debrisPoolRoot != null ? debrisPoolRoot : transform.Find("DebrisPool");
-            Renderer[] allRenderers = GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < allRenderers.Length; i++)
-            {
-                Renderer r = allRenderers[i];
-                if (r == null) continue;
-                if (poolTransform != null && r.transform.IsChildOf(poolTransform)) continue;
-                _cachedIntactRenderers.Add(r);
-            }
-
-            Collider[] allColliders = GetComponentsInChildren<Collider>(true);
-            for (int i = 0; i < allColliders.Length; i++)
-            {
-                Collider c = allColliders[i];
-                if (c == null) continue;
-                if (poolTransform != null && c.transform.IsChildOf(poolTransform)) continue;
-                _cachedIntactColliders.Add(c);
-            }
-        }
-
-        private void SetIntactVisible(bool visible)
-        {
-            if (intactVisualRoot != null)
-            {
-                intactVisualRoot.SetActive(visible);
-            }
-            else
-            {
-                for (int i = 0; i < _cachedIntactRenderers.Count; i++)
-                {
-                    if (_cachedIntactRenderers[i] != null)
-                    {
-                        _cachedIntactRenderers[i].enabled = visible;
-                    }
-                }
-
-                for (int i = 0; i < _cachedIntactColliders.Count; i++)
-                {
-                    if (_cachedIntactColliders[i] != null)
-                    {
-                        _cachedIntactColliders[i].enabled = visible;
-                    }
-                }
-            }
-
-            if (intactCollider != null)
-            {
-                intactCollider.enabled = visible;
-            }
-        }
-
-        private void EnsureDebrisPool()
-        {
-            _fragments.Clear();
-
-            if (debrisPoolRoot == null)
-            {
-                Transform existingPool = transform.Find("DebrisPool");
-                if (existingPool != null)
-                {
-                    debrisPoolRoot = existingPool;
-                }
-            }
-
-            if (debrisPoolRoot != null)
-            {
-                debrisPoolRoot.GetComponentsInChildren(true, _fragments);
-            }
-
-            if (_fragments.Count > 0)
-            {
-                for (int i = 0; i < _fragments.Count; i++)
-                {
-                    _fragments[i].EnsureComponents();
-                    _fragments[i].CacheInitialTransform();
-                }
-                return;
-            }
-
-            // Generic fallback pool so dragging this component onto any scene mesh works immediately
-            var poolGo = new GameObject("DebrisPool");
-            poolGo.transform.SetParent(transform, false);
-            debrisPoolRoot = poolGo.transform;
-
-            Bounds localBounds = ComputeIntactBoundsLocal(out Material primaryMat);
-            int count = Mathf.Clamp(generatedFragmentCount, 5, 8);
-            Mesh cubeMesh = GetSharedCubeMesh();
-
-            for (int i = 0; i < count; i++)
-            {
-                var shardGo = new GameObject($"Fragment_{i}");
-                shardGo.transform.SetParent(debrisPoolRoot, false);
-                shardGo.layer = StagePhysicsLayers.StageDebrisLayer;
-
-                float nx = ((i % 3) - 1) * 0.28f;
-                float ny = 0.25f + (i / 3) * 0.28f;
-                float nz = ((i % 2) == 0 ? -0.18f : 0.18f);
-                shardGo.transform.localPosition = new Vector3(
-                    localBounds.center.x + localBounds.size.x * nx,
-                    Mathf.Max(0.12f, localBounds.min.y + localBounds.size.y * ny),
-                    localBounds.center.z + localBounds.size.z * nz);
-                shardGo.transform.localRotation = Quaternion.Euler(i * 19f, i * 37f, i * 11f);
-                shardGo.transform.localScale = new Vector3(
-                    Mathf.Clamp(localBounds.size.x * 0.36f, 0.08f, 0.36f),
-                    Mathf.Clamp(localBounds.size.y * 0.16f, 0.04f, 0.16f),
-                    Mathf.Clamp(localBounds.size.z * 0.32f, 0.07f, 0.30f));
-
-                var mf = shardGo.AddComponent<MeshFilter>();
-                mf.sharedMesh = cubeMesh;
-
-                var mr = shardGo.AddComponent<MeshRenderer>();
-                if (primaryMat != null)
-                {
-                    mr.sharedMaterial = primaryMat;
-                }
-
-                shardGo.AddComponent<BoxCollider>();
-                shardGo.AddComponent<Rigidbody>();
-                var frag = shardGo.AddComponent<StageDebrisFragment>();
-                frag.EnsureComponents();
-                frag.CacheInitialTransform();
-                _fragments.Add(frag);
-            }
-        }
-
-        private Bounds ComputeIntactBoundsLocal(out Material primaryMaterial)
-        {
-            primaryMaterial = null;
-            Transform searchRoot = intactVisualRoot != null ? intactVisualRoot.transform : transform;
-            Renderer[] renderers = searchRoot.GetComponentsInChildren<Renderer>(true);
-
-            bool hasBounds = false;
-            Bounds combined = new Bounds(Vector3.up * 0.35f, new Vector3(0.5f, 0.5f, 0.5f));
-
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                Renderer r = renderers[i];
-                if (r == null) continue;
-                if (debrisPoolRoot != null && r.transform.IsChildOf(debrisPoolRoot)) continue;
-
-                if (primaryMaterial == null && r.sharedMaterial != null)
-                {
-                    primaryMaterial = r.sharedMaterial;
-                }
-
-                Bounds b = r.bounds;
-                Vector3 localMin = transform.InverseTransformPoint(b.min);
-                Vector3 localMax = transform.InverseTransformPoint(b.max);
-                if (!hasBounds)
-                {
-                    combined = new Bounds((localMin + localMax) * 0.5f, Vector3.zero);
-                    hasBounds = true;
-                }
-                combined.Encapsulate(localMin);
-                combined.Encapsulate(localMax);
-            }
-
-            if (combined.size.sqrMagnitude < 0.01f)
-            {
-                combined = new Bounds(Vector3.up * 0.35f, new Vector3(0.5f, 0.5f, 0.5f));
-            }
-            return combined;
-        }
-
-        private Vector3 GetWorldVisualCenter()
-        {
-            if (intactVisualRoot != null)
-            {
-                Renderer[] renderers = intactVisualRoot.GetComponentsInChildren<Renderer>(true);
-                if (renderers.Length > 0)
-                {
-                    Bounds b = renderers[0].bounds;
-                    for (int i = 1; i < renderers.Length; i++)
-                    {
-                        b.Encapsulate(renderers[i].bounds);
-                    }
-                    return b.center;
-                }
-            }
-
-            return transform.position + Vector3.up * 0.45f;
-        }
-
-        private CombatVfxController ResolveVfxController()
-        {
-            if (_vfxController == null && Application.isPlaying)
-            {
-                _vfxController = FindAnyObjectByType<CombatVfxController>();
-            }
-            return _vfxController;
-        }
-
-        private static Mesh GetSharedCubeMesh()
-        {
-            if (s_sharedCubeMesh != null)
-            {
-                return s_sharedCubeMesh;
-            }
-
-            GameObject temp = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            s_sharedCubeMesh = temp.GetComponent<MeshFilter>().sharedMesh;
-            if (Application.isPlaying)
-            {
-                Destroy(temp);
-            }
-            else
-            {
-                DestroyImmediate(temp);
-            }
-            return s_sharedCubeMesh;
         }
     }
 }

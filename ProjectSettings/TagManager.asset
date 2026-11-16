@@ -16,7 +16,7 @@ TagManager:
   - StagePhysics
   - StageDebris
   - FighterHurtbox
-  - 
+  - StageProjectile
   - 
   - 
   - 

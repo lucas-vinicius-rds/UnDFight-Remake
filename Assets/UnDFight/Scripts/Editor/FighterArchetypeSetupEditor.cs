@@ -1120,11 +1120,22 @@ namespace UnDFight.Editor
             GameObject root = new GameObject($"Fighter_{fighterName}");
             try
             {
+                if (StagePhysicsLayers.HasDedicatedLayers)
+                {
+                    root.layer = StagePhysicsLayers.FighterHurtboxLayer;
+                }
+
                 CapsuleCollider hurtbox = root.AddComponent<CapsuleCollider>();
                 hurtbox.isTrigger = true;
                 hurtbox.radius = fighterData.pushboxRadius;
                 hurtbox.height = fighterData.heightMeters;
                 hurtbox.center = new Vector3(0f, fighterData.heightMeters * 0.5f, 0f);
+
+                Rigidbody hurtboxRb = root.AddComponent<Rigidbody>();
+                hurtboxRb.isKinematic = true;
+                hurtboxRb.useGravity = false;
+                hurtboxRb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                hurtboxRb.interpolation = RigidbodyInterpolation.None;
 
                 PlayerInputHandler inputHandler = root.AddComponent<PlayerInputHandler>();
                 FighterController controllerComp = root.AddComponent<FighterController>();

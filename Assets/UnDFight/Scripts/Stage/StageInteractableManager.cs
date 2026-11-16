@@ -26,6 +26,7 @@ namespace UnDFight
         [SerializeField] private bool allowRKeyResetInTraining = true;
 
         private readonly List<StagePropBase> _props = new List<StagePropBase>();
+        private readonly List<StageThrowableProp> _throwables = new List<StageThrowableProp>();
         private readonly List<IStageResettable> _resettables = new List<IStageResettable>();
 
         private Transform _physicsBoundsRoot;
@@ -38,6 +39,7 @@ namespace UnDFight
         public FightSimulation Simulation => simulation;
         public MatchManager MatchManager => matchManager;
         public IReadOnlyList<StagePropBase> DiscoveredProps => _props;
+        public IReadOnlyList<StageThrowableProp> ThrowableProps => _throwables;
         public IReadOnlyList<IStageResettable> Resettables => _resettables;
         public BoxCollider GroundPhysicsCollider => _groundCollider;
         public BoxCollider LeftWallPhysicsCollider => _leftWallCollider;
@@ -87,9 +89,10 @@ namespace UnDFight
         public void RefreshDiscoveredProps()
         {
             _props.Clear();
+            _throwables.Clear();
             _resettables.Clear();
 
-            StagePropBase[] foundProps = FindObjectsByType<StagePropBase>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            StagePropBase[] foundProps = FindObjectsByType<StagePropBase>(FindObjectsInactive.Include);
             for (int i = 0; i < foundProps.Length; i++)
             {
                 StagePropBase prop = foundProps[i];
@@ -101,11 +104,16 @@ namespace UnDFight
                 {
                     breakable.InitializeIfNeeded();
                 }
+                else if (prop is StageThrowableProp throwable)
+                {
+                    throwable.InitializeIfNeeded();
+                    _throwables.Add(throwable);
+                }
                 _props.Add(prop);
                 _resettables.Add(prop);
             }
 
-            MonoBehaviour[] allBehaviours = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            MonoBehaviour[] allBehaviours = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include);
             for (int i = 0; i < allBehaviours.Length; i++)
             {
                 if (allBehaviours[i] is IStageResettable resettable && !_resettables.Contains(resettable))
@@ -113,6 +121,62 @@ namespace UnDFight
                     _resettables.Add(resettable);
                 }
             }
+        }
+
+        public StageThrowableProp FindNearestReadyThrowable(FighterController fighter)
+        {
+            return FindNearestReadyThrowableInList(_throwables, fighter);
+        }
+
+        public static StageThrowableProp FindNearestReadyThrowableInScene(FighterController fighter)
+        {
+            if (fighter == null)
+            {
+                return null;
+            }
+
+            StageInteractableManager manager = FindAnyObjectByType<StageInteractableManager>();
+            if (manager != null)
+            {
+                StageThrowableProp managed = manager.FindNearestReadyThrowable(fighter);
+                if (managed != null)
+                {
+                    return managed;
+                }
+            }
+
+            StageThrowableProp[] all = FindObjectsByType<StageThrowableProp>(FindObjectsInactive.Exclude);
+            return FindNearestReadyThrowableInList(all, fighter);
+        }
+
+        private static StageThrowableProp FindNearestReadyThrowableInList(IReadOnlyList<StageThrowableProp> list, FighterController fighter)
+        {
+            if (fighter == null || list == null || list.Count == 0)
+            {
+                return null;
+            }
+
+            StageThrowableProp best = null;
+            float bestDist = float.MaxValue;
+            float fighterX = fighter.SimPosition.x;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                StageThrowableProp prop = list[i];
+                if (prop == null || !prop.IsFighterInRange(fighter))
+                {
+                    continue;
+                }
+
+                float dx = Mathf.Abs(prop.transform.position.x - fighterX);
+                if (dx < bestDist)
+                {
+                    bestDist = dx;
+                    best = prop;
+                }
+            }
+
+            return best;
         }
 
         /// <summary>

@@ -32,6 +32,9 @@ namespace UnDFight
         [SerializeField] private bool squashVisualOnCrouch = false;
 
         private const float TurnDurationSeconds = 8f / 60f;
+        public const int StageThrowReleaseTick = 4;
+        public const int StageThrowTotalTicks = 16;
+        public const int StageInteractCooldownTicks = 30;
 
         private static readonly int StateParamHash = Animator.StringToHash("State");
         private static readonly int AttackTypeParamHash = Animator.StringToHash("AttackType");
@@ -77,7 +80,12 @@ namespace UnDFight
         private float _turnElapsed = TurnDurationSeconds;
         private bool _isTurnAnimActive;
         private FighterState _turnStartState;
+        private StageThrowableProp _pendingThrowProp;
+        private int _stageInteractCooldownTicks;
+        private Rigidbody _hurtboxRigidbody;
 
+        public FightSimulation Simulation => _simulation;
+        public CapsuleCollider HurtboxCollider => hurtboxCollider != null ? hurtboxCollider : (hurtboxCollider = GetComponentInChildren<CapsuleCollider>());
         public FighterData Data => fighterData;
         public FighterState State => _state;
         public AttackType CurrentAttack => _currentAttack;
@@ -135,8 +143,23 @@ namespace UnDFight
             {
                 fighterAnimator = GetComponentInChildren<Animator>();
             }
+            EnsureKinematicHurtboxRigidbody();
             SetupAnimatorForFixedTick();
             ApplyFighterDataScaling();
+        }
+
+        private void EnsureKinematicHurtboxRigidbody()
+        {
+            if (_hurtboxRigidbody == null)
+            {
+                _hurtboxRigidbody = GetComponent<Rigidbody>();
+            }
+            if (_hurtboxRigidbody != null)
+            {
+                _hurtboxRigidbody.isKinematic = true;
+                _hurtboxRigidbody.useGravity = false;
+                _hurtboxRigidbody.interpolation = RigidbodyInterpolation.None;
+            }
         }
 
         private void SetupAnimatorForFixedTick()
@@ -170,6 +193,10 @@ namespace UnDFight
             {
                 visualRoot = transform.GetChild(0);
             }
+            if (hurtboxCollider == null)
+            {
+                hurtboxCollider = GetComponentInChildren<CapsuleCollider>();
+            }
             if (_inputHandler == null)
             {
                 _inputHandler = GetComponent<PlayerInputHandler>();
@@ -196,6 +223,9 @@ namespace UnDFight
             _receivedComboHits = 0;
             _receivedComboDamage = 0;
             _grantedStartSuperOnCurrentMove = false;
+            _pendingThrowProp = null;
+            _stageInteractCooldownTicks = 0;
+            EnsureKinematicHurtboxRigidbody();
             SetupAnimatorForFixedTick();
             ApplyFighterDataScaling();
             SnapVisualYaw();
@@ -226,6 +256,8 @@ namespace UnDFight
             _receivedComboHits = 0;
             _receivedComboDamage = 0;
             _grantedStartSuperOnCurrentMove = false;
+            _pendingThrowProp = null;
+            _stageInteractCooldownTicks = 0;
             _inputHandler?.ClearBufferedInputs();
 
             transform.position = new Vector3(_currSimPos.x, _currSimPos.y, 0f);
@@ -613,6 +645,11 @@ namespace UnDFight
                 _wakeupInvincibilityTicks--;
             }
 
+            if (_stageInteractCooldownTicks > 0)
+            {
+                _stageInteractCooldownTicks--;
+            }
+
             _ticksSinceLastHit++;
             _stateTicks++;
 
@@ -635,6 +672,20 @@ namespace UnDFight
             {
                 if (_state == FighterState.Attack)
                 {
+                    if (_pendingThrowProp != null)
+                    {
+                        if (_stateTicks < StageThrowReleaseTick)
+                        {
+                            _pendingThrowProp.UpdateGrabTransform(GetThrowHandWorldPosition());
+                        }
+                        else
+                        {
+                            StageThrowableProp toLaunch = _pendingThrowProp;
+                            _pendingThrowProp = null;
+                            toLaunch.LaunchProjectile(this, _facingSign);
+                        }
+                    }
+
                     if (_currentMoveData != null && _currentMoveData.lungeSpeed > 0f && _stateTicks <= _currentMoveData.LastActiveTick)
                     {
                         _simVelocity.x = _facingSign * _currentMoveData.lungeSpeed;
@@ -729,7 +780,19 @@ namespace UnDFight
                 return;
             }
 
-            // Grounded input consumption: Attack > Jump > Block/Crouch > Walk > Idle
+            // Grounded input consumption: Stage Interact > Attack > Jump > Block/Crouch > Walk > Idle
+            if (_inputHandler != null &&
+                CanAttemptStageInteract() &&
+                _inputHandler.HasStageInteractCombo(tick) &&
+                FindNearestReadyStageProp() != null &&
+                _inputHandler.ConsumeStageInteractCombo(tick) &&
+                TryUseNearestStageProp())
+            {
+                UpdateHurtboxDimensions();
+                StepAnimatorTick(dt);
+                return;
+            }
+
             if (_inputHandler != null &&
                 _inputHandler.ConsumeAttackInput(tick, CanUseSpecial, out AttackType attackType) &&
                 StartAttack(attackType))
@@ -836,6 +899,68 @@ namespace UnDFight
             }
         }
 
+        public bool IsInStageInteractCooldown => _stageInteractCooldownTicks > 0;
+
+        public bool CanAttemptStageInteract()
+        {
+            if (!_inputsEnabled || !_isGrounded || _currentHealth <= 0 || _stageInteractCooldownTicks > 0)
+            {
+                return false;
+            }
+
+            return _state == FighterState.Idle ||
+                   _state == FighterState.WalkForward ||
+                   _state == FighterState.WalkBackward ||
+                   (_state == FighterState.Block && _stateTotalTicks == 0);
+        }
+
+        public StageThrowableProp FindNearestReadyStageProp()
+        {
+            return StageInteractableManager.FindNearestReadyThrowableInScene(this);
+        }
+
+        public StageThrowableProp GetInteractableStagePropInRange()
+        {
+            return CanAttemptStageInteract() ? FindNearestReadyStageProp() : null;
+        }
+
+        public Vector3 GetThrowHandWorldPosition(float fightPlaneZ = 0f)
+        {
+            float fullH = fighterData != null ? fighterData.heightMeters : FighterScaling.ReferenceHeightMeters;
+            return new Vector3(_currSimPos.x + _facingSign * 0.45f, _currSimPos.y + fullH * 0.56f, fightPlaneZ);
+        }
+
+        /// <summary>
+        /// Public entry point for grabbing and throwing the nearest ready StageThrowableProp
+        /// (triggered by HoldBlock + LightPunch or optionally by CpuAiController).
+        /// </summary>
+        public bool TryUseNearestStageProp()
+        {
+            if (!CanAttemptStageInteract())
+            {
+                return false;
+            }
+
+            StageThrowableProp prop = FindNearestReadyStageProp();
+            if (prop == null)
+            {
+                return false;
+            }
+
+            _simVelocity.x = 0f;
+            _blockFromCrouch = false;
+            _hasRegisteredHit = true;
+            _currentAttack = AttackType.HeavyPunch;
+            _currentMoveData = null;
+            _stateTotalTicks = StageThrowTotalTicks;
+            _stageInteractCooldownTicks = StageInteractCooldownTicks;
+            _pendingThrowProp = prop;
+
+            EnterState(FighterState.Attack, triggerAttack: true, forceResetTicks: true);
+            prop.BeginGrab(this);
+            return true;
+        }
+
         private bool StartAttack(AttackType attackType)
         {
             if (attackType == AttackType.None)
@@ -894,6 +1019,11 @@ namespace UnDFight
 
             if (newState != FighterState.Attack)
             {
+                if (_pendingThrowProp != null)
+                {
+                    _pendingThrowProp.CancelGrabAndDrop();
+                    _pendingThrowProp = null;
+                }
                 _currentAttack = AttackType.None;
                 _currentMoveData = null;
                 _hasRegisteredHit = false;

@@ -980,6 +980,13 @@ namespace UnDFight
                 if (ih != null) ih.enabled = false;
                 var col = instance.GetComponent<Collider>();
                 if (col != null) col.enabled = false;
+                var rb = instance.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                    rb.useGravity = false;
+                    rb.detectCollisions = false;
+                }
 
                 animator = instance.GetComponentInChildren<Animator>(true);
                 if (animator != null)

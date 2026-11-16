@@ -353,6 +353,38 @@ namespace UnDFight
             };
         }
 
+        public bool HasStageInteractCombo(int currentTick)
+        {
+            if (!TryGetValidExpireTick(FighterInputButton.LightPunch, currentTick, out int lpExpire))
+            {
+                return false;
+            }
+
+            if (_currentInput.HoldBlock)
+            {
+                return true;
+            }
+
+            return TryGetValidExpireTick(FighterInputButton.Block, currentTick, out int blockExpire) &&
+                   Mathf.Abs(blockExpire - lpExpire) <= 2;
+        }
+
+        public bool ConsumeStageInteractCombo(int currentTick)
+        {
+            if (!HasStageInteractCombo(currentTick))
+            {
+                return false;
+            }
+
+            if (!ConsumeBufferedButton(FighterInputButton.LightPunch, currentTick))
+            {
+                return false;
+            }
+
+            _bufferedButtonExpireTick.Remove(FighterInputButton.Block);
+            return true;
+        }
+
         private bool TryConsumeSpecialShortcutOrButton(int currentTick)
         {
             if (TryGetValidExpireTick(FighterInputButton.LightPunch, currentTick, out int lpExpire) &&

@@ -371,6 +371,74 @@ namespace UnDFight
                 maxHitstop = hitstop;
             }
 
+            EmitCombatHitEffects(
+                strike.Attacker,
+                strike.Defender,
+                strike.Move,
+                strike.ContactPoint,
+                outcome,
+                damageDealt,
+                knockbackVelocity,
+                isTrade,
+                comboCount,
+                comboDamage,
+                isSpecial);
+        }
+
+        /// <summary>
+        /// Emits hitstop, camera shake, VFX/Audio notifications, and CombatHitEvent for a PhysX stage projectile impact.
+        /// </summary>
+        public void NotifyExternalProjectileImpact(
+            FighterController attacker,
+            FighterController defender,
+            MoveData projectileMove,
+            Vector2 contactPoint,
+            HitOutcomeType outcome,
+            int damageDealt,
+            float knockbackVelocity,
+            int comboCount,
+            int comboDamage)
+        {
+            if (defender == null || projectileMove == null)
+            {
+                return;
+            }
+
+            int hitstop = projectileMove.hitstopTicks;
+            if (hitstop > _hitstopTicksRemaining)
+            {
+                _hitstopTicksRemaining = hitstop;
+            }
+
+            EmitCombatHitEffects(
+                attacker,
+                defender,
+                projectileMove,
+                contactPoint,
+                outcome,
+                damageDealt,
+                knockbackVelocity,
+                wasTrade: false,
+                comboCount: comboCount,
+                comboDamage: comboDamage,
+                isSpecial: false);
+        }
+
+        private void EmitCombatHitEffects(
+            FighterController attacker,
+            FighterController defender,
+            MoveData move,
+            Vector2 contactPoint,
+            HitOutcomeType outcome,
+            int damageDealt,
+            float knockbackVelocity,
+            bool wasTrade,
+            int comboCount,
+            int comboDamage,
+            bool isSpecial)
+        {
+            int hitstop = move != null ? move.hitstopTicks : 0;
+
             if (fightCamera != null)
             {
                 if (outcome == HitOutcomeType.Blocked)
@@ -382,9 +450,10 @@ namespace UnDFight
                     fightCamera.TriggerImpactShake(0.22f, 0.24f);
                 }
                 else if (outcome == HitOutcomeType.KnockDown ||
-                         strike.Move.causesKnockdown ||
-                         strike.Move.attackType == AttackType.HeavyPunch ||
-                         strike.Move.attackType == AttackType.HeavyKick)
+                         (move != null &&
+                          (move.causesKnockdown ||
+                           move.attackType == AttackType.HeavyPunch ||
+                           move.attackType == AttackType.HeavyKick)))
                 {
                     fightCamera.TriggerImpactShake(0.14f, 0.16f);
                 }
@@ -396,15 +465,15 @@ namespace UnDFight
 
             OnCombatHit?.Invoke(new CombatHitEvent
             {
-                Attacker = strike.Attacker,
-                Defender = strike.Defender,
-                Move = strike.Move,
+                Attacker = attacker,
+                Defender = defender,
+                Move = move,
                 Outcome = outcome,
-                ContactPoint = strike.ContactPoint,
+                ContactPoint = contactPoint,
                 DamageDealt = damageDealt,
                 HitstopTicks = hitstop,
                 KnockbackVelocity = knockbackVelocity,
-                WasTrade = isTrade,
+                WasTrade = wasTrade,
                 ComboCount = comboCount,
                 ComboDamage = comboDamage,
                 IsSpecial = isSpecial

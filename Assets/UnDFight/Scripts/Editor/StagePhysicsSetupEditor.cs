@@ -16,6 +16,8 @@ namespace UnDFight.Editor
         public const string CratePrefabPath = StagePropsPrefabFolder + "/Prop_BreakableCrate.prefab";
         public const string CrateStackPrefabPath = StagePropsPrefabFolder + "/Prop_BreakableCrateStack.prefab";
         public const string TablePrefabPath = StagePropsPrefabFolder + "/Prop_BreakableTable.prefab";
+        public const string ThrowableChairPrefabPath = StagePropsPrefabFolder + "/Prop_ThrowableChair.prefab";
+        public const string ThrowableBottlePrefabPath = StagePropsPrefabFolder + "/Prop_ThrowableBottle.prefab";
         public const string ArenaFavelaScenePath = "Assets/UnDFight/Scenes/Arena_Favela.unity";
 
         private static readonly string[] FighterPrefabPaths =
@@ -30,12 +32,12 @@ namespace UnDFight.Editor
         public static void ApplyPhase12Setup()
         {
             EnsurePhysicsLayersAndMatrix();
-            AssignFighterPrefabsLayer();
+            AssignFighterPrefabsLayerAndKinematicBody();
             CreateOrUpdateStagePropPrefabs();
             SetupArenaFavelaPropsAndManager();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[UnDFight] Fase 12.1 setup applied: PhysX layers isolated, StageProps prefabs generated, Arena_Favela updated.");
+            Debug.Log("[UnDFight] Fase 12.2 setup applied: PhysX layers isolated (incl. StageProjectile), Fighter hurtbox Rigidbodies updated, breakable & throwable StageProps prefabs generated, Arena_Favela updated.");
         }
 
         public static void EnsurePhysicsLayersAndMatrix()
@@ -50,6 +52,7 @@ namespace UnDFight.Editor
                     EnsureLayerSlot(layersProp, StagePhysicsLayers.PreferredStagePhysicsLayer, StagePhysicsLayers.StagePhysicsLayerName);
                     EnsureLayerSlot(layersProp, StagePhysicsLayers.PreferredStageDebrisLayer, StagePhysicsLayers.StageDebrisLayerName);
                     EnsureLayerSlot(layersProp, StagePhysicsLayers.PreferredFighterHurtboxLayer, StagePhysicsLayers.FighterHurtboxLayerName);
+                    EnsureLayerSlot(layersProp, StagePhysicsLayers.PreferredStageProjectileLayer, StagePhysicsLayers.StageProjectileLayerName);
                     tagManager.ApplyModifiedProperties();
                 }
             }
@@ -58,13 +61,9 @@ namespace UnDFight.Editor
             AssetDatabase.SaveAssets();
         }
 
-        public static void AssignFighterPrefabsLayer()
+        public static void AssignFighterPrefabsLayerAndKinematicBody()
         {
             int fighterLayer = LayerMask.NameToLayer(StagePhysicsLayers.FighterHurtboxLayerName);
-            if (fighterLayer < 0)
-            {
-                return;
-            }
 
             for (int i = 0; i < FighterPrefabPaths.Length; i++)
             {
@@ -80,9 +79,37 @@ namespace UnDFight.Editor
                     continue;
                 }
 
-                if (root.layer != fighterLayer)
+                bool dirty = false;
+                if (fighterLayer >= 0 && root.layer != fighterLayer)
                 {
                     root.layer = fighterLayer;
+                    dirty = true;
+                }
+
+                Rigidbody rb = root.GetComponent<Rigidbody>();
+                if (rb == null)
+                {
+                    rb = root.AddComponent<Rigidbody>();
+                    dirty = true;
+                }
+                if (!rb.isKinematic || rb.useGravity || rb.collisionDetectionMode != CollisionDetectionMode.ContinuousSpeculative || rb.interpolation != RigidbodyInterpolation.None)
+                {
+                    rb.isKinematic = true;
+                    rb.useGravity = false;
+                    rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                    rb.interpolation = RigidbodyInterpolation.None;
+                    dirty = true;
+                }
+
+                CapsuleCollider hurtbox = root.GetComponent<CapsuleCollider>();
+                if (hurtbox != null && !hurtbox.isTrigger)
+                {
+                    hurtbox.isTrigger = true;
+                    dirty = true;
+                }
+
+                if (dirty)
+                {
                     PrefabUtility.SaveAsPrefabAsset(root, path);
                 }
                 PrefabUtility.UnloadPrefabContents(root);
@@ -105,6 +132,8 @@ namespace UnDFight.Editor
             BuildCratePrefab(CratePrefabPath, redPlastic, yellowPlastic);
             BuildCrateStackPrefab(CrateStackPrefabPath, redPlastic, yellowPlastic);
             BuildTablePrefab(TablePrefabPath, redPlastic, amberBottle, greenBottle);
+            BuildThrowableChairPrefab(ThrowableChairPrefabPath, redPlastic, yellowPlastic);
+            BuildThrowableBottlePrefab(ThrowableBottlePrefabPath, amberBottle, greenBottle, yellowPlastic);
         }
 
         public static void SetupArenaFavelaPropsAndManager()
@@ -156,9 +185,13 @@ namespace UnDFight.Editor
             GameObject cratePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CratePrefabPath);
             GameObject crateStackPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CrateStackPrefabPath);
             GameObject tablePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(TablePrefabPath);
+            GameObject chairPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ThrowableChairPrefabPath);
+            GameObject bottlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ThrowableBottlePrefabPath);
 
             InstantiateProp(crateStackPrefab, "Breakable_CrateStack_Left", propsGroup.transform, new Vector3(-6.35f, 0f, 1.32f), 8f);
             InstantiateProp(cratePrefab, "Breakable_Crate_MidLeft", propsGroup.transform, new Vector3(-4.85f, 0f, 1.42f), -12f);
+            InstantiateProp(chairPrefab, "Throwable_Chair_Left", propsGroup.transform, new Vector3(-3.35f, 0f, 1.22f), -28f);
+            InstantiateProp(bottlePrefab, "Throwable_Bottle_Right", propsGroup.transform, new Vector3(3.45f, 0f, 1.22f), 14f);
             InstantiateProp(tablePrefab, "Breakable_Table_Right", propsGroup.transform, new Vector3(5.45f, 0f, 1.38f), 6f);
             InstantiateProp(crateStackPrefab, "Breakable_CrateStack_Right", propsGroup.transform, new Vector3(6.85f, 0f, 1.28f), -10f);
 
@@ -385,6 +418,158 @@ namespace UnDFight.Editor
             var frag = go.AddComponent<StageDebrisFragment>();
             frag.EnsureComponents();
             go.SetActive(false);
+        }
+
+        private static void BuildThrowableChairPrefab(string prefabPath, Material redMat, Material yellowMat)
+        {
+            var root = new GameObject("Prop_ThrowableChair");
+            root.layer = StagePhysicsLayers.StageProjectileLayer;
+            try
+            {
+                var intact = new GameObject("IntactVisual");
+                intact.transform.SetParent(root.transform, false);
+
+                CreatePrimitivePart("Seat", PrimitiveType.Cube, intact.transform, new Vector3(0f, 0.44f, 0f), Vector3.zero, new Vector3(0.44f, 0.045f, 0.44f), redMat);
+                CreatePrimitivePart("Backrest", PrimitiveType.Cube, intact.transform, new Vector3(0f, 0.68f, 0.19f), new Vector3(6f, 0f, 0f), new Vector3(0.44f, 0.44f, 0.04f), redMat);
+                CreatePrimitivePart("BackStripe", PrimitiveType.Cube, intact.transform, new Vector3(0f, 0.72f, 0.165f), new Vector3(6f, 0f, 0f), new Vector3(0.32f, 0.10f, 0.02f), yellowMat);
+                CreatePrimitivePart("Leg_FL", PrimitiveType.Cube, intact.transform, new Vector3(-0.18f, 0.22f, -0.18f), Vector3.zero, new Vector3(0.05f, 0.44f, 0.05f), redMat);
+                CreatePrimitivePart("Leg_FR", PrimitiveType.Cube, intact.transform, new Vector3(0.18f, 0.22f, -0.18f), Vector3.zero, new Vector3(0.05f, 0.44f, 0.05f), redMat);
+                CreatePrimitivePart("Leg_BL", PrimitiveType.Cube, intact.transform, new Vector3(-0.18f, 0.22f, 0.18f), Vector3.zero, new Vector3(0.05f, 0.44f, 0.05f), redMat);
+                CreatePrimitivePart("Leg_BR", PrimitiveType.Cube, intact.transform, new Vector3(0.18f, 0.22f, 0.18f), Vector3.zero, new Vector3(0.05f, 0.44f, 0.05f), redMat);
+
+                var col = root.AddComponent<BoxCollider>();
+                col.isTrigger = true;
+                col.center = new Vector3(0f, 0.45f, 0f);
+                col.size = new Vector3(0.48f, 0.88f, 0.48f);
+
+                var rb = root.AddComponent<Rigidbody>();
+                rb.isKinematic = true;
+                rb.useGravity = false;
+                rb.mass = 1.0f;
+                rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+                var pool = new GameObject("DebrisPool");
+                pool.transform.SetParent(root.transform, false);
+                CreateDebrisShard("SeatShard_0", PrimitiveType.Cube, pool.transform, new Vector3(-0.10f, 0.44f, 0f), new Vector3(5f, 18f, -10f), new Vector3(0.22f, 0.045f, 0.36f), redMat);
+                CreateDebrisShard("SeatShard_1", PrimitiveType.Cube, pool.transform, new Vector3(0.10f, 0.44f, 0f), new Vector3(-6f, -14f, 12f), new Vector3(0.22f, 0.045f, 0.36f), redMat);
+                CreateDebrisShard("BackShard_0", PrimitiveType.Cube, pool.transform, new Vector3(0f, 0.68f, 0.18f), new Vector3(12f, 20f, 8f), new Vector3(0.36f, 0.24f, 0.04f), redMat);
+                CreateDebrisShard("StripeShard", PrimitiveType.Cube, pool.transform, new Vector3(0f, 0.72f, 0.16f), new Vector3(-8f, 35f, 15f), new Vector3(0.24f, 0.08f, 0.03f), yellowMat);
+                CreateDebrisShard("LegShard_0", PrimitiveType.Cube, pool.transform, new Vector3(-0.16f, 0.22f, -0.14f), new Vector3(16f, 12f, -20f), new Vector3(0.05f, 0.38f, 0.05f), redMat);
+                CreateDebrisShard("LegShard_1", PrimitiveType.Cube, pool.transform, new Vector3(0.16f, 0.22f, 0.14f), new Vector3(-14f, -18f, 18f), new Vector3(0.05f, 0.38f, 0.05f), redMat);
+
+                ConfigureThrowableComponent(
+                    root,
+                    rb,
+                    col,
+                    intact,
+                    pool.transform,
+                    promptLabel: "ARREMESSAR CADEIRA",
+                    damage: 85,
+                    knockdown: true,
+                    shatterOnFighter: true,
+                    shatterOnStage: false,
+                    matType: StagePropMaterialType.Plastic,
+                    radiusX: 1.65f,
+                    zTolerance: 2.0f);
+
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void BuildThrowableBottlePrefab(string prefabPath, Material amberMat, Material greenMat, Material labelMat)
+        {
+            var root = new GameObject("Prop_ThrowableBottle");
+            root.layer = StagePhysicsLayers.StageProjectileLayer;
+            try
+            {
+                var intact = new GameObject("IntactVisual");
+                intact.transform.SetParent(root.transform, false);
+
+                CreatePrimitivePart("BottleBody", PrimitiveType.Cylinder, intact.transform, new Vector3(0f, 0.16f, 0f), Vector3.zero, new Vector3(0.16f, 0.16f, 0.16f), amberMat);
+                CreatePrimitivePart("BottleNeck", PrimitiveType.Cylinder, intact.transform, new Vector3(0f, 0.36f, 0f), Vector3.zero, new Vector3(0.075f, 0.10f, 0.075f), greenMat);
+                CreatePrimitivePart("BottleLabel", PrimitiveType.Cylinder, intact.transform, new Vector3(0f, 0.17f, 0f), Vector3.zero, new Vector3(0.166f, 0.075f, 0.166f), labelMat);
+                CreatePrimitivePart("BottleCap", PrimitiveType.Cylinder, intact.transform, new Vector3(0f, 0.47f, 0f), Vector3.zero, new Vector3(0.085f, 0.02f, 0.085f), labelMat);
+
+                var col = root.AddComponent<BoxCollider>();
+                col.isTrigger = true;
+                col.center = new Vector3(0f, 0.24f, 0f);
+                col.size = new Vector3(0.24f, 0.50f, 0.24f);
+
+                var rb = root.AddComponent<Rigidbody>();
+                rb.isKinematic = true;
+                rb.useGravity = false;
+                rb.mass = 1.0f;
+                rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+                var pool = new GameObject("DebrisPool");
+                pool.transform.SetParent(root.transform, false);
+                for (int i = 0; i < 6; i++)
+                {
+                    Material mat = (i % 3 == 0) ? greenMat : amberMat;
+                    Vector3 pos = new Vector3(((i % 3) - 1) * 0.06f, 0.12f + (i / 3) * 0.14f, (i % 2 == 0 ? -0.05f : 0.05f));
+                    Vector3 rot = new Vector3(i * 22f, i * 48f, i * 19f);
+                    Vector3 scl = new Vector3(0.08f, 0.12f, 0.04f);
+                    CreateDebrisShard($"GlassShard_{i}", PrimitiveType.Cube, pool.transform, pos, rot, scl, mat);
+                }
+
+                ConfigureThrowableComponent(
+                    root,
+                    rb,
+                    col,
+                    intact,
+                    pool.transform,
+                    promptLabel: "ARREMESSAR GARRAFA",
+                    damage: 75,
+                    knockdown: false,
+                    shatterOnFighter: true,
+                    shatterOnStage: true,
+                    matType: StagePropMaterialType.Glass,
+                    radiusX: 1.65f,
+                    zTolerance: 2.0f);
+
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void ConfigureThrowableComponent(
+            GameObject root,
+            Rigidbody body,
+            Collider propCollider,
+            GameObject intactVisual,
+            Transform poolTransform,
+            string promptLabel,
+            int damage,
+            bool knockdown,
+            bool shatterOnFighter,
+            bool shatterOnStage,
+            StagePropMaterialType matType,
+            float radiusX,
+            float zTolerance)
+        {
+            var throwable = root.AddComponent<StageThrowableProp>();
+            var so = new SerializedObject(throwable);
+            so.FindProperty("interactionRadiusX").floatValue = radiusX;
+            so.FindProperty("maxZDistanceFromFightPlane").floatValue = zTolerance;
+            so.FindProperty("fightPlaneZ").floatValue = 0f;
+            so.FindProperty("promptLabel").stringValue = promptLabel;
+            so.FindProperty("damage").intValue = damage;
+            so.FindProperty("causesKnockdown").boolValue = knockdown;
+            so.FindProperty("breakOnFighterHit").boolValue = shatterOnFighter;
+            so.FindProperty("breakOnStageHit").boolValue = shatterOnStage;
+            so.FindProperty("materialType").enumValueIndex = (int)matType;
+            so.FindProperty("body").objectReferenceValue = body;
+            so.FindProperty("propCollider").objectReferenceValue = propCollider;
+            so.FindProperty("intactVisualRoot").objectReferenceValue = intactVisual;
+            so.FindProperty("debrisPoolRoot").objectReferenceValue = poolTransform;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static Material LoadMaterialOrFallback(string path)
