@@ -37,16 +37,63 @@ namespace UnDFight
         [Header("Optional Forward Lunge")]
         [Min(0f)] public float lungeSpeed = 0f;
 
+        [Header("Special / EX Mechanics (60 Hz)")]
+        public SpecialMechanicType specialMechanic = SpecialMechanicType.None;
+        [Min(0)] public int superCost = 0;
+        public bool isExMove = false;
+        [Min(0)] public int armorStartTick = 0;
+        [Min(0)] public int armorEndTick = 0;
+        public bool antiAirInvulnerable = false;
+        [Min(0)] public int antiAirStartTick = 0;
+        [Min(0)] public int antiAirEndTick = 0;
+        [Min(0)] public int secondActiveStartTick = 0;
+        [Min(0)] public int secondActiveEndTick = 0;
+        [Min(0)] public int secondHitDamage = 0;
+        public bool spawnsProjectile = false;
+        [Min(0.1f)] public float projectileSpeed = 9.5f;
+        [Min(1)] public int projectileLifetimeTicks = 45;
+        public Vector2 projectileSpawnOffset = new Vector2(0.70f, 1.15f);
+        public Vector2 projectileHitboxSize = new Vector2(0.55f, 0.45f);
+        [Min(0)] public int superFreezeTicks = 0;
+
         public int FirstActiveTick => startupTicks + 1;
         public int LastActiveTick => startupTicks + activeTicks;
         public int TotalTicks => startupTicks + activeTicks + recoveryTicks;
 
+        public bool IsPrimaryActiveTick(int stateTicks)
+        {
+            return stateTicks >= FirstActiveTick && stateTicks <= LastActiveTick;
+        }
+
+        public bool IsSecondaryActiveTick(int stateTicks)
+        {
+            return secondActiveStartTick > 0 && stateTicks >= secondActiveStartTick && stateTicks <= secondActiveEndTick;
+        }
+
         /// <summary>
-        /// Returns true when 1-based attack stateTicks falls within [startupTicks + 1 .. startupTicks + activeTicks].
+        /// Returns true when 1-based attack stateTicks falls within primary or secondary active windows.
         /// </summary>
         public bool IsActiveTick(int stateTicks)
         {
-            return stateTicks >= FirstActiveTick && stateTicks <= LastActiveTick;
+            return IsPrimaryActiveTick(stateTicks) || IsSecondaryActiveTick(stateTicks);
+        }
+
+        public bool HasArmorAtTick(int stateTicks)
+        {
+            return armorStartTick > 0 && armorEndTick >= armorStartTick && stateTicks >= armorStartTick && stateTicks <= armorEndTick;
+        }
+
+        public bool HasAntiAirInvulnerabilityAtTick(int stateTicks)
+        {
+            if (!antiAirInvulnerable)
+            {
+                return false;
+            }
+            if (antiAirEndTick > 0 && antiAirEndTick >= antiAirStartTick)
+            {
+                return stateTicks >= antiAirStartTick && stateTicks <= antiAirEndTick;
+            }
+            return stateTicks <= LastActiveTick;
         }
 
         /// <summary>
@@ -101,6 +148,23 @@ namespace UnDFight
             hitboxCenterOffset = centerOffset;
             hitboxSize = size;
             lungeSpeed = Mathf.Max(0f, lungeSpeedValue);
+            specialMechanic = SpecialMechanicType.None;
+            superCost = 0;
+            isExMove = false;
+            armorStartTick = 0;
+            armorEndTick = 0;
+            antiAirInvulnerable = false;
+            antiAirStartTick = 0;
+            antiAirEndTick = 0;
+            secondActiveStartTick = 0;
+            secondActiveEndTick = 0;
+            secondHitDamage = 0;
+            spawnsProjectile = false;
+            projectileSpeed = 9.5f;
+            projectileLifetimeTicks = 45;
+            projectileSpawnOffset = new Vector2(0.70f, 1.15f);
+            projectileHitboxSize = new Vector2(0.55f, 0.45f);
+            superFreezeTicks = 0;
         }
     }
 }

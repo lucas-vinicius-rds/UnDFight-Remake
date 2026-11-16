@@ -93,7 +93,17 @@ namespace UnDFight.Tests
             Assert.AreNotSame(jompes.crouchKick, rochard.crouchKick);
             Assert.AreNotSame(jompes.jumpAttack, rochard.jumpAttack);
             Assert.AreNotSame(jompes.throwMove, rochard.throwMove);
+            Assert.AreNotSame(jompes.exHeavyPunch, rochard.exHeavyPunch);
+            Assert.AreNotSame(jompes.exHeavyKick, rochard.exHeavyKick);
             Assert.AreNotSame(jompes.specialMove, rochard.specialMove);
+
+            Assert.AreEqual(SpecialMechanicType.ProjectileShot, jompes.specialMove.specialMechanic);
+            Assert.IsTrue(jompes.specialMove.spawnsProjectile);
+            Assert.AreEqual(14, jompes.specialMove.superFreezeTicks);
+
+            Assert.AreEqual(SpecialMechanicType.AntiAirSpin, rochard.specialMove.specialMechanic);
+            Assert.IsTrue(rochard.specialMove.antiAirInvulnerable);
+            Assert.AreEqual(14, rochard.specialMove.superFreezeTicks);
 
             AssertLightTicks(jompes);
             AssertLightTicks(rochard);
@@ -145,7 +155,17 @@ namespace UnDFight.Tests
             Assert.AreNotSame(lucas.crouchKick, tiago.crouchKick);
             Assert.AreNotSame(lucas.jumpAttack, tiago.jumpAttack);
             Assert.AreNotSame(lucas.throwMove, tiago.throwMove);
+            Assert.AreNotSame(lucas.exHeavyPunch, tiago.exHeavyPunch);
+            Assert.AreNotSame(lucas.exHeavyKick, tiago.exHeavyKick);
             Assert.AreNotSame(lucas.specialMove, tiago.specialMove);
+
+            Assert.AreEqual(SpecialMechanicType.ArmoredSmash, lucas.specialMove.specialMechanic);
+            Assert.Greater(lucas.specialMove.armorStartTick, 0);
+            Assert.AreEqual(14, lucas.specialMove.superFreezeTicks);
+
+            Assert.AreEqual(SpecialMechanicType.MultiHitRush, tiago.specialMove.specialMechanic);
+            Assert.AreEqual(12, tiago.specialMove.secondActiveStartTick);
+            Assert.AreEqual(14, tiago.specialMove.superFreezeTicks);
 
             AssertMovesetMatchesFbx(lucas, "Assets/UnDFight/Art/Models/Lucas/Lucas.fbx", "AOC_Lucas");
             AssertMovesetMatchesFbx(tiago, "Assets/UnDFight/Art/Models/Tiago/Tiago.fbx", "AOC_Tiago");
@@ -199,6 +219,16 @@ namespace UnDFight.Tests
                 int clipFrames = Mathf.RoundToInt(clip.length * 60f);
                 Assert.AreEqual(move.TotalTicks, clipFrames, $"{data.fighterName} {attackType} MoveData.TotalTicks must equal FBX clip frame length");
             }
+
+            Assert.IsNotNull(data.exHeavyPunch, $"{data.fighterName} missing exHeavyPunch");
+            Assert.IsTrue(data.exHeavyPunch.isExMove);
+            Assert.AreEqual(FighterData.ExSuperCost, data.exHeavyPunch.superCost);
+            Assert.Greater(data.exHeavyPunch.damage, data.heavyPunch.damage);
+
+            Assert.IsNotNull(data.exHeavyKick, $"{data.fighterName} missing exHeavyKick");
+            Assert.IsTrue(data.exHeavyKick.isExMove);
+            Assert.AreEqual(FighterData.ExSuperCost, data.exHeavyKick.superCost);
+            Assert.Greater(data.exHeavyKick.damage, data.heavyKick.damage);
 
             Assert.IsNotNull(data.prefab);
             Animator anim = data.prefab.GetComponentInChildren<Animator>(true);

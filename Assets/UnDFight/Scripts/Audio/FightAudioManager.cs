@@ -21,6 +21,10 @@ namespace UnDFight
         private AudioClip _whooshLightClip;
         private AudioClip _whooshHeavyClip;
         private AudioClip _whooshSpecialClip;
+        private AudioClip _superFlashClip;
+        private AudioClip _exActivationClip;
+        private AudioClip _projectileFireClip;
+        private AudioClip _armorAbsorbClip;
         private AudioClip _dashClip;
         private AudioClip _throwTechClip;
         private AudioClip _hitLightClip;
@@ -96,6 +100,7 @@ namespace UnDFight
             SceneManager.sceneLoaded += HandleSceneLoaded;
             FighterController.OnAnyAttackStarted += HandleAnyAttackStarted;
             FighterController.OnAnyDashStarted += HandleAnyDashStarted;
+            FighterController.OnAnyProjectileFired += HandleAnyProjectileFired;
             MenuNavigationGroup.OnAnySelectionMoved += HandleUiMove;
             MenuNavigationGroup.OnAnySubmitted += HandleUiConfirm;
             MenuNavigationGroup.OnAnyCancelled += HandleUiBack;
@@ -110,6 +115,7 @@ namespace UnDFight
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             FighterController.OnAnyAttackStarted -= HandleAnyAttackStarted;
             FighterController.OnAnyDashStarted -= HandleAnyDashStarted;
+            FighterController.OnAnyProjectileFired -= HandleAnyProjectileFired;
             MenuNavigationGroup.OnAnySelectionMoved -= HandleUiMove;
             MenuNavigationGroup.OnAnySubmitted -= HandleUiConfirm;
             MenuNavigationGroup.OnAnyCancelled -= HandleUiBack;
@@ -122,6 +128,7 @@ namespace UnDFight
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             FighterController.OnAnyAttackStarted -= HandleAnyAttackStarted;
             FighterController.OnAnyDashStarted -= HandleAnyDashStarted;
+            FighterController.OnAnyProjectileFired -= HandleAnyProjectileFired;
             MenuNavigationGroup.OnAnySelectionMoved -= HandleUiMove;
             MenuNavigationGroup.OnAnySubmitted -= HandleUiConfirm;
             MenuNavigationGroup.OnAnyCancelled -= HandleUiBack;
@@ -192,11 +199,22 @@ namespace UnDFight
             PlaySfx(_dashClip, isForward ? 0.72f : 0.65f);
         }
 
+        public void PlaySuperFlash() => PlaySfx(_superFlashClip, 0.96f);
+        public void PlayExActivation() => PlaySfx(_exActivationClip, 0.85f);
+        public void PlayProjectileFire() => PlaySfx(_projectileFireClip, 0.88f);
+        public void PlayArmorAbsorb() => PlaySfx(_armorAbsorbClip, 0.95f);
+
         public void PlayAttackWhoosh(AttackType attack)
         {
             if (attack == AttackType.Special)
             {
                 PlaySfx(_whooshSpecialClip, 0.95f);
+                return;
+            }
+            if (attack == AttackType.ExHeavyPunch || attack == AttackType.ExHeavyKick)
+            {
+                PlayExActivation();
+                PlaySfx(_whooshHeavyClip, 0.85f);
                 return;
             }
             bool heavy = attack == AttackType.HeavyPunch ||
@@ -208,6 +226,12 @@ namespace UnDFight
 
         public void PlayCombatHit(CombatHitEvent hit)
         {
+            if (hit.WasArmorAbsorbed)
+            {
+                PlayArmorAbsorb();
+                return;
+            }
+
             if (hit.Outcome == HitOutcomeType.ThrowTech)
             {
                 PlaySfx(_throwTechClip, 0.95f);
@@ -290,6 +314,10 @@ namespace UnDFight
             _whooshLightClip = ProceduralAudioFactory.CreateWhooshLightClip();
             _whooshHeavyClip = ProceduralAudioFactory.CreateWhooshHeavyClip();
             _whooshSpecialClip = ProceduralAudioFactory.CreateWhooshSpecialClip();
+            _superFlashClip = ProceduralAudioFactory.CreateSuperFlashClip();
+            _exActivationClip = ProceduralAudioFactory.CreateExActivationClip();
+            _projectileFireClip = ProceduralAudioFactory.CreateProjectileFireClip();
+            _armorAbsorbClip = ProceduralAudioFactory.CreateArmorAbsorbClip();
             _dashClip = ProceduralAudioFactory.CreateDashClip();
             _throwTechClip = ProceduralAudioFactory.CreateThrowTechClip();
             _hitLightClip = ProceduralAudioFactory.CreateHitLightClip();
@@ -324,6 +352,7 @@ namespace UnDFight
             if (_boundSimulation != null)
             {
                 _boundSimulation.OnCombatHit += HandleCombatHit;
+                _boundSimulation.OnSuperFlashTriggered += HandleSuperFlashTriggered;
             }
 
             _boundMatchManager = FindAnyObjectByType<MatchManager>();
@@ -338,6 +367,7 @@ namespace UnDFight
             if (_boundSimulation != null)
             {
                 _boundSimulation.OnCombatHit -= HandleCombatHit;
+                _boundSimulation.OnSuperFlashTriggered -= HandleSuperFlashTriggered;
                 _boundSimulation = null;
             }
 
@@ -351,6 +381,8 @@ namespace UnDFight
         private void HandleCombatHit(CombatHitEvent hit) => PlayCombatHit(hit);
         private void HandleAnyAttackStarted(FighterController fighter, AttackType attack) => PlayAttackWhoosh(attack);
         private void HandleAnyDashStarted(FighterController fighter, bool isForward) => PlayDash(isForward);
+        private void HandleAnyProjectileFired(FighterController fighter, MoveData move) => PlayProjectileFire();
+        private void HandleSuperFlashTriggered(FighterController caster, int freezeTicks) => PlaySuperFlash();
         private void HandleUiMove() => PlayUiMove();
         private void HandleUiConfirm() => PlayUiConfirm();
         private void HandleUiBack() => PlayUiBack();

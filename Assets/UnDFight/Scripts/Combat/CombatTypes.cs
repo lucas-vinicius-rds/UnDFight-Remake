@@ -28,6 +28,15 @@ namespace UnDFight
         MatchOver = 3
     }
 
+    public enum SpecialMechanicType
+    {
+        None = 0,
+        ArmoredSmash = 1,
+        MultiHitRush = 2,
+        ProjectileShot = 3,
+        AntiAirSpin = 4
+    }
+
     public struct CombatHitEvent
     {
         public FighterController Attacker;
@@ -42,5 +51,7 @@ namespace UnDFight
         public int ComboCount;
         public int ComboDamage;
         public bool IsSpecial;
+        public bool IsExMove;
+        public bool WasArmorAbsorbed;
     }
 }

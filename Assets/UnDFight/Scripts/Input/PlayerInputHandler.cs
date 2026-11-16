@@ -213,6 +213,7 @@ namespace UnDFight
             float moveX = 0f;
             float moveY = 0f;
             bool holdBlock = false;
+            bool holdSpecial = false;
 
             var kb = Keyboard.current;
             if (kb != null && assignmentMode != InputAssignmentMode.Gamepad0 && assignmentMode != InputAssignmentMode.Gamepad1)
@@ -233,6 +234,7 @@ namespace UnDFight
                 }
 
                 if (IsKeyPressed(kb, _blockKey)) holdBlock = true;
+                if (IsKeyPressed(kb, _specialKey)) holdSpecial = true;
                 if (WasKeyPressedThisFrame(kb, _lightPunchKey)) BufferButton(FighterInputButton.LightPunch);
                 if (WasKeyPressedThisFrame(kb, _heavyPunchKey)) BufferButton(FighterInputButton.HeavyPunch);
                 if (WasKeyPressedThisFrame(kb, _lightKickKey)) BufferButton(FighterInputButton.LightKick);
@@ -256,6 +258,10 @@ namespace UnDFight
                 {
                     holdBlock = true;
                 }
+                if (_activeGamepad.leftShoulder.isPressed)
+                {
+                    holdSpecial = true;
+                }
 
                 if (_activeGamepad.buttonWest.wasPressedThisFrame) BufferButton(FighterInputButton.LightPunch);
                 if (_activeGamepad.buttonNorth.wasPressedThisFrame) BufferButton(FighterInputButton.HeavyPunch);
@@ -268,6 +274,7 @@ namespace UnDFight
             _currentInput.MoveX = Mathf.Clamp(moveX, -1f, 1f);
             _currentInput.MoveY = Mathf.Clamp(moveY, -1f, 1f);
             _currentInput.HoldBlock = holdBlock;
+            _currentInput.HoldSpecial = holdSpecial;
             _currentInput.LastTickSampled = _currentSimTick;
         }
 
@@ -381,6 +388,20 @@ namespace UnDFight
             return false;
         }
 
+        public void BufferExInput(AttackType exAttack, int currentTick)
+        {
+            _currentSimTick = Mathf.Max(_currentSimTick, currentTick);
+            _bufferedButtonExpireTick[FighterInputButton.Special] = currentTick + bufferWindowTicks;
+            if (exAttack == AttackType.ExHeavyKick)
+            {
+                _bufferedButtonExpireTick[FighterInputButton.HeavyKick] = currentTick + bufferWindowTicks;
+            }
+            else
+            {
+                _bufferedButtonExpireTick[FighterInputButton.HeavyPunch] = currentTick + bufferWindowTicks;
+            }
+        }
+
         public bool ConsumeAttackInput(int currentTick, out AttackType attackType)
         {
             return ConsumeAttackInput(currentTick, allowSpecial: true, out attackType);
@@ -393,6 +414,7 @@ namespace UnDFight
                 allowSpecial,
                 isGrounded: true,
                 isCrouchingInput: _currentInput.MoveY < -0.5f,
+                allowEx: false,
                 out attackType);
         }
 
@@ -401,6 +423,17 @@ namespace UnDFight
             bool allowSpecial,
             bool isGrounded,
             bool isCrouchingInput,
+            out AttackType attackType)
+        {
+            return ConsumeAttackInput(currentTick, allowSpecial, isGrounded, isCrouchingInput, allowEx: false, out attackType);
+        }
+
+        public bool ConsumeAttackInput(
+            int currentTick,
+            bool allowSpecial,
+            bool isGrounded,
+            bool isCrouchingInput,
+            bool allowEx,
             out AttackType attackType)
         {
             if (!isGrounded)
@@ -416,6 +449,20 @@ namespace UnDFight
 
                 attackType = AttackType.None;
                 return false;
+            }
+
+            if (allowEx)
+            {
+                if (TryConsumeExCombo(currentTick, FighterInputButton.HeavyPunch))
+                {
+                    attackType = AttackType.ExHeavyPunch;
+                    return true;
+                }
+                if (TryConsumeExCombo(currentTick, FighterInputButton.HeavyKick))
+                {
+                    attackType = AttackType.ExHeavyKick;
+                    return true;
+                }
             }
 
             if (allowSpecial && TryConsumeSpecialShortcutOrButton(currentTick))
@@ -463,36 +510,57 @@ namespace UnDFight
 
         public bool ConsumeChainAttackInput(int currentTick, AttackType currentAttack, bool allowSpecial, out AttackType nextAttack)
         {
-            if (allowSpecial && IsChainCancelAllowed(currentAttack, AttackType.Special, true) && TryConsumeSpecialShortcutOrButton(currentTick))
+            return ConsumeChainAttackInput(currentTick, currentAttack, allowSpecial, allowEx: false, out nextAttack);
+        }
+
+        public bool ConsumeChainAttackInput(int currentTick, AttackType currentAttack, bool allowSpecial, bool allowEx, out AttackType nextAttack)
+        {
+            if (allowEx)
+            {
+                if (IsChainCancelAllowed(currentAttack, AttackType.ExHeavyPunch, allowSpecial, allowEx: true) &&
+                    TryConsumeExCombo(currentTick, FighterInputButton.HeavyPunch))
+                {
+                    nextAttack = AttackType.ExHeavyPunch;
+                    return true;
+                }
+                if (IsChainCancelAllowed(currentAttack, AttackType.ExHeavyKick, allowSpecial, allowEx: true) &&
+                    TryConsumeExCombo(currentTick, FighterInputButton.HeavyKick))
+                {
+                    nextAttack = AttackType.ExHeavyKick;
+                    return true;
+                }
+            }
+
+            if (allowSpecial && IsChainCancelAllowed(currentAttack, AttackType.Special, true, allowEx) && TryConsumeSpecialShortcutOrButton(currentTick))
             {
                 nextAttack = AttackType.Special;
                 return true;
             }
 
             if (_currentInput.MoveY < -0.5f &&
-                IsChainCancelAllowed(currentAttack, AttackType.CrouchKick, allowSpecial) &&
+                IsChainCancelAllowed(currentAttack, AttackType.CrouchKick, allowSpecial, allowEx) &&
                 ConsumeBufferedButton(FighterInputButton.HeavyKick, currentTick))
             {
                 nextAttack = AttackType.CrouchKick;
                 return true;
             }
 
-            if (IsChainCancelAllowed(currentAttack, AttackType.HeavyKick, allowSpecial) && ConsumeBufferedButton(FighterInputButton.HeavyKick, currentTick))
+            if (IsChainCancelAllowed(currentAttack, AttackType.HeavyKick, allowSpecial, allowEx) && ConsumeBufferedButton(FighterInputButton.HeavyKick, currentTick))
             {
                 nextAttack = AttackType.HeavyKick;
                 return true;
             }
-            if (IsChainCancelAllowed(currentAttack, AttackType.HeavyPunch, allowSpecial) && ConsumeBufferedButton(FighterInputButton.HeavyPunch, currentTick))
+            if (IsChainCancelAllowed(currentAttack, AttackType.HeavyPunch, allowSpecial, allowEx) && ConsumeBufferedButton(FighterInputButton.HeavyPunch, currentTick))
             {
                 nextAttack = AttackType.HeavyPunch;
                 return true;
             }
-            if (IsChainCancelAllowed(currentAttack, AttackType.LightKick, allowSpecial) && ConsumeBufferedButton(FighterInputButton.LightKick, currentTick))
+            if (IsChainCancelAllowed(currentAttack, AttackType.LightKick, allowSpecial, allowEx) && ConsumeBufferedButton(FighterInputButton.LightKick, currentTick))
             {
                 nextAttack = AttackType.LightKick;
                 return true;
             }
-            if (IsChainCancelAllowed(currentAttack, AttackType.LightPunch, allowSpecial) && ConsumeBufferedButton(FighterInputButton.LightPunch, currentTick))
+            if (IsChainCancelAllowed(currentAttack, AttackType.LightPunch, allowSpecial, allowEx) && ConsumeBufferedButton(FighterInputButton.LightPunch, currentTick))
             {
                 nextAttack = AttackType.LightPunch;
                 return true;
@@ -504,6 +572,11 @@ namespace UnDFight
 
         public static bool IsChainCancelAllowed(AttackType fromAttack, AttackType toAttack, bool allowSpecial)
         {
+            return IsChainCancelAllowed(fromAttack, toAttack, allowSpecial, allowEx: false);
+        }
+
+        public static bool IsChainCancelAllowed(AttackType fromAttack, AttackType toAttack, bool allowSpecial, bool allowEx)
+        {
             if (toAttack == AttackType.None || toAttack == fromAttack)
             {
                 return false;
@@ -514,12 +587,47 @@ namespace UnDFight
                 return allowSpecial && fromAttack != AttackType.Special;
             }
 
+            if (toAttack == AttackType.ExHeavyPunch || toAttack == AttackType.ExHeavyKick)
+            {
+                return allowEx &&
+                       (fromAttack == AttackType.LightPunch ||
+                        fromAttack == AttackType.LightKick ||
+                        fromAttack == AttackType.HeavyPunch ||
+                        fromAttack == AttackType.HeavyKick ||
+                        fromAttack == AttackType.CrouchKick);
+            }
+
             return fromAttack switch
             {
                 AttackType.LightPunch => toAttack == AttackType.HeavyPunch || toAttack == AttackType.LightKick || toAttack == AttackType.HeavyKick || toAttack == AttackType.CrouchKick,
                 AttackType.LightKick => toAttack == AttackType.HeavyPunch || toAttack == AttackType.HeavyKick || toAttack == AttackType.CrouchKick,
                 _ => false
             };
+        }
+
+        private bool TryConsumeExCombo(int currentTick, FighterInputButton heavyButton)
+        {
+            if (!TryGetValidExpireTick(heavyButton, currentTick, out int heavyExpire))
+            {
+                return false;
+            }
+
+            if (_currentInput.HoldSpecial)
+            {
+                _bufferedButtonExpireTick.Remove(heavyButton);
+                _bufferedButtonExpireTick.Remove(FighterInputButton.Special);
+                return true;
+            }
+
+            if (TryGetValidExpireTick(FighterInputButton.Special, currentTick, out int spExpire) &&
+                Mathf.Abs(spExpire - heavyExpire) <= 2)
+            {
+                _bufferedButtonExpireTick.Remove(heavyButton);
+                _bufferedButtonExpireTick.Remove(FighterInputButton.Special);
+                return true;
+            }
+
+            return false;
         }
 
         public bool HasStageInteractCombo(int currentTick)

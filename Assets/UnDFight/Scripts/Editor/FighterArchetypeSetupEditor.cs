@@ -35,6 +35,23 @@ namespace UnDFight.Editor
             public float LungeSpeed;
             public bool IsThrow;
             public bool AirOnly;
+            public SpecialMechanicType SpecialMechanic;
+            public int SuperCost;
+            public bool IsExMove;
+            public int ArmorStartTick;
+            public int ArmorEndTick;
+            public bool AntiAirInvulnerable;
+            public int AntiAirStartTick;
+            public int AntiAirEndTick;
+            public int SecondActiveStartTick;
+            public int SecondActiveEndTick;
+            public int SecondHitDamage;
+            public bool SpawnsProjectile;
+            public float ProjectileSpeed;
+            public int ProjectileLifetimeTicks;
+            public Vector2 ProjectileSpawnOffset;
+            public Vector2 ProjectileHitboxSize;
+            public int SuperFreezeTicks;
 
             public int TotalTicks => Startup + Active + Recovery;
         }
@@ -403,6 +420,8 @@ namespace UnDFight.Editor
                 ("CrouchKick", AttackType.CrouchKick),
                 ("JumpAttack", AttackType.JumpAttack),
                 ("Throw", AttackType.Throw),
+                ("HeavyPunch", AttackType.ExHeavyPunch),
+                ("HeavyKick", AttackType.ExHeavyKick),
             };
 
             foreach (var (stateName, atkType) in attackAnyStates)
@@ -413,11 +432,18 @@ namespace UnDFight.Editor
                 AnimatorStateTransition anyTr = null;
                 foreach (AnimatorStateTransition tr in sm.anyStateTransitions)
                 {
-                    if (tr.destinationState == dst)
+                    if (tr.destinationState != dst) continue;
+                    foreach (AnimatorCondition cond in tr.conditions)
                     {
-                        anyTr = tr;
-                        break;
+                        if (cond.parameter == "AttackType" &&
+                            cond.mode == AnimatorConditionMode.Equals &&
+                            Mathf.RoundToInt(cond.threshold) == (int)atkType)
+                        {
+                            anyTr = tr;
+                            break;
+                        }
                     }
+                    if (anyTr != null) break;
                 }
                 if (anyTr == null)
                 {
@@ -873,6 +899,23 @@ namespace UnDFight.Editor
                     spec.LungeSpeed,
                     spec.IsThrow,
                     spec.AirOnly);
+                move.specialMechanic = spec.SpecialMechanic;
+                move.superCost = spec.SuperCost;
+                move.isExMove = spec.IsExMove;
+                move.armorStartTick = spec.ArmorStartTick;
+                move.armorEndTick = spec.ArmorEndTick;
+                move.antiAirInvulnerable = spec.AntiAirInvulnerable;
+                move.antiAirStartTick = spec.AntiAirStartTick;
+                move.antiAirEndTick = spec.AntiAirEndTick;
+                move.secondActiveStartTick = spec.SecondActiveStartTick;
+                move.secondActiveEndTick = spec.SecondActiveEndTick;
+                move.secondHitDamage = spec.SecondHitDamage;
+                move.spawnsProjectile = spec.SpawnsProjectile;
+                if (spec.ProjectileSpeed > 0f) move.projectileSpeed = spec.ProjectileSpeed;
+                if (spec.ProjectileLifetimeTicks > 0) move.projectileLifetimeTicks = spec.ProjectileLifetimeTicks;
+                if (spec.ProjectileSpawnOffset != Vector2.zero) move.projectileSpawnOffset = spec.ProjectileSpawnOffset;
+                if (spec.ProjectileHitboxSize != Vector2.zero) move.projectileHitboxSize = spec.ProjectileHitboxSize;
+                move.superFreezeTicks = spec.SuperFreezeTicks;
                 EditorUtility.SetDirty(move);
 
                 switch (spec.Type)
@@ -897,6 +940,12 @@ namespace UnDFight.Editor
                         break;
                     case AttackType.Throw:
                         data.throwMove = move;
+                        break;
+                    case AttackType.ExHeavyPunch:
+                        data.exHeavyPunch = move;
+                        break;
+                    case AttackType.ExHeavyKick:
+                        data.exHeavyKick = move;
                         break;
                     case AttackType.Special:
                         data.specialMove = move;
@@ -978,6 +1027,66 @@ namespace UnDFight.Editor
             var list = new List<MoveSpec>(GetWeightClassPresetSpecs(weightClass));
             MoveSpec[] specs = list.ToArray();
 
+            MoveSpec baseHp = default;
+            MoveSpec baseHk = default;
+            foreach (MoveSpec s in specs)
+            {
+                if (s.Type == AttackType.HeavyPunch) baseHp = s;
+                else if (s.Type == AttackType.HeavyKick) baseHk = s;
+            }
+
+            bool armorExHp = archetype == FightingArchetype.HeavyBrawler || archetype == FightingArchetype.StreetScrappy;
+            bool antiAirExHk = archetype == FightingArchetype.AgileStriker || archetype == FightingArchetype.TechnicalStriker;
+
+            var exHpSpec = new MoveSpec
+            {
+                MoveName = "EX Soco Forte",
+                Type = AttackType.ExHeavyPunch,
+                Startup = Mathf.Max(4, baseHp.Startup - 2),
+                Active = baseHp.Active + 1,
+                Recovery = Mathf.Max(10, baseHp.Recovery - 2),
+                Damage = Mathf.RoundToInt(baseHp.Damage * 1.30f),
+                ChipDamage = 18,
+                Hitstun = baseHp.Hitstun + 4,
+                Blockstun = baseHp.Blockstun + 3,
+                Hitstop = baseHp.Hitstop + 2,
+                Knockback = baseHp.Knockback + 0.8f,
+                Height = HitHeight.Mid,
+                CausesKnockdown = false,
+                HitboxOffset = baseHp.HitboxOffset + new Vector2(0.08f, 0f),
+                HitboxSize = baseHp.HitboxSize + new Vector2(0.14f, 0.08f),
+                LungeSpeed = armorExHp ? 2.2f : 4.2f,
+                SuperCost = FighterData.ExSuperCost,
+                IsExMove = true,
+                ArmorStartTick = armorExHp ? 2 : 0,
+                ArmorEndTick = armorExHp ? (Mathf.Max(4, baseHp.Startup - 2) + baseHp.Active + 1) : 0,
+            };
+
+            var exHkSpec = new MoveSpec
+            {
+                MoveName = "EX Chute Forte",
+                Type = AttackType.ExHeavyKick,
+                Startup = Mathf.Max(5, baseHk.Startup - 2),
+                Active = baseHk.Active + 1,
+                Recovery = Mathf.Max(12, baseHk.Recovery - 2),
+                Damage = Mathf.RoundToInt(baseHk.Damage * 1.30f),
+                ChipDamage = 20,
+                Hitstun = baseHk.Hitstun + 4,
+                Blockstun = baseHk.Blockstun + 3,
+                Hitstop = baseHk.Hitstop + 2,
+                Knockback = baseHk.Knockback + 0.9f,
+                Height = HitHeight.High,
+                CausesKnockdown = true,
+                HitboxOffset = baseHk.HitboxOffset + new Vector2(0.10f, 0.04f),
+                HitboxSize = baseHk.HitboxSize + new Vector2(0.16f, 0.14f),
+                LungeSpeed = antiAirExHk ? 3.0f : 2.6f,
+                SuperCost = FighterData.ExSuperCost,
+                IsExMove = true,
+                AntiAirInvulnerable = antiAirExHk,
+                AntiAirStartTick = antiAirExHk ? 1 : 0,
+                AntiAirEndTick = antiAirExHk ? (Mathf.Max(5, baseHk.Startup - 2) + baseHk.Active + 1) : 0,
+            };
+
             MoveSpec specialSpec;
             switch (archetype)
             {
@@ -989,17 +1098,22 @@ namespace UnDFight.Editor
                         Startup = 10,
                         Active = 5,
                         Recovery = 17,
-                        Damage = 240,
+                        Damage = 250,
                         ChipDamage = 35,
                         Hitstun = 24,
                         Blockstun = 16,
-                        Hitstop = 11,
-                        Knockback = 5.2f,
+                        Hitstop = 14,
+                        Knockback = 5.4f,
                         Height = HitHeight.Mid,
                         CausesKnockdown = true,
                         HitboxOffset = new Vector2(0.92f, 1.16f),
                         HitboxSize = new Vector2(1.18f, 0.72f),
-                        LungeSpeed = 1.6f
+                        LungeSpeed = 1.8f,
+                        SpecialMechanic = SpecialMechanicType.ArmoredSmash,
+                        SuperCost = FighterData.SpecialSuperCost,
+                        ArmorStartTick = 2,
+                        ArmorEndTick = 14,
+                        SuperFreezeTicks = 14,
                     };
                     break;
 
@@ -1016,10 +1130,13 @@ namespace UnDFight.Editor
                     {
                         MoveName = "Sequência de Rua",
                         Type = AttackType.Special,
-                        Startup = 8,
-                        Active = 5,
-                        Recovery = 15,
-                        Damage = 220,
+                        Startup = 7,
+                        Active = 3,
+                        Recovery = 18,
+                        Damage = 105,
+                        SecondHitDamage = 145,
+                        SecondActiveStartTick = 12,
+                        SecondActiveEndTick = 14,
                         ChipDamage = 30,
                         Hitstun = 22,
                         Blockstun = 15,
@@ -1029,7 +1146,10 @@ namespace UnDFight.Editor
                         CausesKnockdown = true,
                         HitboxOffset = new Vector2(0.88f, 1.18f),
                         HitboxSize = new Vector2(1.16f, 0.66f),
-                        LungeSpeed = 2.0f
+                        LungeSpeed = 3.8f,
+                        SpecialMechanic = SpecialMechanicType.MultiHitRush,
+                        SuperCost = FighterData.SpecialSuperCost,
+                        SuperFreezeTicks = 14,
                     };
                     break;
 
@@ -1054,17 +1174,25 @@ namespace UnDFight.Editor
                         Startup = 7,
                         Active = 4,
                         Recovery = 13,
-                        Damage = 205,
+                        Damage = 210,
                         ChipDamage = 28,
                         Hitstun = 22,
                         Blockstun = 14,
-                        Hitstop = 9,
-                        Knockback = 4.3f,
+                        Hitstop = 10,
+                        Knockback = 4.4f,
                         Height = HitHeight.Mid,
                         CausesKnockdown = true,
                         HitboxOffset = new Vector2(0.90f, 1.14f),
                         HitboxSize = new Vector2(1.14f, 0.58f),
-                        LungeSpeed = 2.4f
+                        LungeSpeed = 1.6f,
+                        SpecialMechanic = SpecialMechanicType.ProjectileShot,
+                        SuperCost = FighterData.SpecialSuperCost,
+                        SpawnsProjectile = true,
+                        ProjectileSpeed = 10.5f,
+                        ProjectileLifetimeTicks = 45,
+                        ProjectileSpawnOffset = new Vector2(0.70f, 1.15f),
+                        ProjectileHitboxSize = new Vector2(0.58f, 0.48f),
+                        SuperFreezeTicks = 14,
                     };
                     break;
 
@@ -1090,22 +1218,28 @@ namespace UnDFight.Editor
                         Startup = 6,
                         Active = 4,
                         Recovery = 12,
-                        Damage = 195,
-                        ChipDamage = 25,
-                        Hitstun = 20,
+                        Damage = 225,
+                        ChipDamage = 26,
+                        Hitstun = 22,
                         Blockstun = 14,
-                        Hitstop = 9,
-                        Knockback = 4.2f,
+                        Hitstop = 10,
+                        Knockback = 4.4f,
                         Height = HitHeight.High,
                         CausesKnockdown = true,
-                        HitboxOffset = new Vector2(0.92f, 1.24f),
-                        HitboxSize = new Vector2(1.22f, 0.68f),
-                        LungeSpeed = 2.2f
+                        HitboxOffset = new Vector2(0.86f, 1.32f),
+                        HitboxSize = new Vector2(1.26f, 1.05f),
+                        LungeSpeed = 4.6f,
+                        SpecialMechanic = SpecialMechanicType.AntiAirSpin,
+                        SuperCost = FighterData.SpecialSuperCost,
+                        AntiAirInvulnerable = true,
+                        AntiAirStartTick = 1,
+                        AntiAirEndTick = 12,
+                        SuperFreezeTicks = 14,
                     };
                     break;
             }
 
-            list = new List<MoveSpec>(specs) { specialSpec };
+            list = new List<MoveSpec>(specs) { exHpSpec, exHkSpec, specialSpec };
             return list.ToArray();
         }
 

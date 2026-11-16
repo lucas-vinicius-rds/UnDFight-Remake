@@ -53,6 +53,8 @@ namespace UnDFight
             if (simulation != null)
             {
                 simulation.OnCombatHit -= HandleCombatHit;
+                simulation.OnSuperFlashTriggered -= HandleSuperFlashTriggered;
+                simulation.OnProjectileClashed -= HandleProjectileClashed;
             }
             simulation = sim;
             if (hud != null)
@@ -62,6 +64,8 @@ namespace UnDFight
             if (simulation != null && isActiveAndEnabled)
             {
                 simulation.OnCombatHit += HandleCombatHit;
+                simulation.OnSuperFlashTriggered += HandleSuperFlashTriggered;
+                simulation.OnProjectileClashed += HandleProjectileClashed;
             }
         }
 
@@ -96,6 +100,10 @@ namespace UnDFight
             {
                 simulation.OnCombatHit -= HandleCombatHit;
                 simulation.OnCombatHit += HandleCombatHit;
+                simulation.OnSuperFlashTriggered -= HandleSuperFlashTriggered;
+                simulation.OnSuperFlashTriggered += HandleSuperFlashTriggered;
+                simulation.OnProjectileClashed -= HandleProjectileClashed;
+                simulation.OnProjectileClashed += HandleProjectileClashed;
             }
             if (matchManager != null)
             {
@@ -109,6 +117,8 @@ namespace UnDFight
             if (simulation != null)
             {
                 simulation.OnCombatHit -= HandleCombatHit;
+                simulation.OnSuperFlashTriggered -= HandleSuperFlashTriggered;
+                simulation.OnProjectileClashed -= HandleProjectileClashed;
             }
             if (matchManager != null)
             {
@@ -167,10 +177,135 @@ namespace UnDFight
             UpdateDebugBoxes();
         }
 
+        private void HandleSuperFlashTriggered(FighterController caster, int freezeTicks)
+        {
+            if (caster == null) return;
+            Vector2 center = caster.SimPosition + new Vector2(0f, 1.15f);
+            SpawnCustomSparkBurst(
+                "VFX_SuperFlash",
+                center,
+                new Color(1.0f, 0.90f, 0.28f, 1.0f),
+                new Color(0.95f, 0.65f, 1.0f, 1.0f),
+                duration: Mathf.Max(0.28f, freezeTicks * FightSimulation.TickDeltaTime * 1.4f),
+                initialScale: 0.68f,
+                maxCoreScale: 1.55f,
+                rayCount: 20,
+                raySpeed: 5.6f);
+        }
+
+        private void HandleProjectileClashed(Vector2 clashPoint)
+        {
+            SpawnCustomSparkBurst(
+                "VFX_ProjectileClash",
+                clashPoint,
+                new Color(0.65f, 0.96f, 1.0f, 1.0f),
+                new Color(0.85f, 0.55f, 1.0f, 1.0f),
+                duration: 0.30f,
+                initialScale: 0.45f,
+                maxCoreScale: 0.92f,
+                rayCount: 14,
+                raySpeed: 4.4f);
+        }
+
         private void HandleCombatHit(CombatHitEvent hit)
         {
+            if (hit.WasArmorAbsorbed)
+            {
+                SpawnCustomSparkBurst(
+                    "VFX_ArmorSpark",
+                    hit.ContactPoint,
+                    new Color(0.86f, 0.92f, 1.0f, 1.0f),
+                    new Color(1.0f, 0.88f, 0.50f, 1.0f),
+                    duration: 0.24f,
+                    initialScale: 0.40f,
+                    maxCoreScale: 0.78f,
+                    rayCount: 12,
+                    raySpeed: 3.8f);
+                return;
+            }
+
             bool isSpecial = hit.IsSpecial || (hit.Move != null && hit.Move.attackType == AttackType.Special);
+            if (hit.IsExMove && hit.Outcome != HitOutcomeType.Blocked)
+            {
+                SpawnCustomSparkBurst(
+                    "VFX_ExSpark",
+                    hit.ContactPoint,
+                    new Color(1.0f, 0.84f, 0.16f, 1.0f),
+                    new Color(1.0f, 0.95f, 0.55f, 1.0f),
+                    duration: 0.34f,
+                    initialScale: 0.44f,
+                    maxCoreScale: 0.90f,
+                    rayCount: 14,
+                    raySpeed: 4.2f);
+                return;
+            }
+
             SpawnSparkBurst(hit.ContactPoint, hit.Outcome, isSpecial);
+        }
+
+        private void SpawnCustomSparkBurst(
+            string objectName,
+            Vector2 contactPoint,
+            Color coreColor,
+            Color rayColor,
+            float duration,
+            float initialScale,
+            float maxCoreScale,
+            int rayCount,
+            float raySpeed)
+        {
+            var root = new GameObject(objectName);
+            root.transform.SetParent(transform, false);
+            root.transform.position = new Vector3(contactPoint.x, contactPoint.y, -0.25f);
+
+            Material coreMat = CreateUnlitMaterial(coreColor);
+            Material rayMat = CreateUnlitMaterial(rayColor);
+
+            GameObject coreObj = new GameObject("Core");
+            coreObj.transform.SetParent(root.transform, false);
+            coreObj.AddComponent<MeshFilter>().sharedMesh = _sphereMesh;
+            var coreRenderer = coreObj.AddComponent<MeshRenderer>();
+            coreRenderer.sharedMaterial = coreMat;
+            coreRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            coreRenderer.receiveShadows = false;
+            coreObj.transform.localScale = Vector3.one * initialScale;
+
+            var burst = new ActiveBurst
+            {
+                Root = root,
+                Core = coreObj.transform,
+                CoreMat = coreMat,
+                BaseColor = coreColor,
+                RayMat = rayMat,
+                RayBaseColor = rayColor,
+                Elapsed = 0f,
+                Duration = duration,
+                MaxCoreScale = maxCoreScale,
+                RaySpeed = raySpeed
+            };
+
+            for (int i = 0; i < rayCount; i++)
+            {
+                float angle = (i / (float)rayCount) * Mathf.PI * 2f + 0.15f;
+                Vector3 dir = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
+
+                GameObject rayObj = new GameObject($"Ray_{i}");
+                rayObj.transform.SetParent(root.transform, false);
+                rayObj.transform.localPosition = dir * 0.22f;
+                rayObj.transform.localRotation = Quaternion.Euler(0f, 0f, angle * Mathf.Rad2Deg);
+                rayObj.transform.localScale = new Vector3(0.44f, 0.065f, 0.065f);
+
+                rayObj.AddComponent<MeshFilter>().sharedMesh = _cubeMesh;
+                var rr = rayObj.AddComponent<MeshRenderer>();
+                rr.sharedMaterial = rayMat;
+                rr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                rr.receiveShadows = false;
+
+                burst.Rays.Add(rayObj.transform);
+                burst.RayDirs.Add(dir);
+            }
+
+            _activeBursts.Add(burst);
         }
 
         public void SpawnSparkBurst(Vector2 contactPoint, HitOutcomeType outcome)

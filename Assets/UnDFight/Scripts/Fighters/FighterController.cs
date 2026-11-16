@@ -12,6 +12,7 @@ namespace UnDFight
     {
         public static event Action<FighterController, AttackType> OnAnyAttackStarted;
         public static event Action<FighterController, bool> OnAnyDashStarted;
+        public static event Action<FighterController, MoveData> OnAnyProjectileFired;
         public const int KnockDownDurationTicks = 45;
         public const int GetUpDurationTicks = 40;
         public const int WakeupInvincibilityGraceTicks = 6;
@@ -73,6 +74,10 @@ namespace UnDFight
         private int _receivedComboDamage;
         private bool _grantedStartSuperOnCurrentMove;
         private bool _hasUsedAirAttackThisJump;
+        private bool _hasAbsorbedArmorThisAttack;
+        private bool _hasResetSecondActiveWindow;
+        private bool _hasSpawnedProjectileThisAttack;
+        private int _attackHitCount;
         private float _baseHurtboxHeight = 1.81f;
         private float _baseHurtboxCenterY = 0.905f;
         private float _visualYaw = 90f;
@@ -105,6 +110,17 @@ namespace UnDFight
         public int SuperGauge => _superGauge;
         public float SuperNormalized => Mathf.Clamp01((float)_superGauge / MaxSuperGauge);
         public bool CanUseSpecial => _superGauge >= MaxSuperGauge;
+        public bool CanUseEx => _superGauge >= FighterData.ExSuperCost;
+        public int AttackHitCount => _attackHitCount;
+        public bool HasActiveSuperArmor =>
+            _state == FighterState.Attack &&
+            !_hasAbsorbedArmorThisAttack &&
+            _currentMoveData != null &&
+            _currentMoveData.HasArmorAtTick(_stateTicks);
+        public bool IsAntiAirInvulnerable =>
+            _state == FighterState.Attack &&
+            _currentMoveData != null &&
+            _currentMoveData.HasAntiAirInvulnerabilityAtTick(_stateTicks);
         public int ReceivedComboHits => _receivedComboHits;
         public int ReceivedComboDamage => _receivedComboDamage;
         public bool HasRegisteredHit => _hasRegisteredHit;
@@ -422,6 +438,7 @@ namespace UnDFight
         public void MarkHitRegistered()
         {
             _hasRegisteredHit = true;
+            _attackHitCount++;
         }
 
         /// <summary>
@@ -436,14 +453,15 @@ namespace UnDFight
         }
 
         /// <summary>
-        /// Returns active world-space XY hitbox and move data only during [Startup+1 .. Startup+Active]
-        /// and only if this execution has not yet registered a hit.
+        /// Returns active world-space XY hitbox and move data only during active windows
+        /// and only if this execution has not yet registered a hit (ignoring projectile-only moves).
         /// </summary>
         public bool TryGetActiveHitbox(out Rect worldHitbox, out MoveData moveData)
         {
             if (_state == FighterState.Attack &&
                 !_hasRegisteredHit &&
                 _currentMoveData != null &&
+                !_currentMoveData.spawnsProjectile &&
                 _currentMoveData.IsActiveTick(_stateTicks))
             {
                 float scale = fighterData != null ? fighterData.HurtboxScale : 1f;
@@ -606,7 +624,7 @@ namespace UnDFight
         }
 
         /// <summary>
-        /// Resolves damage (with combo scaling), stun, knockback (scaled by weight), block, or knockdown from an incoming strike.
+        /// Resolves damage (with combo scaling), stun, knockback (scaled by weight), block, armor absorb, or knockdown.
         /// </summary>
         public void ApplyIncomingAttack(
             MoveData move,
@@ -617,6 +635,33 @@ namespace UnDFight
             out int comboCount,
             out int comboDamage)
         {
+            ApplyIncomingAttack(
+                move,
+                attackerFacingSign,
+                out outcome,
+                out damageDealt,
+                out knockbackVelocity,
+                out comboCount,
+                out comboDamage,
+                out _,
+                isSecondaryMultiHit: false);
+        }
+
+        /// <summary>
+        /// Extended strike resolution supporting Super Armor absorption and multi-hit special properties.
+        /// </summary>
+        public void ApplyIncomingAttack(
+            MoveData move,
+            int attackerFacingSign,
+            out HitOutcomeType outcome,
+            out int damageDealt,
+            out float knockbackVelocity,
+            out int comboCount,
+            out int comboDamage,
+            out bool wasArmorAbsorbed,
+            bool isSecondaryMultiHit = false)
+        {
+            wasArmorAbsorbed = false;
             float pushDir = attackerFacingSign >= 0 ? 1f : -1f;
             float kbMult = fighterData != null ? fighterData.KnockbackMultiplier : 1f;
 
@@ -653,6 +698,36 @@ namespace UnDFight
                 return;
             }
 
+            bool armorBreaks = move == null ||
+                               move.isThrow ||
+                               move.attackType == AttackType.Throw ||
+                               move.attackType == AttackType.Special;
+            if (HasActiveSuperArmor && !armorBreaks)
+            {
+                _hasAbsorbedArmorThisAttack = true;
+                wasArmorAbsorbed = true;
+                int armorDamage = move.damage <= 0 ? 0 : Mathf.Max(1, Mathf.RoundToInt(move.damage * 0.60f));
+                int prevArmorHp = _currentHealth;
+                _currentHealth = Mathf.Max(0, _currentHealth - armorDamage);
+                damageDealt = prevArmorHp - _currentHealth;
+                knockbackVelocity = 0f;
+                comboCount = 0;
+                comboDamage = 0;
+                _ticksSinceLastHit = 0;
+
+                if (_currentHealth <= 0)
+                {
+                    _stateTotalTicks = KnockDownDurationTicks;
+                    EnterState(FighterState.KnockDown, forceResetTicks: true);
+                    outcome = HitOutcomeType.KnockDown;
+                }
+                else
+                {
+                    outcome = HitOutcomeType.Hit;
+                }
+                return;
+            }
+
             if (_state == FighterState.Hit || _state == FighterState.KnockDown)
             {
                 _receivedComboHits++;
@@ -663,8 +738,15 @@ namespace UnDFight
                 _receivedComboDamage = 0;
             }
 
+            int baseMoveDamage = (move.specialMechanic == SpecialMechanicType.MultiHitRush && isSecondaryMultiHit && move.secondHitDamage > 0)
+                ? move.secondHitDamage
+                : move.damage;
+            bool moveKnockdown = move.specialMechanic == SpecialMechanicType.MultiHitRush
+                ? (isSecondaryMultiHit && move.causesKnockdown)
+                : move.causesKnockdown;
+
             float scaling = ComputeComboScalingMultiplier(_receivedComboHits);
-            int scaledDamage = move.damage <= 0 ? 0 : Mathf.Max(1, Mathf.RoundToInt(move.damage * scaling));
+            int scaledDamage = baseMoveDamage <= 0 ? 0 : Mathf.Max(1, Mathf.RoundToInt(baseMoveDamage * scaling));
 
             int prevHealth = _currentHealth;
             _currentHealth = Mathf.Max(0, _currentHealth - scaledDamage);
@@ -682,7 +764,7 @@ namespace UnDFight
             int hitStun = Mathf.Max(1, move.hitstunTicks);
             _knockbackDecelPerSec = Mathf.Abs(hitKbSpeed) / (hitStun * FightSimulation.TickDeltaTime);
 
-            bool shouldKnockDown = _currentHealth <= 0 || move.causesKnockdown;
+            bool shouldKnockDown = _currentHealth <= 0 || moveKnockdown;
             if (shouldKnockDown)
             {
                 _stateTotalTicks = KnockDownDurationTicks;
@@ -763,9 +845,36 @@ namespace UnDFight
                     {
                         _simVelocity.x = _facingSign * _currentMoveData.lungeSpeed;
                     }
+                    else if (_currentMoveData != null &&
+                             _currentMoveData.specialMechanic == SpecialMechanicType.MultiHitRush &&
+                             _currentMoveData.lungeSpeed > 0f &&
+                             _stateTicks <= _currentMoveData.secondActiveEndTick)
+                    {
+                        _simVelocity.x = _facingSign * _currentMoveData.lungeSpeed;
+                    }
                     else
                     {
                         _simVelocity.x = 0f;
+                    }
+
+                    if (_currentMoveData != null)
+                    {
+                        if (_currentMoveData.specialMechanic == SpecialMechanicType.MultiHitRush &&
+                            !_hasResetSecondActiveWindow &&
+                            _currentMoveData.IsSecondaryActiveTick(_stateTicks))
+                        {
+                            _hasResetSecondActiveWindow = true;
+                            _hasRegisteredHit = false;
+                        }
+
+                        if (_currentMoveData.spawnsProjectile &&
+                            !_hasSpawnedProjectileThisAttack &&
+                            _stateTicks >= _currentMoveData.FirstActiveTick)
+                        {
+                            _hasSpawnedProjectileThisAttack = true;
+                            _simulation?.SpawnProjectile(this, _currentMoveData);
+                            OnAnyProjectileFired?.Invoke(this, _currentMoveData);
+                        }
                     }
                 }
                 else
@@ -804,7 +913,7 @@ namespace UnDFight
                     _hasRegisteredHit &&
                     hitstopCleared &&
                     _inputHandler != null &&
-                    _inputHandler.ConsumeChainAttackInput(tick, _currentAttack, CanUseSpecial, out AttackType cancelAttack) &&
+                    _inputHandler.ConsumeChainAttackInput(tick, _currentAttack, CanUseSpecial, CanUseEx, out AttackType cancelAttack) &&
                     StartAttack(cancelAttack))
                 {
                     UpdateHurtboxDimensions();
@@ -855,7 +964,7 @@ namespace UnDFight
                 if (isForward && _inputsEnabled && _stateTicks >= 8)
                 {
                     if (_inputHandler != null &&
-                        _inputHandler.ConsumeAttackInput(tick, CanUseSpecial, isGrounded: true, isCrouchingInput: input.MoveY < -0.5f, out AttackType dashCancelAttack) &&
+                        _inputHandler.ConsumeAttackInput(tick, CanUseSpecial, isGrounded: true, isCrouchingInput: input.MoveY < -0.5f, allowEx: CanUseEx, out AttackType dashCancelAttack) &&
                         StartAttack(dashCancelAttack))
                     {
                         UpdateHurtboxDimensions();
@@ -954,7 +1063,7 @@ namespace UnDFight
             }
 
             if (_inputHandler != null &&
-                _inputHandler.ConsumeAttackInput(tick, CanUseSpecial, isGrounded: true, isCrouchingInput: input.MoveY < -0.5f, out AttackType attackType) &&
+                _inputHandler.ConsumeAttackInput(tick, CanUseSpecial, isGrounded: true, isCrouchingInput: input.MoveY < -0.5f, allowEx: CanUseEx, out AttackType attackType) &&
                 StartAttack(attackType))
             {
                 UpdateHurtboxDimensions();
@@ -1182,13 +1291,27 @@ namespace UnDFight
                 return false;
             }
 
+            MoveData resolvedMove = fighterData != null ? fighterData.GetMoveData(attackType) : null;
+            bool isEx = attackType == AttackType.ExHeavyPunch || attackType == AttackType.ExHeavyKick;
+
             if (attackType == AttackType.Special)
             {
-                if (!CanUseSpecial)
+                int spCost = resolvedMove != null && resolvedMove.superCost > 0 ? resolvedMove.superCost : MaxSuperGauge;
+                if (_superGauge < spCost)
                 {
                     return false;
                 }
-                _superGauge = Mathf.Max(0, _superGauge - MaxSuperGauge);
+                _superGauge = Mathf.Max(0, _superGauge - spCost);
+                _grantedStartSuperOnCurrentMove = false;
+            }
+            else if (isEx)
+            {
+                int exCost = resolvedMove != null && resolvedMove.superCost > 0 ? resolvedMove.superCost : FighterData.ExSuperCost;
+                if (_superGauge < exCost)
+                {
+                    return false;
+                }
+                _superGauge = Mathf.Max(0, _superGauge - exCost);
                 _grantedStartSuperOnCurrentMove = false;
             }
             else
@@ -1200,10 +1323,27 @@ namespace UnDFight
             _simVelocity.x = 0f;
             _blockFromCrouch = false;
             _hasRegisteredHit = false;
+            _hasAbsorbedArmorThisAttack = false;
+            _hasResetSecondActiveWindow = false;
+            _hasSpawnedProjectileThisAttack = false;
+            _attackHitCount = 0;
             _currentAttack = attackType;
-            _currentMoveData = fighterData != null ? fighterData.GetMoveData(attackType) : null;
+            _currentMoveData = resolvedMove;
             _stateTotalTicks = _currentMoveData != null ? _currentMoveData.TotalTicks : GetFallbackAttackTotalTicks(attackType);
+
+            if (_currentMoveData != null && _currentMoveData.specialMechanic == SpecialMechanicType.AntiAirSpin)
+            {
+                _simVelocity.y = 4.2f;
+                _isGrounded = false;
+            }
+
             EnterState(FighterState.Attack, triggerAttack: true, forceResetTicks: true);
+
+            if (attackType == AttackType.Special && _currentMoveData != null && _currentMoveData.superFreezeTicks > 0)
+            {
+                _simulation?.TriggerSuperFlash(this, _currentMoveData.superFreezeTicks);
+            }
+
             return true;
         }
 
@@ -1241,6 +1381,10 @@ namespace UnDFight
                 _currentAttack = AttackType.None;
                 _currentMoveData = null;
                 _hasRegisteredHit = false;
+                _hasAbsorbedArmorThisAttack = false;
+                _hasResetSecondActiveWindow = false;
+                _hasSpawnedProjectileThisAttack = false;
+                _attackHitCount = 0;
                 _grantedStartSuperOnCurrentMove = false;
             }
             else if (triggerAttack)
@@ -1340,6 +1484,8 @@ namespace UnDFight
                 AttackType.CrouchKick => 28,
                 AttackType.JumpAttack => 18,
                 AttackType.Throw => 22,
+                AttackType.ExHeavyPunch => 24,
+                AttackType.ExHeavyKick => 30,
                 _ => 16
             };
         }

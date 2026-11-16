@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3689c22c8cad0aa40bb406794468d3ca, type: 3}
+  m_Name: MoveData_Tiago_ExHeavyPunch
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
+  moveName: EX Soco Forte
+  attackType: 9
+  startupTicks: 5
+  activeTicks: 5
+  recoveryTicks: 14
+  damage: 140
+  chipDamage: 18
+  hitstunTicks: 22
+  blockstunTicks: 15
+  hitstopTicks: 9
+  knockback: 3.5
+  blockKnockbackFactor: 0.5
+  hitHeight: 1
+  causesKnockdown: 0
+  isThrow: 0
+  airOnly: 0
+  hitboxCenterOffset: {x: 0.84, y: 1.18}
+  hitboxSize: {x: 1.0600001, y: 0.54}
+  lungeSpeed: 2.2
+  specialMechanic: 0
+  superCost: 50
+  isExMove: 1
+  armorStartTick: 2
+  armorEndTick: 10
+  antiAirInvulnerable: 0
+  antiAirStartTick: 0
+  antiAirEndTick: 0
+  secondActiveStartTick: 0
+  secondActiveEndTick: 0
+  secondHitDamage: 0
+  spawnsProjectile: 0
+  projectileSpeed: 9.5
+  projectileLifetimeTicks: 45
+  projectileSpawnOffset: {x: 0.7, y: 1.15}
+  projectileHitboxSize: {x: 0.55, y: 0.45}
+  superFreezeTicks: 0

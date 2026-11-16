@@ -38,4 +38,6 @@ MonoBehaviour:
   crouchKick: {fileID: 11400000, guid: 88dcbf53f0f6a33469631f98a4326d88, type: 2}
   jumpAttack: {fileID: 11400000, guid: 0973c07d1808f0641ad6b4839b13577f, type: 2}
   throwMove: {fileID: 11400000, guid: 46857fc0f52c4744ab0e4ccf948900dc, type: 2}
+  exHeavyPunch: {fileID: 11400000, guid: 9198d2c92997f9745a424536fcaefd98, type: 2}
+  exHeavyKick: {fileID: 11400000, guid: a91d5c5592e328f4786b78a91e822577, type: 2}
   specialMove: {fileID: 11400000, guid: aae86613fd69bf14d8044a3743ff85a6, type: 2}

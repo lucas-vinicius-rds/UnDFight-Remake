@@ -56,6 +56,7 @@ namespace UnDFight
         [SerializeField] private Color roundWonColor = new Color(1.0f, 0.78f, 0.16f, 1f);
         [SerializeField] private Color roundEmptyColor = new Color(0.20f, 0.23f, 0.29f, 0.9f);
         [SerializeField] private Color superChargingColor = new Color(0.20f, 0.72f, 1.0f, 1f);
+        [SerializeField] private Color superExReadyColor = new Color(0.18f, 0.88f, 1.0f, 1f);
         [SerializeField] private Color superReadyColorA = new Color(1.0f, 0.78f, 0.16f, 1f);
         [SerializeField] private Color superReadyColorB = new Color(1.0f, 0.94f, 0.58f, 1f);
         [SerializeField] private float trailHoldSeconds = 0.28f;
@@ -82,12 +83,17 @@ namespace UnDFight
 
         public void Configure(FightSimulation sim, MatchManager manager = null)
         {
-            if (simulation != null) simulation.OnCombatHit -= HandleCombatHit;
+            if (simulation != null)
+            {
+                simulation.OnCombatHit -= HandleCombatHit;
+                simulation.OnSuperFlashTriggered -= HandleSuperFlashTriggered;
+            }
             simulation = sim;
             matchManager = manager;
             if (simulation != null && isActiveAndEnabled)
             {
                 simulation.OnCombatHit += HandleCombatHit;
+                simulation.OnSuperFlashTriggered += HandleSuperFlashTriggered;
             }
             EnsureSuperAndComboWidgets();
             EnsureStagePromptWidgets();
@@ -112,7 +118,11 @@ namespace UnDFight
             TextMeshProUGUI banner,
             TextMeshProUGUI subtitle)
         {
-            if (simulation != null) simulation.OnCombatHit -= HandleCombatHit;
+            if (simulation != null)
+            {
+                simulation.OnCombatHit -= HandleCombatHit;
+                simulation.OnSuperFlashTriggered -= HandleSuperFlashTriggered;
+            }
 
             simulation = sim;
             matchManager = manager;
@@ -134,6 +144,7 @@ namespace UnDFight
             if (simulation != null && isActiveAndEnabled)
             {
                 simulation.OnCombatHit += HandleCombatHit;
+                simulation.OnSuperFlashTriggered += HandleSuperFlashTriggered;
             }
             EnsureSuperAndComboWidgets();
             RefreshImmediate();
@@ -154,6 +165,8 @@ namespace UnDFight
             {
                 simulation.OnCombatHit -= HandleCombatHit;
                 simulation.OnCombatHit += HandleCombatHit;
+                simulation.OnSuperFlashTriggered -= HandleSuperFlashTriggered;
+                simulation.OnSuperFlashTriggered += HandleSuperFlashTriggered;
             }
             EnsureSuperAndComboWidgets();
             EnsureStagePromptWidgets();
@@ -165,6 +178,7 @@ namespace UnDFight
             if (simulation != null)
             {
                 simulation.OnCombatHit -= HandleCombatHit;
+                simulation.OnSuperFlashTriggered -= HandleSuperFlashTriggered;
             }
         }
 
@@ -220,6 +234,24 @@ namespace UnDFight
             UpdateStageInteractionPrompts();
         }
 
+        private void HandleSuperFlashTriggered(FighterController caster, int freezeTicks)
+        {
+            if (simulation == null || caster == null)
+            {
+                return;
+            }
+
+            bool casterIsP1 = caster == simulation.Fighter1;
+            TextMeshProUGUI targetCallout = casterIsP1 ? p1CalloutText : p2CalloutText;
+            if (targetCallout != null)
+            {
+                targetCallout.text = "SUPER!";
+                targetCallout.color = new Color(1.0f, 0.88f, 0.20f, 1f);
+                if (casterIsP1) _p1CalloutTimer = calloutDurationSeconds;
+                else _p2CalloutTimer = calloutDurationSeconds;
+            }
+        }
+
         private void HandleCombatHit(CombatHitEvent hit)
         {
             if (simulation == null || hit.Defender == null)
@@ -227,12 +259,17 @@ namespace UnDFight
                 return;
             }
 
-            // Show feedback callout on the defender's side (HIT / BLOCK / K.O.! / ESPECIAL!)
+            // Show feedback callout on the defender's side (HIT / BLOCK / K.O.! / EX! / ARMOR! / ESPECIAL!)
             bool defenderIsP1 = hit.Defender == simulation.Fighter1;
             TextMeshProUGUI targetCallout = defenderIsP1 ? p1CalloutText : p2CalloutText;
             if (targetCallout != null)
             {
-                if (hit.Outcome == HitOutcomeType.ThrowTech)
+                if (hit.WasArmorAbsorbed)
+                {
+                    targetCallout.text = "ARMOR!";
+                    targetCallout.color = new Color(0.88f, 0.94f, 1.0f, 1f);
+                }
+                else if (hit.Outcome == HitOutcomeType.ThrowTech)
                 {
                     targetCallout.text = "TECH!";
                     targetCallout.color = new Color(0.45f, 0.96f, 1.0f, 1f);
@@ -254,6 +291,11 @@ namespace UnDFight
                         : "ESPECIAL!";
                     targetCallout.text = moveLabel;
                     targetCallout.color = new Color(1.0f, 0.86f, 0.25f, 1f);
+                }
+                else if (hit.IsExMove)
+                {
+                    targetCallout.text = "EX!";
+                    targetCallout.color = new Color(1.0f, 0.80f, 0.16f, 1f);
                 }
                 else
                 {
@@ -439,15 +481,21 @@ namespace UnDFight
         private void UpdateSingleSuperBar(FighterController fighter, UnityEngine.UI.Image superFill, TextMeshProUGUI superText)
         {
             float ratio = fighter != null ? fighter.SuperNormalized : 0f;
-            bool isReady = fighter != null && fighter.CanUseSpecial;
+            bool isSuperReady = fighter != null && fighter.CanUseSpecial;
+            bool isExReady = fighter != null && fighter.CanUseEx && !isSuperReady;
 
             if (superFill != null)
             {
                 superFill.fillAmount = ratio;
-                if (isReady)
+                if (isSuperReady)
                 {
                     float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f);
                     superFill.color = Color.Lerp(superReadyColorA, superReadyColorB, pulse);
+                }
+                else if (isExReady)
+                {
+                    float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5f);
+                    superFill.color = Color.Lerp(superExReadyColor, new Color(1.0f, 0.78f, 0.22f, 1f), pulse * 0.45f);
                 }
                 else
                 {
@@ -457,11 +505,17 @@ namespace UnDFight
 
             if (superText != null)
             {
-                if (isReady)
+                if (isSuperReady)
                 {
                     float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f);
                     superText.text = "SUPER PRONTO!";
                     superText.color = Color.Lerp(superReadyColorA, superReadyColorB, pulse);
+                }
+                else if (isExReady)
+                {
+                    int pct = fighter != null ? fighter.SuperGauge : 50;
+                    superText.text = $"EX PRONTO! {pct}%";
+                    superText.color = new Color(0.45f, 0.96f, 1.0f, 0.98f);
                 }
                 else
                 {
@@ -604,11 +658,29 @@ namespace UnDFight
                 superFill.fillAmount = 0f;
                 superFill.color = superChargingColor;
                 superFill.raycastTarget = false;
+                existingBorder = borderGo.transform;
             }
             else if (superFill == null)
             {
                 Transform fillTr = FindDescendant(existingBorder, $"{prefix}_SuperFill");
                 if (fillTr != null) superFill = fillTr.GetComponent<UnityEngine.UI.Image>();
+            }
+
+            if (existingBorder != null && existingBorder.Find($"{prefix}_SuperHalfMarker") == null)
+            {
+                var markerGo = new GameObject($"{prefix}_SuperHalfMarker", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                markerGo.transform.SetParent(existingBorder, false);
+                var markerRt = (RectTransform)markerGo.transform;
+                markerRt.anchorMin = new Vector2(0.5f, 0f);
+                markerRt.anchorMax = new Vector2(0.5f, 1f);
+                markerRt.pivot = new Vector2(0.5f, 0.5f);
+                markerRt.anchoredPosition = Vector2.zero;
+                markerRt.sizeDelta = new Vector2(2.5f, 2f);
+
+                var markerImg = markerGo.GetComponent<UnityEngine.UI.Image>();
+                markerImg.sprite = barSprite;
+                markerImg.color = new Color(0.95f, 0.90f, 0.72f, 0.92f);
+                markerImg.raycastTarget = false;
             }
 
             if (superText == null)

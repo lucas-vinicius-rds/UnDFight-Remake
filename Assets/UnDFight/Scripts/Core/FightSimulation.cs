@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace UnDFight
@@ -73,6 +74,29 @@ namespace UnDFight
         public const int TickRate = FixedTickClock.DefaultTickRate;
         public const float TickDeltaTime = 1f / TickRate;
 
+        public sealed class SimulatedProjectile
+        {
+            public int Id;
+            public FighterController Owner;
+            public FighterController Target;
+            public MoveData Move;
+            public Vector2 Position;
+            public float VelocityX;
+            public int FacingSign;
+            public int RemainingTicks;
+            public bool Active;
+            public GameObject VisualObject;
+
+            public Rect GetHitboxRect()
+            {
+                float scale = Owner != null && Owner.Data != null ? Owner.Data.HurtboxScale : 1f;
+                Vector2 size = Move != null ? Move.projectileHitboxSize : new Vector2(0.55f, 0.45f);
+                float width = Mathf.Max(0.1f, size.x) * scale;
+                float height = Mathf.Max(0.1f, size.y) * scale;
+                return new Rect(Position.x - width * 0.5f, Position.y - height * 0.5f, width, height);
+            }
+        }
+
         private struct PendingStrike
         {
             public bool Valid;
@@ -94,8 +118,12 @@ namespace UnDFight
         [SerializeField] private MatchManager matchManager;
         [SerializeField] private CpuAiController cpuAiController;
 
+        private readonly List<SimulatedProjectile> _activeProjectiles = new List<SimulatedProjectile>(4);
         private FixedTickClock _clock;
         private int _hitstopTicksRemaining;
+        private int _superFlashTicksRemaining;
+        private FighterController _superFlashCaster;
+        private int _nextProjectileId = 1;
         private int _manualTickCounter;
         private bool _isPaused;
 
@@ -110,11 +138,16 @@ namespace UnDFight
         public MatchManager MatchManager => matchManager;
         public CpuAiController CpuAi => cpuAiController;
         public int HitstopTicksRemaining => _hitstopTicksRemaining;
+        public int SuperFlashTicksRemaining => _superFlashTicksRemaining;
+        public FighterController SuperFlashCaster => _superFlashCaster;
+        public IReadOnlyList<SimulatedProjectile> ActiveProjectiles => _activeProjectiles;
         public bool IsPaused => _isPaused;
 
         public event Action<CombatHitEvent> OnCombatHit;
         public event Action<FighterController> OnFighterGroundImpact;
         public event Action<FighterController, FighterController> OnParticipantsChanged;
+        public event Action<FighterController, int> OnSuperFlashTriggered;
+        public event Action<Vector2> OnProjectileClashed;
 
         private void Awake()
         {
@@ -140,6 +173,9 @@ namespace UnDFight
 
             if (_clock == null) _clock = new FixedTickClock(TickRate);
             _hitstopTicksRemaining = 0;
+            _superFlashTicksRemaining = 0;
+            _superFlashCaster = null;
+            ClearProjectiles();
             if (fighter1 != null) fighter1.InitializeSimulation(this, 0);
             if (fighter2 != null) fighter2.InitializeSimulation(this, 1);
             if (fightCamera != null && fighter1 != null && fighter2 != null)
@@ -180,6 +216,70 @@ namespace UnDFight
         public void ClearHitstop()
         {
             _hitstopTicksRemaining = 0;
+            _superFlashTicksRemaining = 0;
+            _superFlashCaster = null;
+            ClearProjectiles();
+        }
+
+        public void TriggerSuperFlash(FighterController caster, int freezeTicks)
+        {
+            if (freezeTicks <= 0)
+            {
+                return;
+            }
+
+            _superFlashTicksRemaining = Mathf.Max(_superFlashTicksRemaining, freezeTicks);
+            _superFlashCaster = caster;
+            if (fightCamera != null && caster != null)
+            {
+                fightCamera.TriggerSuperCameraFocus(caster.transform, freezeTicks * TickDeltaTime);
+            }
+            OnSuperFlashTriggered?.Invoke(caster, freezeTicks);
+        }
+
+        public SimulatedProjectile SpawnProjectile(FighterController owner, MoveData move)
+        {
+            if (owner == null || move == null)
+            {
+                return null;
+            }
+
+            float scale = owner.Data != null ? owner.Data.HurtboxScale : 1f;
+            Vector2 spawnPos = new Vector2(
+                owner.SimPosition.x + owner.FacingSign * move.projectileSpawnOffset.x * scale,
+                owner.SimPosition.y + move.projectileSpawnOffset.y * scale);
+            FighterController target = owner == fighter1 ? fighter2 : fighter1;
+
+            var proj = new SimulatedProjectile
+            {
+                Id = _nextProjectileId++,
+                Owner = owner,
+                Target = target,
+                Move = move,
+                Position = spawnPos,
+                VelocityX = owner.FacingSign * Mathf.Max(0.5f, move.projectileSpeed),
+                FacingSign = owner.FacingSign,
+                RemainingTicks = Mathf.Max(1, move.projectileLifetimeTicks),
+                Active = true,
+                VisualObject = CreateProjectileVisual(spawnPos, move.projectileHitboxSize * scale)
+            };
+
+            _activeProjectiles.Add(proj);
+            return proj;
+        }
+
+        public void ClearProjectiles()
+        {
+            for (int i = _activeProjectiles.Count - 1; i >= 0; i--)
+            {
+                DestroyProjectileVisual(_activeProjectiles[i]);
+            }
+            _activeProjectiles.Clear();
+        }
+
+        private void OnDestroy()
+        {
+            ClearProjectiles();
         }
 
         public void ForceUpdateFacing()
@@ -216,6 +316,25 @@ namespace UnDFight
 
         private void StepSingleTick(int tick, float dt)
         {
+            // During Super Flash cinematic freeze, halt fighter simulation while camera zooms onto caster
+            if (_superFlashTicksRemaining > 0)
+            {
+                _superFlashTicksRemaining--;
+                fighter1?.InputHandler?.SyncSimulationTick(tick);
+                fighter2?.InputHandler?.SyncSimulationTick(tick);
+                fighter1?.HoldVisualForHitstop();
+                fighter2?.HoldVisualForHitstop();
+                if (fightCamera != null)
+                {
+                    fightCamera.StepTick(dt);
+                }
+                if (_superFlashTicksRemaining == 0)
+                {
+                    _superFlashCaster = null;
+                }
+                return;
+            }
+
             // During hit-stop freeze frames, halt fighter movement, state advancement, and Animator Update
             if (_hitstopTicksRemaining > 0)
             {
@@ -246,6 +365,11 @@ namespace UnDFight
             if (combatAllowed)
             {
                 ResolveCombatHits();
+                StepProjectiles(dt);
+            }
+            else if (_activeProjectiles.Count > 0)
+            {
+                ClearProjectiles();
             }
 
             CheckFighterGroundImpact(fighter1, f1WasGrounded);
@@ -326,6 +450,11 @@ namespace UnDFight
                 return default;
             }
 
+            if (defender.IsAntiAirInvulnerable && (!attacker.IsGrounded || move.attackType == AttackType.JumpAttack))
+            {
+                return default;
+            }
+
             if (IsThrowMove(move))
             {
                 if (!defender.IsGrounded ||
@@ -402,6 +531,10 @@ namespace UnDFight
                 return;
             }
 
+            bool isSecondaryHit = strike.Move != null &&
+                                  strike.Move.specialMechanic == SpecialMechanicType.MultiHitRush &&
+                                  strike.Move.IsSecondaryActiveTick(strike.Attacker.StateTicks);
+
             strike.Attacker.MarkHitRegistered();
             strike.Defender.ApplyIncomingAttack(
                 strike.Move,
@@ -410,13 +543,18 @@ namespace UnDFight
                 out int damageDealt,
                 out float knockbackVelocity,
                 out int comboCount,
-                out int comboDamage);
+                out int comboDamage,
+                out bool wasArmorAbsorbed,
+                isSecondaryMultiHit: isSecondaryHit);
 
             bool isSpecial = strike.Move.attackType == AttackType.Special;
+            bool isExMove = strike.Move.isExMove ||
+                            strike.Move.attackType == AttackType.ExHeavyPunch ||
+                            strike.Move.attackType == AttackType.ExHeavyKick;
             int consumedStartBonus = strike.Attacker.ConsumeStartSuperBonus();
             if (outcome == HitOutcomeType.Blocked)
             {
-                if (!isSpecial)
+                if (!isSpecial && !isExMove)
                 {
                     strike.Attacker.AddSuperGauge(Mathf.Max(0, FighterController.SuperGainBlockAttacker - consumedStartBonus));
                 }
@@ -424,14 +562,17 @@ namespace UnDFight
             }
             else
             {
-                if (!isSpecial)
+                if (!isSpecial && !isExMove)
                 {
                     bool isHeavy = strike.Move.attackType == AttackType.HeavyPunch ||
                                    strike.Move.attackType == AttackType.HeavyKick;
                     int hitGain = isHeavy ? FighterController.SuperGainHeavyHitAttacker : FighterController.SuperGainLightHitAttacker;
                     strike.Attacker.AddSuperGauge(Mathf.Max(0, hitGain - consumedStartBonus));
                 }
-                strike.Defender.AddSuperGauge(FighterController.SuperGainHitDefender);
+                if (!wasArmorAbsorbed)
+                {
+                    strike.Defender.AddSuperGauge(FighterController.SuperGainHitDefender);
+                }
             }
 
             int hitstop = strike.Move.hitstopTicks;
@@ -451,7 +592,175 @@ namespace UnDFight
                 isTrade,
                 comboCount,
                 comboDamage,
-                isSpecial);
+                isSpecial,
+                isExMove,
+                wasArmorAbsorbed);
+        }
+
+        private void StepProjectiles(float dt)
+        {
+            if (_activeProjectiles.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _activeProjectiles.Count; i++)
+            {
+                SimulatedProjectile p = _activeProjectiles[i];
+                if (!p.Active) continue;
+
+                p.Position.x += p.VelocityX * dt;
+                p.RemainingTicks--;
+                if (p.VisualObject != null)
+                {
+                    p.VisualObject.transform.position = new Vector3(p.Position.x, p.Position.y, 0f);
+                }
+
+                if (p.RemainingTicks <= 0 || p.Position.x < stageMinX || p.Position.x > stageMaxX)
+                {
+                    p.Active = false;
+                }
+            }
+
+            // Deterministic projectile-vs-projectile clash
+            for (int i = 0; i < _activeProjectiles.Count; i++)
+            {
+                SimulatedProjectile a = _activeProjectiles[i];
+                if (!a.Active) continue;
+                Rect rectA = a.GetHitboxRect();
+
+                for (int j = i + 1; j < _activeProjectiles.Count; j++)
+                {
+                    SimulatedProjectile b = _activeProjectiles[j];
+                    if (!b.Active || a.Owner == b.Owner) continue;
+
+                    if (rectA.Overlaps(b.GetHitboxRect()))
+                    {
+                        a.Active = false;
+                        b.Active = false;
+                        Vector2 clashPt = (a.Position + b.Position) * 0.5f;
+                        OnProjectileClashed?.Invoke(clashPt);
+                        break;
+                    }
+                }
+            }
+
+            // Deterministic projectile-vs-fighter hit resolution
+            int maxHitstop = 0;
+            for (int i = 0; i < _activeProjectiles.Count; i++)
+            {
+                SimulatedProjectile p = _activeProjectiles[i];
+                if (!p.Active || p.Target == null || p.Target.IsInvulnerable)
+                {
+                    continue;
+                }
+
+                Rect hurtbox = p.Target.GetHurtboxRect();
+                Rect projRect = p.GetHitboxRect();
+                if (!projRect.Overlaps(hurtbox))
+                {
+                    continue;
+                }
+
+                p.Active = false;
+                Vector2 contactPt = new Vector2(
+                    Mathf.Clamp(p.Position.x, hurtbox.xMin, hurtbox.xMax),
+                    Mathf.Clamp(p.Position.y, hurtbox.yMin, hurtbox.yMax));
+
+                p.Target.ApplyIncomingAttack(
+                    p.Move,
+                    p.FacingSign,
+                    out HitOutcomeType outcome,
+                    out int damageDealt,
+                    out float knockbackVelocity,
+                    out int comboCount,
+                    out int comboDamage,
+                    out bool wasArmorAbsorbed);
+
+                p.Target.AddSuperGauge(outcome == HitOutcomeType.Blocked
+                    ? FighterController.SuperGainBlockDefender
+                    : (wasArmorAbsorbed ? 0 : FighterController.SuperGainHitDefender));
+
+                if (p.Move != null && p.Move.hitstopTicks > maxHitstop)
+                {
+                    maxHitstop = p.Move.hitstopTicks;
+                }
+
+                bool isSpecial = p.Move != null && p.Move.attackType == AttackType.Special;
+                bool isExMove = p.Move != null && p.Move.isExMove;
+                EmitCombatHitEffects(
+                    p.Owner,
+                    p.Target,
+                    p.Move,
+                    contactPt,
+                    outcome,
+                    damageDealt,
+                    knockbackVelocity,
+                    wasTrade: false,
+                    comboCount: comboCount,
+                    comboDamage: comboDamage,
+                    isSpecial: isSpecial,
+                    isExMove: isExMove,
+                    wasArmorAbsorbed: wasArmorAbsorbed);
+            }
+
+            if (maxHitstop > _hitstopTicksRemaining)
+            {
+                _hitstopTicksRemaining = maxHitstop;
+            }
+
+            for (int i = _activeProjectiles.Count - 1; i >= 0; i--)
+            {
+                if (!_activeProjectiles[i].Active)
+                {
+                    DestroyProjectileVisual(_activeProjectiles[i]);
+                    _activeProjectiles.RemoveAt(i);
+                }
+            }
+        }
+
+        private GameObject CreateProjectileVisual(Vector2 spawnPos, Vector2 size)
+        {
+            if (!Application.isPlaying)
+            {
+                return null;
+            }
+
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = "CombatProjectile_Visual";
+            go.transform.position = new Vector3(spawnPos.x, spawnPos.y, 0f);
+            float diameter = Mathf.Max(0.28f, Mathf.Min(size.x, size.y));
+            go.transform.localScale = new Vector3(diameter * 1.25f, diameter, diameter);
+            Collider col = go.GetComponent<Collider>();
+            if (col != null) Destroy(col);
+
+            Shader unlit = Shader.Find("Universal Render Pipeline/Unlit");
+            if (unlit == null) unlit = Shader.Find("Sprites/Default");
+            if (unlit != null)
+            {
+                var mat = new Material(unlit);
+                Color c = new Color(0.58f, 0.25f, 1.0f, 1.0f);
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
+                if (mat.HasProperty("_Color")) mat.SetColor("_Color", c);
+                var mr = go.GetComponent<MeshRenderer>();
+                if (mr != null)
+                {
+                    mr.sharedMaterial = mat;
+                    mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    mr.receiveShadows = false;
+                }
+            }
+            return go;
+        }
+
+        private static void DestroyProjectileVisual(SimulatedProjectile proj)
+        {
+            if (proj?.VisualObject != null)
+            {
+                if (Application.isPlaying) Destroy(proj.VisualObject);
+                else DestroyImmediate(proj.VisualObject);
+                proj.VisualObject = null;
+            }
         }
 
         /// <summary>
@@ -504,7 +813,9 @@ namespace UnDFight
             bool wasTrade,
             int comboCount,
             int comboDamage,
-            bool isSpecial)
+            bool isSpecial,
+            bool isExMove = false,
+            bool wasArmorAbsorbed = false)
         {
             int hitstop = outcome == HitOutcomeType.ThrowTech
                 ? 6
@@ -524,7 +835,7 @@ namespace UnDFight
                 {
                     fightCamera.TriggerImpactShake(0.22f, 0.24f);
                 }
-                else if (outcome == HitOutcomeType.KnockDown ||
+                else if (isExMove || outcome == HitOutcomeType.KnockDown ||
                          (move != null &&
                           (move.causesKnockdown ||
                            move.attackType == AttackType.HeavyPunch ||
@@ -551,7 +862,9 @@ namespace UnDFight
                 WasTrade = wasTrade,
                 ComboCount = comboCount,
                 ComboDamage = comboDamage,
-                IsSpecial = isSpecial
+                IsSpecial = isSpecial,
+                IsExMove = isExMove,
+                WasArmorAbsorbed = wasArmorAbsorbed
             });
         }
 

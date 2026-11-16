@@ -31,3 +31,20 @@ MonoBehaviour:
   hitboxCenterOffset: {x: 0.78, y: 1.18}
   hitboxSize: {x: 0.94, y: 0.48}
   lungeSpeed: 0
+  specialMechanic: 0
+  superCost: 0
+  isExMove: 0
+  armorStartTick: 0
+  armorEndTick: 0
+  antiAirInvulnerable: 0
+  antiAirStartTick: 0
+  antiAirEndTick: 0
+  secondActiveStartTick: 0
+  secondActiveEndTick: 0
+  secondHitDamage: 0
+  spawnsProjectile: 0
+  projectileSpeed: 9.5
+  projectileLifetimeTicks: 45
+  projectileSpawnOffset: {x: 0.7, y: 1.15}
+  projectileHitboxSize: {x: 0.55, y: 0.45}
+  superFreezeTicks: 0

@@ -23,6 +23,8 @@ namespace UnDFight.Tests
             public MoveData CrouchKick;
             public MoveData JumpAttack;
             public MoveData ThrowMove;
+            public MoveData ExHeavyPunch;
+            public MoveData ExHeavyKick;
             public MoveData Special;
         }
 
@@ -77,6 +79,16 @@ namespace UnDFight.Tests
             rig.ThrowMove = Track(ScriptableObject.CreateInstance<MoveData>());
             rig.ThrowMove.Configure("Throw", AttackType.Throw, 5, 3, 14, 115, 20, 10, 8, 3.5f, HitHeight.Unblockable, true, new Vector2(0.58f, 1.02f), new Vector2(0.64f, 0.56f), isThrowValue: true);
 
+            rig.ExHeavyPunch = Track(ScriptableObject.CreateInstance<MoveData>());
+            rig.ExHeavyPunch.Configure("EX Soco Forte", AttackType.ExHeavyPunch, 5, 5, 14, 145, 22, 15, 9, 3.6f, HitHeight.Mid, false, new Vector2(0.84f, 1.18f), new Vector2(1.06f, 0.54f), chip: 18, lungeSpeedValue: 2.4f);
+            rig.ExHeavyPunch.superCost = FighterData.ExSuperCost;
+            rig.ExHeavyPunch.isExMove = true;
+
+            rig.ExHeavyKick = Track(ScriptableObject.CreateInstance<MoveData>());
+            rig.ExHeavyKick.Configure("EX Chute Forte", AttackType.ExHeavyKick, 7, 5, 18, 175, 24, 16, 10, 4.4f, HitHeight.High, true, new Vector2(0.96f, 1.28f), new Vector2(1.24f, 0.70f), chip: 20, lungeSpeedValue: 3.0f);
+            rig.ExHeavyKick.superCost = FighterData.ExSuperCost;
+            rig.ExHeavyKick.isExMove = true;
+
             rig.Special = Track(ScriptableObject.CreateInstance<MoveData>());
             rig.Special.Configure("Golpe Especial", AttackType.Special, 8, 5, 15, 220, 30, 14, 12, 4.4f, HitHeight.Mid, true, new Vector2(0.95f, 1.15f), new Vector2(1.25f, 0.72f), chip: 30, lungeSpeedValue: 5.5f);
 
@@ -115,6 +127,8 @@ namespace UnDFight.Tests
             data.crouchKick = rig.CrouchKick;
             data.jumpAttack = rig.JumpAttack;
             data.throwMove = rig.ThrowMove;
+            data.exHeavyPunch = rig.ExHeavyPunch;
+            data.exHeavyKick = rig.ExHeavyKick;
             data.specialMove = rig.Special;
             return data;
         }
@@ -847,6 +861,256 @@ namespace UnDFight.Tests
             Assert.AreEqual(FighterState.Idle, rig.P2.State);
             Assert.Less(rig.P1.SimPosition.x, p1StartX - 0.1f);
             Assert.Greater(rig.P2.SimPosition.x, p2StartX + 0.1f);
+        }
+
+        [Test]
+        public void ExHeavyPunch_Consumes50SuperGauge_AndDealsEnhancedDamage()
+        {
+            FighterRig rig = CreateRig();
+            rig.P1.SetSimPositionX(-0.60f);
+            rig.P2.SetSimPositionX(0.60f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+            rig.P1.SetSuperGauge(75);
+
+            var events = new List<CombatHitEvent>();
+            rig.Sim.OnCombatHit += e => events.Add(e);
+
+            // Press HeavyPunch + Special simultaneously with 75 gauge -> spends 50 (leaving 25) and deals 145 dmg
+            rig.P1.InputHandler.BufferExInput(AttackType.ExHeavyPunch, rig.Sim.CurrentTick + 1);
+            rig.Sim.StepSimulationTicks(1);
+            Assert.AreEqual(FighterState.Attack, rig.P1.State);
+            Assert.AreEqual(AttackType.ExHeavyPunch, rig.P1.CurrentAttack);
+            Assert.AreEqual(25, rig.P1.SuperGauge);
+
+            rig.Sim.StepSimulationTicks(6); // Startup 5 + active tick 6
+            Assert.AreEqual(855, rig.P2.CurrentHealth);
+            Assert.AreEqual(1, events.Count);
+            Assert.IsTrue(events[0].IsExMove);
+            Assert.AreEqual(145, events[0].DamageDealt);
+            Assert.AreEqual(25, rig.P1.SuperGauge, "EX moves must not gain meter back on hit.");
+        }
+
+        [Test]
+        public void LucasSpecial_SuperArmor_AbsorbsNormalStrikeWithoutInterruptingAttack()
+        {
+            FighterRig rig = CreateRig();
+            rig.Special.Configure("Martelo do Asfalto", AttackType.Special, 10, 5, 17, 250, 24, 16, 14, 5.4f, HitHeight.Mid, true, new Vector2(0.92f, 1.16f), new Vector2(1.18f, 0.72f), chip: 35, lungeSpeedValue: 1.8f);
+            rig.Special.specialMechanic = SpecialMechanicType.ArmoredSmash;
+            rig.Special.superCost = 100;
+            rig.Special.armorStartTick = 2;
+            rig.Special.armorEndTick = 14;
+            rig.Special.superFreezeTicks = 0;
+
+            rig.P1.SetSimPositionX(-0.55f);
+            rig.P2.SetSimPositionX(0.55f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+            rig.P1.SetSuperGauge(100);
+
+            var events = new List<CombatHitEvent>();
+            rig.Sim.OnCombatHit += e => events.Add(e);
+
+            // P1 starts ArmoredSmash; P2 starts LightPunch (startup 4, active 5)
+            rig.P1.InputHandler.BufferButton(FighterInputButton.Special);
+            rig.Sim.StepSimulationTicks(1);
+            Assert.AreEqual(AttackType.Special, rig.P1.CurrentAttack);
+
+            rig.P2.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.Sim.StepSimulationTicks(6); // P2's LP hits P1 during P1's armor window!
+
+            // P1 absorbs LP at 60% damage (50 * 0.6 = 30), stays in Special Attack state, and counter-hits P2!
+            Assert.AreEqual(970, rig.P1.CurrentHealth);
+            Assert.AreEqual(FighterState.Attack, rig.P1.State, "Super Armor must prevent hitstun interruption.");
+            Assert.AreEqual(AttackType.Special, rig.P1.CurrentAttack);
+            Assert.IsTrue(events.Exists(e => e.WasArmorAbsorbed && e.Defender == rig.P1));
+
+            // Finish hitstop + Lucas Special active frame -> P2 gets crushed by Martelo do Asfalto
+            rig.Sim.StepSimulationTicks(12);
+            Assert.AreEqual(750, rig.P2.CurrentHealth);
+            Assert.AreEqual(FighterState.KnockDown, rig.P2.State);
+        }
+
+        [Test]
+        public void TiagoSpecial_MultiHitRush_RegistersTwoDistinctHitsAndComboCount()
+        {
+            FighterRig rig = CreateRig();
+            rig.Special.Configure("Sequência de Rua", AttackType.Special, 7, 3, 18, 105, 22, 15, 6, 1.4f, HitHeight.Mid, true, new Vector2(0.88f, 1.18f), new Vector2(1.16f, 0.66f), chip: 30, lungeSpeedValue: 3.8f);
+            rig.Special.specialMechanic = SpecialMechanicType.MultiHitRush;
+            rig.Special.superCost = 100;
+            rig.Special.secondActiveStartTick = 12;
+            rig.Special.secondActiveEndTick = 14;
+            rig.Special.secondHitDamage = 145;
+            rig.Special.superFreezeTicks = 0;
+
+            rig.P1.SetSimPositionX(-0.55f);
+            rig.P2.SetSimPositionX(0.55f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+            rig.P1.SetSuperGauge(100);
+
+            var events = new List<CombatHitEvent>();
+            rig.Sim.OnCombatHit += e => events.Add(e);
+
+            rig.P1.InputHandler.BufferButton(FighterInputButton.Special);
+            // Step through startup (7) + 1st hit + hitstop (6) + 2nd window (ticks 9..12)
+            rig.Sim.StepSimulationTicks(1 + 8 + 6 + 6);
+
+            Assert.AreEqual(2, events.Count, "MultiHitRush must register 2 distinct hits.");
+            Assert.AreEqual(1, events[0].ComboCount);
+            Assert.AreEqual(105, events[0].DamageDealt);
+            Assert.AreEqual(HitOutcomeType.Hit, events[0].Outcome);
+
+            Assert.AreEqual(2, events[1].ComboCount);
+            Assert.AreEqual(Mathf.RoundToInt(145 * 0.85f), events[1].DamageDealt);
+            Assert.AreEqual(HitOutcomeType.KnockDown, events[1].Outcome);
+        }
+
+        [Test]
+        public void JompesSpecial_SpawnsDeterministicProjectile_ThatHitsAndClashesAt60Hz()
+        {
+            // 1. Projectile spawns at tick 8 and hits distant opponent deterministically
+            FighterRig rigHit = CreateRig();
+            rigHit.Special.Configure("Golpe Sombrio", AttackType.Special, 7, 4, 13, 210, 22, 14, 10, 4.4f, HitHeight.Mid, true, new Vector2(0.90f, 1.14f), new Vector2(1.14f, 0.58f), chip: 28, lungeSpeedValue: 0f);
+            rigHit.Special.specialMechanic = SpecialMechanicType.ProjectileShot;
+            rigHit.Special.superCost = 100;
+            rigHit.Special.spawnsProjectile = true;
+            rigHit.Special.projectileSpeed = 10.5f;
+            rigHit.Special.projectileLifetimeTicks = 45;
+            rigHit.Special.projectileSpawnOffset = new Vector2(0.70f, 1.15f);
+            rigHit.Special.projectileHitboxSize = new Vector2(0.58f, 0.48f);
+            rigHit.Special.superFreezeTicks = 0;
+
+            rigHit.P1.SetSimPositionX(-2.2f);
+            rigHit.P2.SetSimPositionX(2.2f);
+            rigHit.Sim.ForceUpdateFacing();
+            rigHit.P1.InputHandler.SetSimulatedInput(default, true);
+            rigHit.P2.InputHandler.SetSimulatedInput(default, true);
+            rigHit.P1.SetSuperGauge(100);
+
+            rigHit.P1.InputHandler.BufferButton(FighterInputButton.Special);
+            rigHit.Sim.StepSimulationTicks(9); // Consume (1) + 8 ticks -> spawns projectile
+            Assert.AreEqual(1, rigHit.Sim.ActiveProjectiles.Count);
+
+            // Advance until projectile crosses arena and hits P2
+            rigHit.Sim.StepSimulationTicks(30);
+            Assert.AreEqual(0, rigHit.Sim.ActiveProjectiles.Count);
+            Assert.AreEqual(790, rigHit.P2.CurrentHealth);
+            Assert.AreEqual(FighterState.KnockDown, rigHit.P2.State);
+
+            // 2. Projectile vs Projectile clash cancels both cleanly
+            FighterRig rigClash = CreateRig();
+            rigClash.Special.Configure("Golpe Sombrio", AttackType.Special, 7, 4, 13, 210, 22, 14, 10, 4.4f, HitHeight.Mid, true, new Vector2(0.90f, 1.14f), new Vector2(1.14f, 0.58f), chip: 28, lungeSpeedValue: 0f);
+            rigClash.Special.specialMechanic = SpecialMechanicType.ProjectileShot;
+            rigClash.Special.superCost = 100;
+            rigClash.Special.spawnsProjectile = true;
+            rigClash.Special.projectileSpeed = 10.5f;
+            rigClash.Special.projectileLifetimeTicks = 45;
+            rigClash.Special.projectileSpawnOffset = new Vector2(0.70f, 1.15f);
+            rigClash.Special.projectileHitboxSize = new Vector2(0.58f, 0.48f);
+            rigClash.Special.superFreezeTicks = 0;
+
+            rigClash.P1.SetSimPositionX(-3.0f);
+            rigClash.P2.SetSimPositionX(3.0f);
+            rigClash.Sim.ForceUpdateFacing();
+            rigClash.P1.InputHandler.SetSimulatedInput(default, true);
+            rigClash.P2.InputHandler.SetSimulatedInput(default, true);
+            rigClash.P1.SetSuperGauge(100);
+            rigClash.P2.SetSuperGauge(100);
+
+            int clashCount = 0;
+            rigClash.Sim.OnProjectileClashed += _ => clashCount++;
+
+            rigClash.P1.InputHandler.BufferButton(FighterInputButton.Special);
+            rigClash.P2.InputHandler.BufferButton(FighterInputButton.Special);
+            rigClash.Sim.StepSimulationTicks(30);
+
+            Assert.AreEqual(1, clashCount);
+            Assert.AreEqual(0, rigClash.Sim.ActiveProjectiles.Count);
+            Assert.AreEqual(1000, rigClash.P1.CurrentHealth);
+            Assert.AreEqual(1000, rigClash.P2.CurrentHealth);
+        }
+
+        [Test]
+        public void RochardSpecial_AntiAirInvulnerability_EvadesJumpAttackAndPunishes()
+        {
+            FighterRig rig = CreateRig();
+            rig.Special.Configure("Tornado Relâmpago", AttackType.Special, 6, 4, 12, 225, 22, 14, 10, 4.4f, HitHeight.High, true, new Vector2(0.86f, 1.32f), new Vector2(1.26f, 1.05f), chip: 26, lungeSpeedValue: 4.6f);
+            rig.Special.specialMechanic = SpecialMechanicType.AntiAirSpin;
+            rig.Special.superCost = 100;
+            rig.Special.antiAirInvulnerable = true;
+            rig.Special.antiAirStartTick = 1;
+            rig.Special.antiAirEndTick = 12;
+            rig.Special.superFreezeTicks = 0;
+
+            rig.P1.SetSimPositionX(-2.6f);
+            rig.P2.SetSimPositionX(0.55f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 1f }, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.SetSuperGauge(100);
+
+            // P1 jumps in and starts JumpAttack on descent
+            rig.Sim.StepSimulationTicks(25);
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
+            rig.Sim.StepSimulationTicks(4);
+
+            // P2 counters with AntiAirSpin Special while P1 is airborne attacking
+            rig.P2.InputHandler.BufferButton(FighterInputButton.Special);
+            rig.Sim.StepSimulationTicks(12);
+
+            Assert.AreEqual(1000, rig.P2.CurrentHealth, "Anti-air invulnerability must evade incoming JumpAttack.");
+            Assert.AreEqual(775, rig.P1.CurrentHealth, "Rochard AntiAirSpin must punish airborne attacker.");
+            Assert.AreEqual(FighterState.KnockDown, rig.P1.State);
+        }
+
+        [Test]
+        public void SuperFlash_FreezesSimulationBriefly_AndTriggersCameraZoom()
+        {
+            FighterRig rig = CreateRig();
+            rig.Special.Configure("Martelo do Asfalto", AttackType.Special, 10, 5, 17, 250, 24, 16, 14, 5.4f, HitHeight.Mid, true, new Vector2(0.92f, 1.16f), new Vector2(1.18f, 0.72f), chip: 35, lungeSpeedValue: 1.8f);
+            rig.Special.superCost = 100;
+            rig.Special.superFreezeTicks = 14;
+
+            var camGo = Track(new GameObject("Test_SuperCam"));
+            var cam = camGo.AddComponent<FightCameraController>();
+            var mid = Track(new GameObject("CamMid")).transform;
+            cam.ConfigureTargets(rig.P1.transform, rig.P2.transform, mid);
+            rig.Sim.SetParticipants(rig.P1, rig.P2, cam);
+
+            rig.P1.SetSimPositionX(-1.2f);
+            rig.P2.SetSimPositionX(1.2f);
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+            rig.P1.SetSuperGauge(100);
+
+            int flashEvents = 0;
+            rig.Sim.OnSuperFlashTriggered += (caster, ticks) => { if (caster == rig.P1 && ticks == 14) flashEvents++; };
+
+            float initialCamDist = cam.CurrentDistance;
+            rig.P1.InputHandler.BufferButton(FighterInputButton.Special);
+            rig.Sim.StepSimulationTicks(1);
+
+            Assert.AreEqual(1, flashEvents);
+            Assert.AreEqual(14, rig.Sim.SuperFlashTicksRemaining);
+            Assert.IsTrue(cam.IsSuperCameraActive);
+            Assert.AreEqual(0, rig.P1.StateTicks, "Fighter simulation ticks must stay frozen during SuperFlash.");
+
+            // Step 10 ticks of SuperFlash -> camera zooms in dramatically while fighter stays frozen
+            rig.Sim.StepSimulationTicks(10);
+            Assert.AreEqual(4, rig.Sim.SuperFlashTicksRemaining);
+            Assert.AreEqual(0, rig.P1.StateTicks);
+            Assert.Less(cam.CurrentDistance, initialCamDist - 1.0f);
+
+            // Finish remaining 4 SuperFlash ticks + 1 normal tick -> simulation resumes cleanly
+            rig.Sim.StepSimulationTicks(5);
+            Assert.AreEqual(0, rig.Sim.SuperFlashTicksRemaining);
+            Assert.IsFalse(cam.IsSuperCameraActive);
+            Assert.AreEqual(1, rig.P1.StateTicks);
         }
     }
 }

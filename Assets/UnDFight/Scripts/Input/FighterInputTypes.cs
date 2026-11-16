@@ -23,6 +23,7 @@ namespace UnDFight
         public float MoveX;
         public float MoveY;
         public bool HoldBlock;
+        public bool HoldSpecial;
         public int LastTickSampled;
     }
 }

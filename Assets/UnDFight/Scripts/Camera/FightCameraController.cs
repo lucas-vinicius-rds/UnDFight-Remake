@@ -36,8 +36,23 @@ namespace UnDFight
         private float _shakeDuration;
         private float _shakeElapsed;
         private float _shakePhase;
+        private Transform _superFocusTarget;
+        private float _superFocusRemaining;
 
         public float CurrentShakeOffsetMagnitude { get; private set; }
+        public float CurrentDistance => _currentDistance;
+        public bool IsSuperCameraActive => _superFocusRemaining > 0f && _superFocusTarget != null;
+
+        public void TriggerSuperCameraFocus(Transform target, float durationSeconds)
+        {
+            if (target == null || durationSeconds <= 0f)
+            {
+                return;
+            }
+
+            _superFocusTarget = target;
+            _superFocusRemaining = Mathf.Max(_superFocusRemaining, durationSeconds);
+        }
 
         public void TriggerImpactShake(float intensity, float duration)
         {
@@ -98,21 +113,44 @@ namespace UnDFight
             Vector3 p1 = fighter1Transform.position;
             Vector3 p2 = fighter2Transform.position;
 
-            float separationX = Mathf.Abs(p1.x - p2.x);
-            float separationY = Mathf.Abs(p1.y - p2.y);
-            float desiredDistance = Mathf.Clamp(minDistance + (separationX + separationY * 0.5f) * 0.48f + distancePadding * 0.25f, minDistance, maxDistance);
+            float desiredDistance;
+            float targetMidX;
+            float targetMidY;
+            float smoothRate = zoomSmoothSpeed;
 
-            _currentDistance = Mathf.Lerp(_currentDistance, desiredDistance, 1f - Mathf.Exp(-zoomSmoothSpeed * dt));
+            if (_superFocusRemaining > 0f && _superFocusTarget != null)
+            {
+                _superFocusRemaining = Mathf.Max(0f, _superFocusRemaining - dt);
+                desiredDistance = Mathf.Max(3.6f, minDistance * 0.62f);
+                targetMidX = Mathf.Clamp(_superFocusTarget.position.x, stageMinX + 1.8f, stageMaxX - 1.8f);
+                targetMidY = Mathf.Max(0f, _superFocusTarget.position.y) + heightOffset * 0.92f;
+                smoothRate = zoomSmoothSpeed * 2.4f;
+                if (_superFocusRemaining <= 0f)
+                {
+                    _superFocusTarget = null;
+                }
+            }
+            else
+            {
+                float separationX = Mathf.Abs(p1.x - p2.x);
+                float separationY = Mathf.Abs(p1.y - p2.y);
+                desiredDistance = Mathf.Clamp(minDistance + (separationX + separationY * 0.5f) * 0.48f + distancePadding * 0.25f, minDistance, maxDistance);
 
-            float halfViewWidth = _currentDistance * 0.45f;
-            float clampedMin = Mathf.Min(stageMinX + halfViewWidth, 0f);
-            float clampedMax = Mathf.Max(stageMaxX - halfViewWidth, 0f);
+                float halfViewWidth = Mathf.Max(desiredDistance, _currentDistance) * 0.45f;
+                float clampedMin = Mathf.Min(stageMinX + halfViewWidth, 0f);
+                float clampedMax = Mathf.Max(stageMaxX - halfViewWidth, 0f);
 
-            float midX = Mathf.Clamp((p1.x + p2.x) * 0.5f, clampedMin, clampedMax);
-            float midY = Mathf.Max(0f, (p1.y + p2.y) * 0.5f) + heightOffset;
+                targetMidX = Mathf.Clamp((p1.x + p2.x) * 0.5f, clampedMin, clampedMax);
+                targetMidY = Mathf.Max(0f, (p1.y + p2.y) * 0.5f) + heightOffset;
+            }
+
+            _currentDistance = Mathf.Lerp(_currentDistance, desiredDistance, 1f - Mathf.Exp(-smoothRate * dt));
 
             Vector2 shakeOffset = EvaluateShakeOffset(dt);
-            focusMidpoint.position = new Vector3(midX + shakeOffset.x, midY + shakeOffset.y, 0f);
+            Vector3 currentPos = focusMidpoint.position;
+            float nextX = Mathf.Lerp(currentPos.x, targetMidX, 1f - Mathf.Exp(-smoothRate * dt)) + shakeOffset.x;
+            float nextY = Mathf.Lerp(currentPos.y, targetMidY, 1f - Mathf.Exp(-smoothRate * dt)) + shakeOffset.y;
+            focusMidpoint.position = new Vector3(nextX, nextY, 0f);
 
             if (positionComposer != null)
             {

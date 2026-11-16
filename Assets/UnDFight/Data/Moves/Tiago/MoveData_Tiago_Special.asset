@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: "Sequ\xEAncia de Rua"
   attackType: 5
-  startupTicks: 8
-  activeTicks: 5
-  recoveryTicks: 15
-  damage: 220
+  startupTicks: 7
+  activeTicks: 3
+  recoveryTicks: 18
+  damage: 105
   chipDamage: 30
   hitstunTicks: 22
   blockstunTicks: 15
@@ -30,4 +30,21 @@ MonoBehaviour:
   airOnly: 0
   hitboxCenterOffset: {x: 0.88, y: 1.18}
   hitboxSize: {x: 1.16, y: 0.66}
-  lungeSpeed: 2
+  lungeSpeed: 3.8
+  specialMechanic: 2
+  superCost: 100
+  isExMove: 0
+  armorStartTick: 0
+  armorEndTick: 0
+  antiAirInvulnerable: 0
+  antiAirStartTick: 0
+  antiAirEndTick: 0
+  secondActiveStartTick: 12
+  secondActiveEndTick: 14
+  secondHitDamage: 145
+  spawnsProjectile: 0
+  projectileSpeed: 9.5
+  projectileLifetimeTicks: 45
+  projectileSpawnOffset: {x: 0.7, y: 1.15}
+  projectileHitboxSize: {x: 0.55, y: 0.45}
+  superFreezeTicks: 14

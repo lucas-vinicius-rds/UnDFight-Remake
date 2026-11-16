@@ -351,10 +351,19 @@ namespace UnDFight
             {
                 float chainChance = difficulty == CpuDifficulty.Hard ? 0.78f : 0.42f;
                 if (controlledFighter.CanUseSpecial &&
-                    PlayerInputHandler.IsChainCancelAllowed(controlledFighter.CurrentAttack, AttackType.Special, true) &&
+                    PlayerInputHandler.IsChainCancelAllowed(controlledFighter.CurrentAttack, AttackType.Special, true, controlledFighter.CanUseEx) &&
                     _rng.NextDouble() < chainChance)
                 {
                     TriggerAttack(AttackType.Special, inputHandler, currentTick);
+                    return;
+                }
+
+                if (controlledFighter.CanUseEx &&
+                    PlayerInputHandler.IsChainCancelAllowed(controlledFighter.CurrentAttack, AttackType.ExHeavyPunch, controlledFighter.CanUseSpecial, true) &&
+                    _rng.NextDouble() < chainChance * 0.65)
+                {
+                    AttackType exFollow = _rng.NextDouble() < 0.5 ? AttackType.ExHeavyPunch : AttackType.ExHeavyKick;
+                    TriggerAttack(exFollow, inputHandler, currentTick);
                     return;
                 }
 
@@ -459,6 +468,21 @@ namespace UnDFight
 
             if (absDx > ApproachThreshold)
             {
+                // Jompes ProjectileShot Special at mid/long range on Medium/Hard
+                if (canAct &&
+                    _attackCooldownTicks <= 0 &&
+                    difficulty != CpuDifficulty.Easy &&
+                    controlledFighter.CanUseSpecial &&
+                    controlledFighter.Data != null &&
+                    controlledFighter.Data.specialMove != null &&
+                    controlledFighter.Data.specialMove.spawnsProjectile &&
+                    absDx <= 5.5f &&
+                    _rng.NextDouble() < _profile.Aggression * 0.40)
+                {
+                    TriggerAttack(AttackType.Special, inputHandler, currentTick);
+                    return;
+                }
+
                 // Advance toward opponent cleanly; dash forward at long range based on Aggression
                 if (canAct && absDx > 2.80f && _attackCooldownTicks <= 0 && _rng.NextDouble() < _profile.Aggression * 0.45)
                 {
@@ -538,12 +562,28 @@ namespace UnDFight
 
         private AttackType ChooseCloseRangeAttack(float absDx)
         {
-            if (controlledFighter != null && controlledFighter.CanUseSpecial && difficulty != CpuDifficulty.Easy)
+            if (controlledFighter != null && difficulty != CpuDifficulty.Easy)
             {
-                float rawSpecialProb = difficulty == CpuDifficulty.Hard ? 0.35f : 0.20f;
-                if (_rng.NextDouble() < rawSpecialProb)
+                if (controlledFighter.CanUseSpecial)
                 {
-                    return AttackType.Special;
+                    float rawSpecialProb = difficulty == CpuDifficulty.Hard ? 0.35f : 0.20f;
+                    if (_rng.NextDouble() < rawSpecialProb)
+                    {
+                        return AttackType.Special;
+                    }
+                }
+
+                if (controlledFighter.CanUseEx)
+                {
+                    float exProb = difficulty == CpuDifficulty.Hard ? 0.32f : 0.18f;
+                    if (_rng.NextDouble() < exProb)
+                    {
+                        if (opponentFighter != null && !opponentFighter.IsGrounded)
+                        {
+                            return AttackType.ExHeavyKick;
+                        }
+                        return _rng.NextDouble() < 0.55 ? AttackType.ExHeavyPunch : AttackType.ExHeavyKick;
+                    }
                 }
             }
 
@@ -577,6 +617,10 @@ namespace UnDFight
             {
                 inputHandler.BufferThrowInput(currentTick);
             }
+            else if (attack == AttackType.ExHeavyPunch || attack == AttackType.ExHeavyKick)
+            {
+                inputHandler.BufferExInput(attack, currentTick);
+            }
             else
             {
                 inputHandler.BufferButton(AttackToButton(attack));
@@ -591,6 +635,8 @@ namespace UnDFight
                 AttackType.CrouchKick => 32,
                 AttackType.JumpAttack => 22,
                 AttackType.Throw => 26,
+                AttackType.ExHeavyPunch => 28,
+                AttackType.ExHeavyKick => 32,
                 AttackType.Special => 38,
                 _ => 20
             };

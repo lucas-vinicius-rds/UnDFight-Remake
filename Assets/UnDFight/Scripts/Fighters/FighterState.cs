@@ -28,6 +28,8 @@ namespace UnDFight
         Special = 5,
         CrouchKick = 6,
         JumpAttack = 7,
-        Throw = 8
+        Throw = 8,
+        ExHeavyPunch = 9,
+        ExHeavyKick = 10
     }
 }

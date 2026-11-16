@@ -98,6 +98,58 @@ namespace UnDFight
             });
         }
 
+        public static AudioClip CreateSuperFlashClip()
+        {
+            return BuildClip("SFX_Super_Flash", 0.44f, (t, dur, rng) =>
+            {
+                float norm = t / dur;
+                float env = FastAttackDecay(t, 0.004f, dur, 4.8f);
+                float sub = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(92f, 44f, norm) * t) * 0.55f;
+                float chime = (Mathf.Sin(2f * Mathf.PI * 880f * t) * 0.38f +
+                               Mathf.Sin(2f * Mathf.PI * 1320f * t) * 0.30f +
+                               Mathf.Sin(2f * Mathf.PI * 1760f * t) * 0.22f) * FastAttackDecay(t, 0.003f, 0.36f, 7.5f);
+                return (sub + chime) * env;
+            });
+        }
+
+        public static AudioClip CreateExActivationClip()
+        {
+            return BuildClip("SFX_Ex_Activation", 0.20f, (t, dur, rng) =>
+            {
+                float norm = t / dur;
+                float env = FastAttackDecay(t, 0.002f, dur, 9.5f);
+                float rise = Mathf.Lerp(420f, 1180f, norm);
+                return (Mathf.Sin(2f * Mathf.PI * rise * t) * 0.48f +
+                        Mathf.Sin(2f * Mathf.PI * rise * 1.5f * t) * 0.28f) * env;
+            });
+        }
+
+        public static AudioClip CreateProjectileFireClip()
+        {
+            return BuildClip("SFX_Projectile_Fire", 0.25f, (t, dur, rng) =>
+            {
+                float norm = t / dur;
+                float env = FastAttackDecay(t, 0.004f, dur, 7.2f);
+                float sweep = Mathf.Lerp(620f, 190f, norm);
+                float tone = Mathf.Sin(2f * Mathf.PI * sweep * t) * 0.50f;
+                float hiss = ((float)rng.NextDouble() * 2f - 1f) * 0.32f;
+                return (tone + hiss) * env;
+            });
+        }
+
+        public static AudioClip CreateArmorAbsorbClip()
+        {
+            return BuildClip("SFX_Armor_Absorb", 0.18f, (t, dur, rng) =>
+            {
+                float env = FastAttackDecay(t, 0.002f, dur, 11f);
+                float clang = Mathf.Sin(2f * Mathf.PI * 310f * t) * 0.48f +
+                              Mathf.Sin(2f * Mathf.PI * 465f * t) * 0.38f +
+                              Mathf.Sin(2f * Mathf.PI * 930f * t) * 0.22f;
+                float thud = Mathf.Sin(2f * Mathf.PI * 96f * t) * 0.45f;
+                return (clang + thud) * env;
+            });
+        }
+
         public static AudioClip CreateHitLightClip()
         {
             return BuildClip("SFX_Hit_Light", 0.15f, (t, dur, rng) =>

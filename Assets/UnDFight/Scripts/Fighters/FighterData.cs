@@ -36,6 +36,9 @@ namespace UnDFight
         [Range(0.3f, 0.9f)] public float crouchHeightRatio = 0.62f;
         [Min(0.1f)] public float pushboxRadius = 0.36f;
 
+        public const int ExSuperCost = 50;
+        public const int SpecialSuperCost = 100;
+
         [Header("Moveset (60 Hz Frame Data)")]
         public MoveData lightPunch;
         public MoveData heavyPunch;
@@ -44,6 +47,8 @@ namespace UnDFight
         public MoveData crouchKick;
         public MoveData jumpAttack;
         public MoveData throwMove;
+        public MoveData exHeavyPunch;
+        public MoveData exHeavyKick;
         public MoveData specialMove;
 
         public WeightClass WeightCategory => FighterScaling.GetWeightClass(weightKg);
@@ -68,7 +73,19 @@ namespace UnDFight
                 AttackType.CrouchKick => crouchKick,
                 AttackType.JumpAttack => jumpAttack,
                 AttackType.Throw => throwMove,
+                AttackType.ExHeavyPunch => exHeavyPunch,
+                AttackType.ExHeavyKick => exHeavyKick,
                 AttackType.Special => specialMove,
+                _ => null
+            };
+        }
+
+        public MoveData GetExMoveData(AttackType baseAttack)
+        {
+            return baseAttack switch
+            {
+                AttackType.HeavyPunch or AttackType.ExHeavyPunch => exHeavyPunch,
+                AttackType.HeavyKick or AttackType.ExHeavyKick => exHeavyKick,
                 _ => null
             };
         }
