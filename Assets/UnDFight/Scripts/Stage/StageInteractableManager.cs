@@ -317,7 +317,7 @@ namespace UnDFight
 
         private void HandleCombatHit(CombatHitEvent hit)
         {
-            if (hit.Outcome == HitOutcomeType.Blocked)
+            if (hit.Outcome == HitOutcomeType.Blocked || hit.Outcome == HitOutcomeType.ThrowTech)
             {
                 return;
             }

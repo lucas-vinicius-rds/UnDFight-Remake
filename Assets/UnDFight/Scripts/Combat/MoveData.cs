@@ -27,6 +27,8 @@ namespace UnDFight
         [Range(0.1f, 1f)] public float blockKnockbackFactor = 0.5f;
         public HitHeight hitHeight = HitHeight.Mid;
         public bool causesKnockdown = false;
+        public bool isThrow = false;
+        public bool airOnly = false;
 
         [Header("2D XY Hitbox (Local +X Facing, HurtboxScale = 1.0)")]
         public Vector2 hitboxCenterOffset = new Vector2(0.68f, 1.18f);
@@ -77,7 +79,9 @@ namespace UnDFight
             Vector2 centerOffset,
             Vector2 size,
             int chip = 0,
-            float lungeSpeedValue = 0f)
+            float lungeSpeedValue = 0f,
+            bool isThrowValue = false,
+            bool airOnlyValue = false)
         {
             moveName = nameValue;
             attackType = type;
@@ -92,6 +96,8 @@ namespace UnDFight
             knockback = Mathf.Max(0f, kb);
             hitHeight = height;
             causesKnockdown = knockdown;
+            isThrow = isThrowValue;
+            airOnly = airOnlyValue;
             hitboxCenterOffset = centerOffset;
             hitboxSize = size;
             lungeSpeed = Mathf.Max(0f, lungeSpeedValue);

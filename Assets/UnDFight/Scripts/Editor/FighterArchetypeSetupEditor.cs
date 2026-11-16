@@ -33,6 +33,8 @@ namespace UnDFight.Editor
             public Vector2 HitboxOffset;
             public Vector2 HitboxSize;
             public float LungeSpeed;
+            public bool IsThrow;
+            public bool AirOnly;
 
             public int TotalTicks => Startup + Active + Recovery;
         }
@@ -69,8 +71,10 @@ namespace UnDFight.Editor
 
         private static readonly string[] RequiredClips =
         {
-            "Idle", "WalkForward", "WalkBackward", "Jump", "Crouch", "BlockStand",
-            "LightPunch", "HeavyPunch", "LightKick", "HeavyKick", "Special",
+            "Idle", "WalkForward", "WalkBackward", "DashForward", "DashBackward",
+            "Jump", "Crouch", "BlockStand",
+            "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
+            "CrouchKick", "JumpAttack", "Throw", "Special",
             "HitReact", "KnockDown", "GetUp", "Victory", "Defeat", "Turn180"
         };
 
@@ -80,24 +84,33 @@ namespace UnDFight.Editor
             {
                 WeightClass.Light => new[]
                 {
-                    new MoveSpec { Type = AttackType.LightPunch, Startup = 3, Active = 3, Recovery = 7,  Damage = 42,  Hitstun = 11, Blockstun = 7,  Hitstop = 4, Knockback = 1.1f, Height = HitHeight.Mid,  CausesKnockdown = false, HitboxOffset = new Vector2(0.66f, 1.15f), HitboxSize = new Vector2(0.76f, 0.40f) },
-                    new MoveSpec { Type = AttackType.HeavyPunch, Startup = 5, Active = 4, Recovery = 12, Damage = 92,  Hitstun = 16, Blockstun = 11, Hitstop = 6, Knockback = 2.2f, Height = HitHeight.Mid,  CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 1.15f), HitboxSize = new Vector2(0.88f, 0.44f) },
-                    new MoveSpec { Type = AttackType.LightKick,  Startup = 4, Active = 3, Recovery = 9,  Damage = 52,  Hitstun = 12, Blockstun = 8,  Hitstop = 4, Knockback = 1.4f, Height = HitHeight.Low,  CausesKnockdown = false, HitboxOffset = new Vector2(0.72f, 0.50f), HitboxSize = new Vector2(0.88f, 0.42f) },
-                    new MoveSpec { Type = AttackType.HeavyKick,  Startup = 7, Active = 4, Recovery = 16, Damage = 112, Hitstun = 20, Blockstun = 13, Hitstop = 7, Knockback = 2.9f, Height = HitHeight.High, CausesKnockdown = true,  HitboxOffset = new Vector2(0.84f, 1.20f), HitboxSize = new Vector2(1.04f, 0.54f) },
+                    new MoveSpec { Type = AttackType.LightPunch, Startup = 3, Active = 3, Recovery = 7,  Damage = 42,  Hitstun = 11, Blockstun = 7,  Hitstop = 4, Knockback = 1.1f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.66f, 1.15f), HitboxSize = new Vector2(0.76f, 0.40f) },
+                    new MoveSpec { Type = AttackType.HeavyPunch, Startup = 5, Active = 4, Recovery = 12, Damage = 92,  Hitstun = 16, Blockstun = 11, Hitstop = 6, Knockback = 2.2f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 1.15f), HitboxSize = new Vector2(0.88f, 0.44f) },
+                    new MoveSpec { Type = AttackType.LightKick,  Startup = 4, Active = 3, Recovery = 9,  Damage = 52,  Hitstun = 12, Blockstun = 8,  Hitstop = 4, Knockback = 1.4f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.72f, 0.50f), HitboxSize = new Vector2(0.88f, 0.42f) },
+                    new MoveSpec { Type = AttackType.HeavyKick,  Startup = 7, Active = 4, Recovery = 16, Damage = 112, Hitstun = 20, Blockstun = 13, Hitstop = 7, Knockback = 2.9f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.84f, 1.20f), HitboxSize = new Vector2(1.04f, 0.54f) },
+                    new MoveSpec { Type = AttackType.CrouchKick, Startup = 6, Active = 4, Recovery = 15, Damage = 85,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 2.4f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 0.34f), HitboxSize = new Vector2(1.10f, 0.42f) },
+                    new MoveSpec { Type = AttackType.JumpAttack, Startup = 4, Active = 8, Recovery = 6,  Damage = 75,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 1.6f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.66f, 0.56f), HitboxSize = new Vector2(0.96f, 0.74f) },
+                    new MoveSpec { Type = AttackType.Throw,      Startup = 5, Active = 3, Recovery = 14, Damage = 110, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 3.2f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
                 },
                 WeightClass.Medium => new[]
                 {
-                    new MoveSpec { Type = AttackType.LightPunch, Startup = 4, Active = 3, Recovery = 9,  Damage = 48,  Hitstun = 12, Blockstun = 8,  Hitstop = 4, Knockback = 1.3f, Height = HitHeight.Mid,  CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
-                    new MoveSpec { Type = AttackType.HeavyPunch, Startup = 7, Active = 4, Recovery = 16, Damage = 108, Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.7f, Height = HitHeight.Mid,  CausesKnockdown = false, HitboxOffset = new Vector2(0.76f, 1.18f), HitboxSize = new Vector2(0.92f, 0.46f) },
-                    new MoveSpec { Type = AttackType.LightKick,  Startup = 5, Active = 3, Recovery = 11, Damage = 62,  Hitstun = 14, Blockstun = 9,  Hitstop = 5, Knockback = 1.7f, Height = HitHeight.Low,  CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
-                    new MoveSpec { Type = AttackType.HeavyKick,  Startup = 9, Active = 4, Recovery = 20, Damage = 130, Hitstun = 22, Blockstun = 14, Hitstop = 8, Knockback = 3.5f, Height = HitHeight.High, CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 1.24f), HitboxSize = new Vector2(1.10f, 0.56f) },
+                    new MoveSpec { Type = AttackType.LightPunch, Startup = 4, Active = 3, Recovery = 9,  Damage = 48,  Hitstun = 12, Blockstun = 8,  Hitstop = 4, Knockback = 1.3f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
+                    new MoveSpec { Type = AttackType.HeavyPunch, Startup = 7, Active = 4, Recovery = 16, Damage = 108, Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.7f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.76f, 1.18f), HitboxSize = new Vector2(0.92f, 0.46f) },
+                    new MoveSpec { Type = AttackType.LightKick,  Startup = 5, Active = 3, Recovery = 11, Damage = 62,  Hitstun = 14, Blockstun = 9,  Hitstop = 5, Knockback = 1.7f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
+                    new MoveSpec { Type = AttackType.HeavyKick,  Startup = 9, Active = 4, Recovery = 20, Damage = 130, Hitstun = 22, Blockstun = 14, Hitstop = 8, Knockback = 3.5f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 1.24f), HitboxSize = new Vector2(1.10f, 0.56f) },
+                    new MoveSpec { Type = AttackType.CrouchKick, Startup = 7, Active = 4, Recovery = 17, Damage = 95,  Hitstun = 20, Blockstun = 13, Hitstop = 7, Knockback = 2.8f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 0.36f), HitboxSize = new Vector2(1.14f, 0.44f) },
+                    new MoveSpec { Type = AttackType.JumpAttack, Startup = 4, Active = 8, Recovery = 6,  Damage = 85,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 1.9f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.68f, 0.58f), HitboxSize = new Vector2(0.98f, 0.76f) },
+                    new MoveSpec { Type = AttackType.Throw,      Startup = 5, Active = 3, Recovery = 14, Damage = 115, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 3.5f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
                 },
                 _ => new[]
                 {
-                    new MoveSpec { Type = AttackType.LightPunch, Startup = 5, Active = 3, Recovery = 11, Damage = 62,  Hitstun = 14, Blockstun = 10, Hitstop = 5, Knockback = 1.9f, Height = HitHeight.Mid,  CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
-                    new MoveSpec { Type = AttackType.HeavyPunch, Startup = 9, Active = 5, Recovery = 19, Damage = 140, Hitstun = 22, Blockstun = 15, Hitstop = 9, Knockback = 3.7f, Height = HitHeight.Mid,  CausesKnockdown = false, HitboxOffset = new Vector2(0.78f, 1.18f), HitboxSize = new Vector2(0.94f, 0.48f) },
-                    new MoveSpec { Type = AttackType.LightKick,  Startup = 6, Active = 4, Recovery = 13, Damage = 78,  Hitstun = 16, Blockstun = 11, Hitstop = 6, Knockback = 2.3f, Height = HitHeight.Low,  CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
-                    new MoveSpec { Type = AttackType.HeavyKick,  Startup = 11, Active = 5, Recovery = 24, Damage = 165, Hitstun = 26, Blockstun = 17, Hitstop = 10, Knockback = 4.6f, Height = HitHeight.High, CausesKnockdown = true, HitboxOffset = new Vector2(0.88f, 1.24f), HitboxSize = new Vector2(1.12f, 0.56f) },
+                    new MoveSpec { Type = AttackType.LightPunch, Startup = 5, Active = 3, Recovery = 11, Damage = 62,  Hitstun = 14, Blockstun = 10, Hitstop = 5, Knockback = 1.9f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
+                    new MoveSpec { Type = AttackType.HeavyPunch, Startup = 9, Active = 5, Recovery = 19, Damage = 140, Hitstun = 22, Blockstun = 15, Hitstop = 9, Knockback = 3.7f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.78f, 1.18f), HitboxSize = new Vector2(0.94f, 0.48f) },
+                    new MoveSpec { Type = AttackType.LightKick,  Startup = 6, Active = 4, Recovery = 13, Damage = 78,  Hitstun = 16, Blockstun = 11, Hitstop = 6, Knockback = 2.3f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
+                    new MoveSpec { Type = AttackType.HeavyKick,  Startup = 11, Active = 5, Recovery = 24, Damage = 165, Hitstun = 26, Blockstun = 17, Hitstop = 10, Knockback = 4.6f, Height = HitHeight.High,       CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 1.24f), HitboxSize = new Vector2(1.12f, 0.56f) },
+                    new MoveSpec { Type = AttackType.CrouchKick, Startup = 8, Active = 5, Recovery = 19, Damage = 110, Hitstun = 22, Blockstun = 14, Hitstop = 8, Knockback = 3.4f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.90f, 0.36f), HitboxSize = new Vector2(1.18f, 0.44f) },
+                    new MoveSpec { Type = AttackType.JumpAttack, Startup = 4, Active = 8, Recovery = 6,  Damage = 98,  Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.2f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.70f, 0.60f), HitboxSize = new Vector2(1.02f, 0.78f) },
+                    new MoveSpec { Type = AttackType.Throw,      Startup = 5, Active = 3, Recovery = 14, Damage = 125, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 4.0f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
                 }
             };
         }
@@ -374,22 +387,11 @@ namespace UnDFight.Editor
                 throw new InvalidOperationException("Idle state not found in AC_Fighter.controller");
             }
 
-            AnimatorState specialState = FindState(sm, "Special");
-            if (specialState == null)
-            {
-                AnimationClip specialBaseClip = null;
-                foreach (UnityEngine.Object obj in AssetDatabase.LoadAllAssetsAtPath(LucasFbxPath))
-                {
-                    if (obj is AnimationClip clip && string.Equals(clip.name, "Special", StringComparison.Ordinal))
-                    {
-                        specialBaseClip = clip;
-                        break;
-                    }
-                }
-                specialState = sm.AddState("Special", new Vector3(480f, 260f, 0f));
-                specialState.motion = specialBaseClip;
-                specialState.writeDefaultValues = true;
-            }
+            AnimatorState specialState = EnsureAnimatorStateFromBaseFbx(sm, "Special", new Vector3(480f, 260f, 0f));
+            AnimatorState crouchKickState = EnsureAnimatorStateFromBaseFbx(sm, "CrouchKick", new Vector3(480f, 320f, 0f));
+            AnimatorState jumpAttackState = EnsureAnimatorStateFromBaseFbx(sm, "JumpAttack", new Vector3(480f, 380f, 0f));
+            AnimatorState throwState = EnsureAnimatorStateFromBaseFbx(sm, "Throw", new Vector3(480f, 440f, 0f));
+            _ = (specialState, crouchKickState, jumpAttackState, throwState);
 
             (string stateName, AttackType atkType)[] attackAnyStates =
             {
@@ -397,7 +399,10 @@ namespace UnDFight.Editor
                 ("HeavyPunch", AttackType.HeavyPunch),
                 ("LightKick", AttackType.LightKick),
                 ("HeavyKick", AttackType.HeavyKick),
-                ("Special", AttackType.Special)
+                ("Special", AttackType.Special),
+                ("CrouchKick", AttackType.CrouchKick),
+                ("JumpAttack", AttackType.JumpAttack),
+                ("Throw", AttackType.Throw),
             };
 
             foreach (var (stateName, atkType) in attackAnyStates)
@@ -426,7 +431,11 @@ namespace UnDFight.Editor
                 anyTr.canTransitionToSelf = true;
             }
 
-            string[] attackStates = { "LightPunch", "HeavyPunch", "LightKick", "HeavyKick", "Special" };
+            string[] attackStates =
+            {
+                "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
+                "Special", "CrouchKick", "JumpAttack", "Throw"
+            };
             foreach (string stateName in attackStates)
             {
                 AnimatorState st = FindState(sm, stateName);
@@ -477,8 +486,114 @@ namespace UnDFight.Editor
             }
 
             EnsureTurn180StateAndTransitions(controller, sm, idleState);
+            EnsureDashStatesAndTransitions(sm, idleState);
 
             EditorUtility.SetDirty(controller);
+        }
+
+        private static AnimatorState EnsureAnimatorStateFromBaseFbx(
+            AnimatorStateMachine sm,
+            string stateName,
+            Vector3 position)
+        {
+            AnimatorState st = FindState(sm, stateName);
+            if (st == null)
+            {
+                st = sm.AddState(stateName, position);
+            }
+
+            AnimationClip baseClip = null;
+            foreach (UnityEngine.Object obj in AssetDatabase.LoadAllAssetsAtPath(LucasFbxPath))
+            {
+                if (obj is AnimationClip clip && string.Equals(clip.name, stateName, StringComparison.Ordinal))
+                {
+                    baseClip = clip;
+                    break;
+                }
+            }
+            if (baseClip != null)
+            {
+                st.motion = baseClip;
+            }
+            st.writeDefaultValues = true;
+            return st;
+        }
+
+        private static void EnsureDashStatesAndTransitions(AnimatorStateMachine sm, AnimatorState idleState)
+        {
+            (string stateName, FighterState fState, Vector3 pos)[] dashDefs =
+            {
+                ("DashForward", FighterState.DashForward, new Vector3(480f, -180f, 0f)),
+                ("DashBackward", FighterState.DashBackward, new Vector3(480f, -240f, 0f)),
+            };
+
+            foreach (var (stateName, fState, pos) in dashDefs)
+            {
+                AnimatorState dst = EnsureAnimatorStateFromBaseFbx(sm, stateName, pos);
+
+                AnimatorStateTransition anyTr = null;
+                foreach (AnimatorStateTransition tr in sm.anyStateTransitions)
+                {
+                    if (tr.destinationState == dst)
+                    {
+                        anyTr = tr;
+                        break;
+                    }
+                }
+                if (anyTr == null)
+                {
+                    anyTr = sm.AddAnyStateTransition(dst);
+                }
+                anyTr.hasExitTime = false;
+                anyTr.duration = 0.03f;
+                anyTr.hasFixedDuration = true;
+                anyTr.canTransitionToSelf = false;
+                anyTr.conditions = new[]
+                {
+                    new AnimatorCondition { mode = AnimatorConditionMode.Equals, parameter = "State", threshold = (int)fState },
+                    new AnimatorCondition { mode = AnimatorConditionMode.IfNot, parameter = "IsTurning", threshold = 0f },
+                };
+
+                bool hasExitTime = false;
+                bool hasStateExit = false;
+                foreach (AnimatorStateTransition tr in dst.transitions)
+                {
+                    if (tr.destinationState != idleState) continue;
+                    if (tr.hasExitTime && tr.conditions.Length == 0)
+                    {
+                        tr.exitTime = 1f;
+                        tr.duration = 0.03f;
+                        tr.hasFixedDuration = true;
+                        hasExitTime = true;
+                    }
+                    else if (!tr.hasExitTime && tr.conditions.Length == 1 &&
+                             tr.conditions[0].parameter == "State" &&
+                             tr.conditions[0].mode == AnimatorConditionMode.NotEqual &&
+                             Mathf.RoundToInt(tr.conditions[0].threshold) == (int)fState)
+                    {
+                        tr.duration = 0.03f;
+                        tr.hasFixedDuration = true;
+                        hasStateExit = true;
+                    }
+                }
+
+                if (!hasExitTime)
+                {
+                    AnimatorStateTransition tr = dst.AddTransition(idleState);
+                    tr.hasExitTime = true;
+                    tr.exitTime = 1f;
+                    tr.duration = 0.03f;
+                    tr.hasFixedDuration = true;
+                }
+                if (!hasStateExit)
+                {
+                    AnimatorStateTransition tr = dst.AddTransition(idleState);
+                    tr.hasExitTime = false;
+                    tr.duration = 0.03f;
+                    tr.hasFixedDuration = true;
+                    tr.AddCondition(AnimatorConditionMode.NotEqual, (int)fState, "State");
+                }
+            }
         }
 
         private static void EnsureTurn180StateAndTransitions(
@@ -582,6 +697,8 @@ namespace UnDFight.Editor
                 ("WalkForward", FighterState.WalkForward, true),
                 ("WalkBackward", FighterState.WalkBackward, true),
                 ("Crouch", FighterState.Crouch, true),
+                ("DashForward", FighterState.DashForward, false),
+                ("DashBackward", FighterState.DashBackward, false),
                 ("Jump", FighterState.Jump, false),
                 ("Block", FighterState.Block, false),
                 ("HitReact", FighterState.Hit, false),
@@ -753,7 +870,9 @@ namespace UnDFight.Editor
                     spec.HitboxOffset,
                     spec.HitboxSize,
                     spec.ChipDamage,
-                    spec.LungeSpeed);
+                    spec.LungeSpeed,
+                    spec.IsThrow,
+                    spec.AirOnly);
                 EditorUtility.SetDirty(move);
 
                 switch (spec.Type)
@@ -769,6 +888,15 @@ namespace UnDFight.Editor
                         break;
                     case AttackType.HeavyKick:
                         data.heavyKick = move;
+                        break;
+                    case AttackType.CrouchKick:
+                        data.crouchKick = move;
+                        break;
+                    case AttackType.JumpAttack:
+                        data.jumpAttack = move;
+                        break;
+                    case AttackType.Throw:
+                        data.throwMove = move;
                         break;
                     case AttackType.Special:
                         data.specialMove = move;

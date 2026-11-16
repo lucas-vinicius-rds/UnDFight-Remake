@@ -55,6 +55,35 @@ namespace UnDFight
             return BuildFilteredNoiseSweepClip("SFX_Whoosh_Heavy", 0.22f, startCutoffHz: 680f, endCutoffHz: 150f, gain: 0.42f);
         }
 
+        public static AudioClip CreateDashClip()
+        {
+            return BuildClip("SFX_Dash", 0.14f, (t, dur, rng) =>
+            {
+                float norm = t / dur;
+                float env = FastAttackDecay(t, 0.005f, dur, 7.5f);
+                float lowFreq = Mathf.Lerp(175f, 70f, norm);
+                float body = Mathf.Sin(2f * Mathf.PI * lowFreq * t) * 0.42f;
+                float rush = ((float)rng.NextDouble() * 2f - 1f) * 0.36f * (1f - norm * 0.4f);
+                return (body + rush) * env;
+            });
+        }
+
+        public static AudioClip CreateThrowTechClip()
+        {
+            return BuildClip("SFX_Throw_Tech", 0.24f, (t, dur, rng) =>
+            {
+                float hit1Env = FastAttackDecay(t, 0.002f, 0.14f, 12f);
+                float hit2Env = t >= 0.045f ? FastAttackDecay(t - 0.045f, 0.002f, dur - 0.045f, 10f) : 0f;
+                float clang1 = (Mathf.Sin(2f * Mathf.PI * 520f * t) * 0.55f +
+                                Mathf.Sin(2f * Mathf.PI * 980f * t) * 0.45f) * hit1Env;
+                float clang2 = (Mathf.Sin(2f * Mathf.PI * 660f * t) * 0.50f +
+                                Mathf.Sin(2f * Mathf.PI * 1320f * t) * 0.40f +
+                                Mathf.Sin(2f * Mathf.PI * 140f * t) * 0.35f) * hit2Env;
+                float snap = ((float)rng.NextDouble() * 2f - 1f) * FastAttackDecay(t, 0.001f, 0.07f, 18f) * 0.32f;
+                return (clang1 + clang2) * 0.55f + snap;
+            });
+        }
+
         public static AudioClip CreateWhooshSpecialClip()
         {
             return BuildClip("SFX_Whoosh_Special", 0.34f, (t, dur, rng) =>

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3689c22c8cad0aa40bb406794468d3ca, type: 3}
+  m_Name: MoveData_Jompes_JumpAttack
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
+  moveName: JumpAttack
+  attackType: 7
+  startupTicks: 4
+  activeTicks: 8
+  recoveryTicks: 6
+  damage: 75
+  chipDamage: 0
+  hitstunTicks: 18
+  blockstunTicks: 12
+  hitstopTicks: 6
+  knockback: 1.6
+  blockKnockbackFactor: 0.5
+  hitHeight: 3
+  causesKnockdown: 0
+  isThrow: 0
+  airOnly: 1
+  hitboxCenterOffset: {x: 0.66, y: 0.56}
+  hitboxSize: {x: 0.96, y: 0.74}
+  lungeSpeed: 0

@@ -21,6 +21,8 @@ namespace UnDFight
         private AudioClip _whooshLightClip;
         private AudioClip _whooshHeavyClip;
         private AudioClip _whooshSpecialClip;
+        private AudioClip _dashClip;
+        private AudioClip _throwTechClip;
         private AudioClip _hitLightClip;
         private AudioClip _hitHeavyClip;
         private AudioClip _hitSpecialClip;
@@ -93,6 +95,7 @@ namespace UnDFight
             SettingsManager.OnSettingsApplied += HandleSettingsApplied;
             SceneManager.sceneLoaded += HandleSceneLoaded;
             FighterController.OnAnyAttackStarted += HandleAnyAttackStarted;
+            FighterController.OnAnyDashStarted += HandleAnyDashStarted;
             MenuNavigationGroup.OnAnySelectionMoved += HandleUiMove;
             MenuNavigationGroup.OnAnySubmitted += HandleUiConfirm;
             MenuNavigationGroup.OnAnyCancelled += HandleUiBack;
@@ -106,6 +109,7 @@ namespace UnDFight
             SettingsManager.OnSettingsApplied -= HandleSettingsApplied;
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             FighterController.OnAnyAttackStarted -= HandleAnyAttackStarted;
+            FighterController.OnAnyDashStarted -= HandleAnyDashStarted;
             MenuNavigationGroup.OnAnySelectionMoved -= HandleUiMove;
             MenuNavigationGroup.OnAnySubmitted -= HandleUiConfirm;
             MenuNavigationGroup.OnAnyCancelled -= HandleUiBack;
@@ -117,6 +121,7 @@ namespace UnDFight
             SettingsManager.OnSettingsApplied -= HandleSettingsApplied;
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             FighterController.OnAnyAttackStarted -= HandleAnyAttackStarted;
+            FighterController.OnAnyDashStarted -= HandleAnyDashStarted;
             MenuNavigationGroup.OnAnySelectionMoved -= HandleUiMove;
             MenuNavigationGroup.OnAnySubmitted -= HandleUiConfirm;
             MenuNavigationGroup.OnAnyCancelled -= HandleUiBack;
@@ -182,6 +187,11 @@ namespace UnDFight
             PlaySfx(clip, 0.92f);
         }
 
+        public void PlayDash(bool isForward)
+        {
+            PlaySfx(_dashClip, isForward ? 0.72f : 0.65f);
+        }
+
         public void PlayAttackWhoosh(AttackType attack)
         {
             if (attack == AttackType.Special)
@@ -189,12 +199,21 @@ namespace UnDFight
                 PlaySfx(_whooshSpecialClip, 0.95f);
                 return;
             }
-            bool heavy = attack == AttackType.HeavyPunch || attack == AttackType.HeavyKick;
+            bool heavy = attack == AttackType.HeavyPunch ||
+                         attack == AttackType.HeavyKick ||
+                         attack == AttackType.CrouchKick ||
+                         attack == AttackType.JumpAttack;
             PlaySfx(heavy ? _whooshHeavyClip : _whooshLightClip, 0.75f);
         }
 
         public void PlayCombatHit(CombatHitEvent hit)
         {
+            if (hit.Outcome == HitOutcomeType.ThrowTech)
+            {
+                PlaySfx(_throwTechClip, 0.95f);
+                return;
+            }
+
             if (hit.Outcome == HitOutcomeType.Blocked)
             {
                 PlaySfx(_blockImpactClip, hit.IsSpecial ? 0.98f : 0.90f);
@@ -271,6 +290,8 @@ namespace UnDFight
             _whooshLightClip = ProceduralAudioFactory.CreateWhooshLightClip();
             _whooshHeavyClip = ProceduralAudioFactory.CreateWhooshHeavyClip();
             _whooshSpecialClip = ProceduralAudioFactory.CreateWhooshSpecialClip();
+            _dashClip = ProceduralAudioFactory.CreateDashClip();
+            _throwTechClip = ProceduralAudioFactory.CreateThrowTechClip();
             _hitLightClip = ProceduralAudioFactory.CreateHitLightClip();
             _hitHeavyClip = ProceduralAudioFactory.CreateHitHeavyClip();
             _hitSpecialClip = ProceduralAudioFactory.CreateHitSpecialClip();
@@ -329,6 +350,7 @@ namespace UnDFight
 
         private void HandleCombatHit(CombatHitEvent hit) => PlayCombatHit(hit);
         private void HandleAnyAttackStarted(FighterController fighter, AttackType attack) => PlayAttackWhoosh(attack);
+        private void HandleAnyDashStarted(FighterController fighter, bool isForward) => PlayDash(isForward);
         private void HandleUiMove() => PlayUiMove();
         private void HandleUiConfirm() => PlayUiConfirm();
         private void HandleUiBack() => PlayUiBack();

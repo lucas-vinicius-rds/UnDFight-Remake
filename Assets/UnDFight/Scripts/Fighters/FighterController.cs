@@ -11,6 +11,7 @@ namespace UnDFight
     public class FighterController : MonoBehaviour
     {
         public static event Action<FighterController, AttackType> OnAnyAttackStarted;
+        public static event Action<FighterController, bool> OnAnyDashStarted;
         public const int KnockDownDurationTicks = 45;
         public const int GetUpDurationTicks = 40;
         public const int WakeupInvincibilityGraceTicks = 6;
@@ -71,6 +72,7 @@ namespace UnDFight
         private int _receivedComboHits;
         private int _receivedComboDamage;
         private bool _grantedStartSuperOnCurrentMove;
+        private bool _hasUsedAirAttackThisJump;
         private float _baseHurtboxHeight = 1.81f;
         private float _baseHurtboxCenterY = 0.905f;
         private float _visualYaw = 90f;
@@ -109,9 +111,25 @@ namespace UnDFight
         public bool InputsEnabled => _inputsEnabled;
         public int WakeupInvincibilityTicks => _wakeupInvincibilityTicks;
         public int TicksSinceLastHit => _ticksSinceLastHit;
-        public bool IsCrouching => _state == FighterState.Crouch || (_state == FighterState.Block && _blockFromCrouch);
+        public bool IsCrouching =>
+            _state == FighterState.Crouch ||
+            (_state == FighterState.Block && _blockFromCrouch) ||
+            (_state == FighterState.Attack && _currentAttack == AttackType.CrouchKick);
+        public bool IsDashInvulnerable
+        {
+            get
+            {
+                if (_state != FighterState.DashBackward)
+                {
+                    return false;
+                }
+                int invulTicks = fighterData != null ? fighterData.backdashInvulnerableTicks : 5;
+                return invulTicks > 0 && _stateTicks <= invulTicks;
+            }
+        }
         public bool IsInvulnerable =>
             _wakeupInvincibilityTicks > 0 ||
+            IsDashInvulnerable ||
             _state == FighterState.KnockDown ||
             _state == FighterState.GetUp ||
             _state == FighterState.Victory ||
@@ -223,6 +241,7 @@ namespace UnDFight
             _receivedComboHits = 0;
             _receivedComboDamage = 0;
             _grantedStartSuperOnCurrentMove = false;
+            _hasUsedAirAttackThisJump = false;
             _pendingThrowProp = null;
             _stageInteractCooldownTicks = 0;
             EnsureKinematicHurtboxRigidbody();
@@ -256,6 +275,7 @@ namespace UnDFight
             _receivedComboHits = 0;
             _receivedComboDamage = 0;
             _grantedStartSuperOnCurrentMove = false;
+            _hasUsedAirAttackThisJump = false;
             _pendingThrowProp = null;
             _stageInteractCooldownTicks = 0;
             _inputHandler?.ClearBufferedInputs();
@@ -473,10 +493,59 @@ namespace UnDFight
                 return false;
             }
 
+            if (move.hitHeight == HitHeight.Unblockable)
+            {
+                return false;
+            }
+
             bool crouchGuard = IsCrouching || input.MoveY < -0.5f;
+            if (move.hitHeight == HitHeight.Overhead)
+            {
+                return !crouchGuard;
+            }
+
             return crouchGuard
                 ? (move.hitHeight == HitHeight.Low || move.hitHeight == HitHeight.Mid)
                 : (move.hitHeight == HitHeight.High || move.hitHeight == HitHeight.Mid);
+        }
+
+        public bool CanTechIncomingThrow(int currentTick)
+        {
+            if (!_isGrounded || IsInvulnerable || _inputHandler == null)
+            {
+                return false;
+            }
+
+            bool inTechableState =
+                _state == FighterState.Idle ||
+                _state == FighterState.WalkForward ||
+                _state == FighterState.WalkBackward ||
+                _state == FighterState.Crouch ||
+                (_state == FighterState.Block && _stateTotalTicks == 0) ||
+                (_state == FighterState.Attack && _currentAttack == AttackType.Throw);
+
+            return inTechableState && _inputHandler.HasRecentThrowTechInput(currentTick, 7);
+        }
+
+        public void ApplyThrowTechPushback(int opponentFacingSign)
+        {
+            float pushDir = opponentFacingSign >= 0 ? 1f : -1f;
+            const float pushSpeed = 4.2f;
+            const int techStunTicks = 10;
+
+            _blockFromCrouch = false;
+            _receivedComboHits = 0;
+            _receivedComboDamage = 0;
+            _simVelocity.x = pushDir * pushSpeed;
+            _knockbackDecelPerSec = pushSpeed / (techStunTicks * FightSimulation.TickDeltaTime);
+            _stateTotalTicks = techStunTicks;
+
+            bool wasInHit = _state == FighterState.Hit;
+            EnterState(FighterState.Hit, forceResetTicks: true);
+            if (wasInHit && fighterAnimator != null && fighterAnimator.runtimeAnimatorController != null)
+            {
+                fighterAnimator.Play(HitReactStateHash, 0, 0f);
+            }
         }
 
         public void AddSuperGauge(int amount)
@@ -686,7 +755,11 @@ namespace UnDFight
                         }
                     }
 
-                    if (_currentMoveData != null && _currentMoveData.lungeSpeed > 0f && _stateTicks <= _currentMoveData.LastActiveTick)
+                    if (_currentAttack == AttackType.JumpAttack)
+                    {
+                        // Preserve parabolic horizontal & vertical jump trajectory under gravity
+                    }
+                    else if (_currentMoveData != null && _currentMoveData.lungeSpeed > 0f && _stateTicks <= _currentMoveData.LastActiveTick)
                     {
                         _simVelocity.x = _facingSign * _currentMoveData.lungeSpeed;
                     }
@@ -701,6 +774,28 @@ namespace UnDFight
                 }
 
                 ApplyGravityAndIntegrate(dt);
+
+                if (_state == FighterState.Attack && _currentAttack == AttackType.JumpAttack)
+                {
+                    if (_isGrounded)
+                    {
+                        _hasUsedAirAttackThisJump = false;
+                        _simVelocity.x = 0f;
+                        _knockbackDecelPerSec = 0f;
+                        EnterState(FighterState.Idle);
+                        UpdateHurtboxDimensions();
+                        StepAnimatorTick(dt);
+                        return;
+                    }
+
+                    if (_stateTicks >= _stateTotalTicks)
+                    {
+                        EnterState(FighterState.Jump);
+                        UpdateHurtboxDimensions();
+                        StepAnimatorTick(dt);
+                        return;
+                    }
+                }
 
                 bool hitstopCleared = _simulation == null || _simulation.HitstopTicksRemaining <= 0;
                 if (_state == FighterState.Attack &&
@@ -753,13 +848,78 @@ namespace UnDFight
                 return;
             }
 
+            // Timed Dash states (DashForward cancelable into Attack or Jump from tick 8+)
+            if (_state == FighterState.DashForward || _state == FighterState.DashBackward)
+            {
+                bool isForward = _state == FighterState.DashForward;
+                if (isForward && _inputsEnabled && _stateTicks >= 8)
+                {
+                    if (_inputHandler != null &&
+                        _inputHandler.ConsumeAttackInput(tick, CanUseSpecial, isGrounded: true, isCrouchingInput: input.MoveY < -0.5f, out AttackType dashCancelAttack) &&
+                        StartAttack(dashCancelAttack))
+                    {
+                        UpdateHurtboxDimensions();
+                        StepAnimatorTick(dt);
+                        return;
+                    }
+
+                    if (input.MoveY > 0.5f)
+                    {
+                        StartJump(input.MoveX, dt);
+                        return;
+                    }
+                }
+
+                int decelTicks = isForward ? 4 : 5;
+                int remaining = _stateTotalTicks - _stateTicks;
+                float decelFactor = remaining <= decelTicks
+                    ? Mathf.Clamp(remaining / (float)(decelTicks + 1), 0.25f, 1f)
+                    : 1f;
+                float baseDashSpeed = isForward
+                    ? (fighterData != null ? fighterData.EffectiveDashForwardSpeed : 8.2f)
+                    : (fighterData != null ? fighterData.EffectiveDashBackwardSpeed : 7.0f);
+                int moveDir = isForward ? _facingSign : -_facingSign;
+                _simVelocity.x = moveDir * baseDashSpeed * decelFactor;
+
+                ApplyGravityAndIntegrate(dt);
+
+                if (_stateTicks >= _stateTotalTicks && _isGrounded)
+                {
+                    _simVelocity.x = 0f;
+                    EnterState(FighterState.Idle);
+                }
+
+                UpdateHurtboxDimensions();
+                StepAnimatorTick(dt);
+                return;
+            }
+
             // Airborne state
             if (!_isGrounded)
             {
                 _state = FighterState.Jump;
+                if (_inputsEnabled &&
+                    !_hasUsedAirAttackThisJump &&
+                    _inputHandler != null &&
+                    _inputHandler.ConsumeAttackInput(tick, allowSpecial: false, isGrounded: false, isCrouchingInput: false, out AttackType airAttack) &&
+                    StartAirAttack(airAttack))
+                {
+                    ApplyGravityAndIntegrate(dt);
+                    if (_isGrounded)
+                    {
+                        _hasUsedAirAttackThisJump = false;
+                        _simVelocity.x = 0f;
+                        EnterState(FighterState.Idle);
+                    }
+                    UpdateHurtboxDimensions();
+                    StepAnimatorTick(dt);
+                    return;
+                }
+
                 ApplyGravityAndIntegrate(dt);
                 if (_isGrounded)
                 {
+                    _hasUsedAirAttackThisJump = false;
                     _simVelocity.x = 0f;
                     EnterState(FighterState.Idle);
                 }
@@ -780,7 +940,7 @@ namespace UnDFight
                 return;
             }
 
-            // Grounded input consumption: Stage Interact > Attack > Jump > Block/Crouch > Walk > Idle
+            // Grounded input consumption: Stage Interact > Attack > Jump > Dash > Block/Crouch > Walk > Idle
             if (_inputHandler != null &&
                 CanAttemptStageInteract() &&
                 _inputHandler.HasStageInteractCombo(tick) &&
@@ -794,7 +954,7 @@ namespace UnDFight
             }
 
             if (_inputHandler != null &&
-                _inputHandler.ConsumeAttackInput(tick, CanUseSpecial, out AttackType attackType) &&
+                _inputHandler.ConsumeAttackInput(tick, CanUseSpecial, isGrounded: true, isCrouchingInput: input.MoveY < -0.5f, out AttackType attackType) &&
                 StartAttack(attackType))
             {
                 UpdateHurtboxDimensions();
@@ -804,16 +964,15 @@ namespace UnDFight
 
             if (input.MoveY > 0.5f)
             {
-                float jumpForce = fighterData != null ? fighterData.jumpForce : 12.5f;
-                float walkSpeed = fighterData != null ? fighterData.EffectiveWalkForwardSpeed : 4.2f;
-                _blockFromCrouch = false;
-                _simVelocity.y = jumpForce;
-                _simVelocity.x = input.MoveX * walkSpeed;
-                _isGrounded = false;
-                EnterState(FighterState.Jump);
-                ApplyGravityAndIntegrate(dt);
-                UpdateHurtboxDimensions();
-                StepAnimatorTick(dt);
+                StartJump(input.MoveX, dt);
+                return;
+            }
+
+            if (!input.HoldBlock &&
+                _inputHandler != null &&
+                _inputHandler.ConsumeBufferedDash(tick, _facingSign, out bool isForwardDash))
+            {
+                StartDash(isForwardDash, dt);
                 return;
             }
 
@@ -896,6 +1055,7 @@ namespace UnDFight
                 _currSimPos.y = groundY;
                 _simVelocity.y = 0f;
                 _isGrounded = true;
+                _hasUsedAirAttackThisJump = false;
             }
         }
 
@@ -961,9 +1121,63 @@ namespace UnDFight
             return true;
         }
 
+        private void StartJump(float moveX, float dt)
+        {
+            float jumpForce = fighterData != null ? fighterData.jumpForce : 12.5f;
+            float walkSpeed = fighterData != null ? fighterData.EffectiveWalkForwardSpeed : 4.2f;
+            _blockFromCrouch = false;
+            _hasUsedAirAttackThisJump = false;
+            _simVelocity.y = jumpForce;
+            _simVelocity.x = moveX * walkSpeed;
+            _isGrounded = false;
+            EnterState(FighterState.Jump);
+            ApplyGravityAndIntegrate(dt);
+            UpdateHurtboxDimensions();
+            StepAnimatorTick(dt);
+        }
+
+        private void StartDash(bool isForward, float dt)
+        {
+            _blockFromCrouch = false;
+            _knockbackDecelPerSec = 0f;
+            int ticks = isForward
+                ? (fighterData != null ? Mathf.Max(1, fighterData.dashForwardTicks) : 14)
+                : (fighterData != null ? Mathf.Max(1, fighterData.dashBackwardTicks) : 16);
+            float speed = isForward
+                ? (fighterData != null ? fighterData.EffectiveDashForwardSpeed : 8.2f)
+                : (fighterData != null ? fighterData.EffectiveDashBackwardSpeed : 7.0f);
+
+            _stateTotalTicks = ticks;
+            _simVelocity.x = (isForward ? _facingSign : -_facingSign) * speed;
+            EnterState(isForward ? FighterState.DashForward : FighterState.DashBackward, forceResetTicks: true);
+            OnAnyDashStarted?.Invoke(this, isForward);
+            ApplyGravityAndIntegrate(dt);
+            UpdateHurtboxDimensions();
+            StepAnimatorTick(dt);
+        }
+
+        private bool StartAirAttack(AttackType attackType)
+        {
+            if (attackType != AttackType.JumpAttack || _hasUsedAirAttackThisJump)
+            {
+                return false;
+            }
+
+            _hasUsedAirAttackThisJump = true;
+            AddSuperGauge(SuperGainWhiff);
+            _grantedStartSuperOnCurrentMove = true;
+            _blockFromCrouch = false;
+            _hasRegisteredHit = false;
+            _currentAttack = AttackType.JumpAttack;
+            _currentMoveData = fighterData != null ? fighterData.GetMoveData(AttackType.JumpAttack) : null;
+            _stateTotalTicks = _currentMoveData != null ? _currentMoveData.TotalTicks : GetFallbackAttackTotalTicks(AttackType.JumpAttack);
+            EnterState(FighterState.Attack, triggerAttack: true, forceResetTicks: true);
+            return true;
+        }
+
         private bool StartAttack(AttackType attackType)
         {
-            if (attackType == AttackType.None)
+            if (attackType == AttackType.None || (attackType == AttackType.JumpAttack && _isGrounded))
             {
                 return false;
             }
@@ -1048,7 +1262,9 @@ namespace UnDFight
                    state == FighterState.KnockDown ||
                    state == FighterState.GetUp ||
                    state == FighterState.Victory ||
-                   state == FighterState.Defeat;
+                   state == FighterState.Defeat ||
+                   state == FighterState.DashForward ||
+                   state == FighterState.DashBackward;
         }
 
         private static float GetTargetYawForFacing(int facingSign)
@@ -1121,6 +1337,9 @@ namespace UnDFight
                 AttackType.LightKick => 19,
                 AttackType.HeavyKick => 33,
                 AttackType.Special => 28,
+                AttackType.CrouchKick => 28,
+                AttackType.JumpAttack => 18,
+                AttackType.Throw => 22,
                 _ => 16
             };
         }

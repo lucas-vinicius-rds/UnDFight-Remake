@@ -24,6 +24,9 @@ WEIGHT_CLASS_FRAMEDATA = {
         "HeavyPunch": (5, 4, 12),   # 21 frames
         "LightKick":  (4, 3, 9),    # 16 frames
         "HeavyKick":  (7, 4, 16),   # 27 frames
+        "CrouchKick": (6, 4, 15),   # 25 frames
+        "JumpAttack": (4, 8, 6),    # 18 frames
+        "Throw":      (5, 3, 14),   # 22 frames
         "Special":    (7, 4, 13),   # 24 frames (Jompes default light)
     },
     "medium": {
@@ -31,6 +34,9 @@ WEIGHT_CLASS_FRAMEDATA = {
         "HeavyPunch": (7, 4, 16),   # 27 frames
         "LightKick":  (5, 3, 11),   # 19 frames
         "HeavyKick":  (9, 4, 20),   # 33 frames
+        "CrouchKick": (7, 4, 17),   # 28 frames
+        "JumpAttack": (4, 8, 6),    # 18 frames
+        "Throw":      (5, 3, 14),   # 22 frames
         "Special":    (8, 5, 15),   # 28 frames (Tiago)
     },
     "heavy": {
@@ -38,6 +44,9 @@ WEIGHT_CLASS_FRAMEDATA = {
         "HeavyPunch": (9, 5, 19),   # 33 frames
         "LightKick":  (6, 4, 13),   # 23 frames
         "HeavyKick":  (11, 5, 24),  # 40 frames
+        "CrouchKick": (8, 5, 19),   # 32 frames
+        "JumpAttack": (4, 8, 6),    # 18 frames
+        "Throw":      (5, 3, 14),   # 22 frames
         "Special":    (10, 5, 17),  # 32 frames (Lucas)
     },
 }
@@ -1785,6 +1794,138 @@ def build_style_attacks(style, idle0, framedata):
             sp_end_f: idle0,
         }
 
+    # CrouchKick (low sweeping kick from crouch posture)
+    crouch_base = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.35),
+        "Hips":          (14.0, 0.0, 20.0),
+        "Spine":         (10.0, 0.0, 4.0),
+        "Chest":         (8.0, 0.0, 2.0),
+        "Neck":          (-14.0, 0.0, -14.0),
+        "Head":          (-12.0, 0.0, -12.0),
+        "LeftUpperLeg":  (-92.0, -8.0, 10.0),
+        "LeftLowerLeg":  (98.0, 0.0, 0.0),
+        "LeftFoot":      (-6.0, 0.0, 0.0),
+        "RightUpperLeg": (-88.0, 8.0, -10.0),
+        "RightLowerLeg": (96.0, 0.0, 0.0),
+        "RightFoot":     (-8.0, 0.0, 0.0),
+    })
+    ck_sweep = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.44),
+        "Hips":          (-10.0, 8.0, -22.0),
+        "Spine":         (-6.0, 0.0, 8.0),
+        "Chest":         (4.0, 0.0, 8.0),
+        "Neck":          (6.0, 0.0, 12.0),
+        "Head":          (4.0, 0.0, 10.0),
+        "LeftUpperArm":  (-10.0, 46.0, -54.0),
+        "LeftLowerArm":  (12.0, -34.0, -104.0),
+        "RightUpperArm": (-14.0, -46.0, 54.0),
+        "RightLowerArm": (12.0, 34.0, 104.0),
+        "LeftUpperLeg":  (-76.0, -12.0, 16.0),
+        "LeftLowerLeg":  (6.0, 0.0, 0.0),
+        "LeftFoot":      (22.0, 0.0, 0.0),
+        "RightUpperLeg": (-92.0, 14.0, -16.0),
+        "RightLowerLeg": (104.0, 0.0, 0.0),
+        "RightFoot":     (-10.0, 0.0, 0.0),
+    })
+    ck_ant_f, ck_hit_start, ck_hit_end, ck_end_f = _attack_key_frames(*framedata["CrouchKick"])
+    anims["CrouchKick"] = {
+        1: crouch_base,
+        ck_ant_f: crouch_base,
+        ck_hit_start: ck_sweep,
+        ck_hit_end: ck_sweep,
+        ck_end_f: idle0,
+    }
+
+    # JumpAttack (aerial downward-forward flying kick, 18 frames: 1..19)
+    ja_tuck = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, 0.04),
+        "Spine":         (8.0, 0.0, 4.0),
+        "LeftUpperArm":  (-14.0, 42.0, -56.0),
+        "RightUpperArm": (-14.0, -42.0, 56.0),
+        "LeftUpperLeg":  (-78.0, -4.0, 6.0),
+        "LeftLowerLeg":  (95.0, 0.0, 0.0),
+        "LeftFoot":      (20.0, 0.0, 0.0),
+        "RightUpperLeg": (-58.0, 4.0, -6.0),
+        "RightLowerLeg": (88.0, 0.0, 0.0),
+        "RightFoot":     (20.0, 0.0, 0.0),
+    })
+    ja_hit = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, 0.08),
+        "Hips":          (-18.0, 6.0, -16.0),
+        "Spine":         (-10.0, 0.0, 8.0),
+        "Chest":         (4.0, 0.0, 6.0),
+        "Neck":          (8.0, 0.0, 8.0),
+        "Head":          (4.0, 0.0, 6.0),
+        "LeftUpperArm":  (-14.0, 44.0, -62.0),
+        "LeftLowerArm":  (14.0, -36.0, -106.0),
+        "RightUpperArm": (-14.0, -44.0, 62.0),
+        "RightLowerArm": (14.0, 36.0, 106.0),
+        "LeftUpperLeg":  (-68.0, -6.0, 8.0),
+        "LeftLowerLeg":  (8.0, 0.0, 0.0),
+        "LeftFoot":      (22.0, 0.0, 0.0),
+        "RightUpperLeg": (-76.0, 8.0, -10.0),
+        "RightLowerLeg": (102.0, 0.0, 0.0),
+        "RightFoot":     (18.0, 0.0, 0.0),
+    })
+    ja_ant_f, ja_hit_start, ja_hit_end, ja_end_f = _attack_key_frames(*framedata["JumpAttack"])
+    anims["JumpAttack"] = {
+        1: ja_tuck,
+        ja_ant_f: ja_tuck,
+        ja_hit_start: ja_hit,
+        ja_hit_end: ja_hit,
+        ja_end_f: ja_tuck,
+    }
+
+    # Throw (close-range two-handed grab -> firm shoulder/torso throw, 22 frames: 1..23)
+    grip_hands = relaxed_grip(0.45)
+    th_grab = merge_pose(idle0, merge_pose(grip_hands, {
+        "HipsOffset":    (0.0, 0.0, -0.055),
+        "Hips":          (4.0, 0.0, 14.0),
+        "Spine":         (6.0, 0.0, 4.0),
+        "Chest":         (6.0, 0.0, 2.0),
+        "Neck":          (-8.0, 0.0, -12.0),
+        "Head":          (-6.0, 0.0, -10.0),
+        "LeftShoulder":  (0.0, 12.0, -20.0),
+        "LeftUpperArm":  (-14.0, 8.0, -56.0),
+        "LeftLowerArm":  (10.0, -24.0, -22.0),
+        "LeftHand":      (-14.0, -18.0, 8.0),
+        "RightShoulder": (0.0, -12.0, 20.0),
+        "RightUpperArm": (-14.0, -8.0, 56.0),
+        "RightLowerArm": (10.0, 24.0, 22.0),
+        "RightHand":     (-14.0, 18.0, -8.0),
+        "LeftUpperLeg":  (-32.0, -5.0, 6.0),
+        "LeftLowerLeg":  (22.0, 0.0, 0.0),
+        "RightUpperLeg": (18.0, 6.0, -6.0),
+        "RightLowerLeg": (12.0, 0.0, 0.0),
+    }))
+    th_throw = merge_pose(idle0, merge_pose(grip_hands, {
+        "HipsOffset":    (0.0, 0.0, -0.068),
+        "Hips":          (6.0, 0.0, -18.0),
+        "Spine":         (8.0, -4.0, -18.0),
+        "Chest":         (8.0, -4.0, -16.0),
+        "UpperChest":    (4.0, -2.0, -10.0),
+        "Neck":          (-8.0, 0.0, 24.0),
+        "Head":          (-6.0, 0.0, 22.0),
+        "LeftShoulder":  (0.0, 14.0, -14.0),
+        "LeftUpperArm":  (-18.0, 26.0, -72.0),
+        "LeftLowerArm":  (14.0, -34.0, -78.0),
+        "RightShoulder": (0.0, -14.0, 18.0),
+        "RightUpperArm": (-24.0, -12.0, 38.0),
+        "RightLowerArm": (10.0, 28.0, 44.0),
+        "LeftUpperLeg":  (-34.0, -5.0, 6.0),
+        "LeftLowerLeg":  (26.0, 0.0, 0.0),
+        "RightUpperLeg": (20.0, 6.0, -6.0),
+        "RightLowerLeg": (14.0, 0.0, 0.0),
+    }))
+    th_ant_f, th_hit_start, th_hit_end, th_end_f = _attack_key_frames(*framedata["Throw"])
+    anims["Throw"] = {
+        1: idle0,
+        th_ant_f: th_grab,
+        th_hit_start: th_throw,
+        th_hit_end: th_throw,
+        th_end_f: idle0,
+    }
+
     return anims
 
 
@@ -1976,13 +2117,73 @@ def build_common_actions(idle0):
     })
     anims["Turn180"] = {1: idle0, 3: turn_start, 5: turn_mid, 7: turn_end, 9: idle0}
 
+    # DashForward (14 frames: 1..15, explosive forward drive with tight guard returning to Idle)
+    dash_fwd_drive = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.075),
+        "Hips":          (8.0, 0.0, 18.0),
+        "Spine":         (10.0, 0.0, 4.0),
+        "Chest":         (8.0, 0.0, 2.0),
+        "UpperChest":    (4.0, 0.0, 2.0),
+        "Neck":          (-12.0, 0.0, -14.0),
+        "Head":          (-8.0, 0.0, -14.0),
+        "LeftUpperLeg":  (-42.0, -5.0, 6.0),
+        "LeftLowerLeg":  (26.0, 0.0, 0.0),
+        "LeftFoot":      (10.0, 0.0, 0.0),
+        "RightUpperLeg": (28.0, 6.0, -6.0),
+        "RightLowerLeg": (16.0, 0.0, 0.0),
+        "RightFoot":     (-18.0, 0.0, 0.0),
+    })
+    dash_fwd_glide = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.055),
+        "Hips":          (6.0, 0.0, 20.0),
+        "Spine":         (7.0, 0.0, 4.0),
+        "Chest":         (5.0, 0.0, 2.0),
+        "Neck":          (-8.0, 0.0, -14.0),
+        "Head":          (-6.0, 0.0, -14.0),
+        "LeftUpperLeg":  (-34.0, -5.0, 6.0),
+        "LeftLowerLeg":  (16.0, 0.0, 0.0),
+        "LeftFoot":      (14.0, 0.0, 0.0),
+        "RightUpperLeg": (18.0, 6.0, -6.0),
+        "RightLowerLeg": (22.0, 0.0, 0.0),
+        "RightFoot":     (-20.0, 0.0, 0.0),
+    })
+    anims["DashForward"] = {1: idle0, 5: dash_fwd_drive, 10: dash_fwd_glide, 15: idle0}
+
+    # DashBackward (16 frames: 1..17, elastic backdash evading backward then cushioning into Idle)
+    dash_back_evade = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.035),
+        "Hips":          (-8.0, 0.0, 20.0),
+        "Spine":         (-10.0, 0.0, 4.0),
+        "Chest":         (-8.0, 0.0, 2.0),
+        "Neck":          (8.0, 0.0, -14.0),
+        "Head":          (6.0, 0.0, -14.0),
+        "LeftUpperLeg":  (-20.0, -4.0, 5.0),
+        "LeftLowerLeg":  (36.0, 0.0, 0.0),
+        "LeftFoot":      (-8.0, 0.0, 0.0),
+        "RightUpperLeg": (14.0, 5.0, -5.0),
+        "RightLowerLeg": (22.0, 0.0, 0.0),
+        "RightFoot":     (-18.0, 0.0, 0.0),
+    })
+    dash_back_land = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.065),
+        "Hips":          (2.0, 0.0, 22.0),
+        "Spine":         (4.0, 0.0, 4.0),
+        "LeftUpperLeg":  (-32.0, -5.0, 6.0),
+        "LeftLowerLeg":  (24.0, 0.0, 0.0),
+        "LeftFoot":      (8.0, 0.0, 0.0),
+        "RightUpperLeg": (20.0, 6.0, -6.0),
+        "RightLowerLeg": (18.0, 0.0, 0.0),
+        "RightFoot":     (-22.0, 0.0, 0.0),
+    })
+    anims["DashBackward"] = {1: idle0, 5: dash_back_evade, 11: dash_back_land, 17: idle0}
+
     return anims
 
 
 def _get_clip_ground_modes(clip_name, style, keyframes):
     frames = sorted(keyframes.keys())
     first_f, last_f = frames[0], frames[-1]
-    if clip_name in ("Idle", "BlockStand", "Crouch", "Victory", "HitReact", "LightPunch", "HeavyPunch"):
+    if clip_name in ("Idle", "BlockStand", "Crouch", "Victory", "HitReact", "LightPunch", "HeavyPunch", "Throw"):
         return {f: "both" for f in frames}
     if clip_name == "Special":
         if style == "agile_striker":
@@ -1990,6 +2191,20 @@ def _get_clip_ground_modes(clip_name, style, keyframes):
         return {f: "both" for f in frames}
     if clip_name in ("LightKick", "HeavyKick"):
         return {f: ("both" if f in (first_f, last_f) else "right") for f in frames}
+    if clip_name == "CrouchKick":
+        return {
+            frames[0]: "both",
+            frames[1]: "both",
+            frames[2]: "min",
+            frames[3]: "min",
+            frames[4]: "both",
+        }
+    if clip_name == "JumpAttack":
+        return {}
+    if clip_name == "DashForward":
+        return {1: "both", 5: "min", 10: "min", 15: "both"}
+    if clip_name == "DashBackward":
+        return {1: "both", 5: "min", 11: "min", 17: "both"}
     if clip_name in ("WalkForward", "WalkBackward"):
         return {f: "min" for f in frames}
     if clip_name == "Jump":
@@ -2030,13 +2245,19 @@ def verify_and_report_grounding(arm_obj, mesh_obj, foot_vdata, name, framedata):
     sp_hit_f = 1 + framedata["Special"][0] + 1
     hp_hit_f = 1 + framedata["HeavyPunch"][0] + 1
     hk_hit_f = 1 + framedata["HeavyKick"][0] + 1
+    ck_hit_f = 1 + framedata["CrouchKick"][0] + 1
+    th_hit_f = 1 + framedata["Throw"][0] + 1
     checks = [
         ("BlockStand", 20),
         ("Crouch", 20),
+        ("DashForward", 5),
+        ("DashBackward", 5),
         ("Victory", 50),
         ("Turn180", 5),
         ("HeavyPunch", hp_hit_f),
         ("HeavyKick", hk_hit_f),
+        ("CrouchKick", ck_hit_f),
+        ("Throw", th_hit_f),
         ("Special", sp_hit_f),
     ]
     for cname, f in checks:
@@ -2099,8 +2320,10 @@ def generate_all_animations(arm_obj, config=None):
             kf[frame_idx] = merge_pose(hand_pose, pose_dict)
 
     ordered_names = [
-        "Idle", "WalkForward", "WalkBackward", "Jump", "Crouch", "BlockStand",
-        "LightPunch", "HeavyPunch", "LightKick", "HeavyKick", "Special",
+        "Idle", "WalkForward", "WalkBackward", "DashForward", "DashBackward",
+        "Jump", "Crouch", "BlockStand",
+        "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
+        "CrouchKick", "JumpAttack", "Throw", "Special",
         "HitReact", "KnockDown", "GetUp", "Victory", "Defeat", "Turn180",
     ]
     for name in ordered_names:
@@ -3080,11 +3303,18 @@ def write_frame_data_doc(config):
         },
     }[style]
 
+    common_attack_notes = {
+        "CrouchKick": "Rasteira agachada baixa varrendo o chão com a perna estendida à frente (`LeftFoot`, `HitHeight.Low`, derruba)",
+        "JumpAttack": "Voadora aérea descendente em diagonal (`LeftFoot`, `HitHeight.Overhead`, quebra guarda agachada)",
+        "Throw": "Agarrão de curto alcance com ambas as mãos (`relaxed_grip`) seguido de arremesso firme de ombro/tronco (`Unblockable`)",
+    }
+
     def fmt_row(mname):
         s, a, r = fd[mname]
         tot = s + a + r
         dur_str = f"{tot/60.0:.3f}".replace(".", ",")
-        return f"| **{mname}** | {s} | {a} | {r} | {tot} | {dur_str} s | {s+1}–{s+a} | {style_notes[mname]} |"
+        note = style_notes.get(mname) or common_attack_notes[mname]
+        return f"| **{mname}** | {s} | {a} | {r} | {tot} | {dur_str} s | {s+1}–{s+a} | {note} |"
 
     doc_path = os.path.join(PROJECT_ROOT, "Docs", f"FrameData_{name}.md")
     lines = [
@@ -3105,6 +3335,9 @@ def write_frame_data_doc(config):
         fmt_row("HeavyPunch"),
         fmt_row("LightKick"),
         fmt_row("HeavyKick"),
+        fmt_row("CrouchKick"),
+        fmt_row("JumpAttack"),
+        fmt_row("Throw"),
         fmt_row("Special"),
         "",
         "---",
@@ -3116,6 +3349,8 @@ def write_frame_data_doc(config):
         f"| **Idle** | 60 (1–61) | 1,000 s | Sim | Não | {style_notes['Idle']} |",
         f"| **WalkForward** | 48 (1–49) | 0,800 s | Sim | Não | {style_notes['Walk']} (avanço) |",
         f"| **WalkBackward** | 48 (1–49) | 0,800 s | Sim | Não | {style_notes['Walk']} (recuo) |",
+        "| **DashForward** | 14 (1–15) | 0,233 s | Não | Não | Impulso explosivo para frente com inclinação de tronco, guarda firme e retorno ao `Idle` (cancelável após tick 8) |",
+        "| **DashBackward** | 16 (1–17) | 0,267 s | Não | Não | Recuo elástico rápido afastando tronco/cabeça para trás e amortecendo na base (evasão nos 5 primeiros ticks) |",
         "| **Jump** | 36 (1–37) | 0,600 s | Não | Não | Antecipação, elevação vertical local e pouso retornando ao `Idle` |",
         "| **Crouch** | 30 (1–31) | 0,500 s | Não | Não | Agachamento em guarda baixa mantido até o frame 31 enquanto segurado |",
         f"| **BlockStand** | 24 (1–25) | 0,400 s | Não | Não | {style_notes['BlockStand']} |",

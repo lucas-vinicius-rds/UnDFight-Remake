@@ -26,6 +26,8 @@ MonoBehaviour:
   blockKnockbackFactor: 0.5
   hitHeight: 1
   causesKnockdown: 0
+  isThrow: 0
+  airOnly: 0
   hitboxCenterOffset: {x: 0.74, y: 1.15}
   hitboxSize: {x: 0.88, y: 0.44}
   lungeSpeed: 0

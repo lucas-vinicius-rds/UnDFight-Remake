@@ -11,6 +11,7 @@ namespace UnDFight
     public class PlayerInputHandler : MonoBehaviour
     {
         public const int DefaultBufferWindowTicks = 6;
+        public const int DashDoubleTapWindowTicks = 12;
 
         [Header("Player Configuration")]
         [SerializeField, Range(0, 1)] private int playerIndex = 0;
@@ -23,6 +24,13 @@ namespace UnDFight
         private Gamepad _activeGamepad;
         private int _currentSimTick;
         private bool _useSimulatedInput;
+        private int _prevTapSign;
+        private int _lastTapDir;
+        private int _lastTapTick = -999;
+        private int _lastDashEvalTick = -1;
+        private int _bufferedDashDirection;
+        private int _bufferedDashExpireTick = -1;
+        private int _lastThrowAttemptTick = -999;
 
         private Key _lightPunchKey;
         private Key _heavyPunchKey;
@@ -145,6 +153,30 @@ namespace UnDFight
         public void SyncSimulationTick(int currentTick)
         {
             _currentSimTick = currentTick;
+            if (currentTick > 0 && currentTick != _lastDashEvalTick)
+            {
+                _lastDashEvalTick = currentTick;
+                EvaluateHorizontalTap(_currentInput.MoveX, currentTick);
+            }
+        }
+
+        private void EvaluateHorizontalTap(float moveX, int currentTick)
+        {
+            int curSign = moveX > 0.2f ? 1 : (moveX < -0.2f ? -1 : 0);
+            if (curSign != 0 && _prevTapSign == 0)
+            {
+                if (_lastTapDir == curSign && (currentTick - _lastTapTick) <= DashDoubleTapWindowTicks)
+                {
+                    BufferDashDirection(curSign, currentTick);
+                    _lastTapDir = 0;
+                }
+                else
+                {
+                    _lastTapDir = curSign;
+                    _lastTapTick = currentTick;
+                }
+            }
+            _prevTapSign = curSign;
         }
 
         /// <summary>
@@ -161,12 +193,19 @@ namespace UnDFight
         {
             _useSimulatedInput = false;
             _currentInput = default;
-            _bufferedButtonExpireTick.Clear();
+            ClearBufferedInputs();
         }
 
         public void ClearBufferedInputs()
         {
             _bufferedButtonExpireTick.Clear();
+            _prevTapSign = 0;
+            _lastTapDir = 0;
+            _lastTapTick = -999;
+            _lastDashEvalTick = -1;
+            _bufferedDashDirection = 0;
+            _bufferedDashExpireTick = -1;
+            _lastThrowAttemptTick = -999;
         }
 
         private void SampleDevices()
@@ -250,6 +289,86 @@ namespace UnDFight
         public void BufferButton(FighterInputButton button)
         {
             _bufferedButtonExpireTick[button] = _currentSimTick + bufferWindowTicks;
+            if ((button == FighterInputButton.LightPunch || button == FighterInputButton.LightKick) &&
+                !_currentInput.HoldBlock &&
+                TryGetValidExpireTick(FighterInputButton.LightPunch, _currentSimTick, out int lpExpire) &&
+                TryGetValidExpireTick(FighterInputButton.LightKick, _currentSimTick, out int lkExpire) &&
+                Mathf.Abs(lpExpire - lkExpire) <= 2)
+            {
+                _lastThrowAttemptTick = _currentSimTick;
+            }
+        }
+
+        public void BufferDashDirection(int directionSign, int currentTick)
+        {
+            if (directionSign == 0)
+            {
+                return;
+            }
+            _bufferedDashDirection = directionSign > 0 ? 1 : -1;
+            _bufferedDashExpireTick = currentTick + bufferWindowTicks;
+        }
+
+        public bool ConsumeBufferedDash(int currentTick, int facingSign, out bool isForwardDash)
+        {
+            if (_bufferedDashDirection != 0 && currentTick <= _bufferedDashExpireTick)
+            {
+                int dir = _bufferedDashDirection;
+                _bufferedDashDirection = 0;
+                _bufferedDashExpireTick = -1;
+                isForwardDash = dir == (facingSign >= 0 ? 1 : -1);
+                return true;
+            }
+            isForwardDash = false;
+            return false;
+        }
+
+        public void BufferThrowInput(int currentTick)
+        {
+            _currentSimTick = Mathf.Max(_currentSimTick, currentTick);
+            _bufferedButtonExpireTick[FighterInputButton.LightPunch] = currentTick + bufferWindowTicks;
+            _bufferedButtonExpireTick[FighterInputButton.LightKick] = currentTick + bufferWindowTicks;
+            _lastThrowAttemptTick = currentTick;
+        }
+
+        public bool TryConsumeThrowCombo(int currentTick)
+        {
+            if (_currentInput.HoldBlock)
+            {
+                return false;
+            }
+
+            if (TryGetValidExpireTick(FighterInputButton.LightPunch, currentTick, out int lpExpire) &&
+                TryGetValidExpireTick(FighterInputButton.LightKick, currentTick, out int lkExpire) &&
+                Mathf.Abs(lpExpire - lkExpire) <= 2)
+            {
+                _bufferedButtonExpireTick.Remove(FighterInputButton.LightPunch);
+                _bufferedButtonExpireTick.Remove(FighterInputButton.LightKick);
+                _lastThrowAttemptTick = currentTick;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool HasRecentThrowTechInput(int currentTick, int windowTicks = 7)
+        {
+            if (_lastThrowAttemptTick >= 0 && currentTick - _lastThrowAttemptTick <= windowTicks)
+            {
+                return true;
+            }
+
+            return !_currentInput.HoldBlock &&
+                   TryGetValidExpireTick(FighterInputButton.LightPunch, currentTick, out int lpExpire) &&
+                   TryGetValidExpireTick(FighterInputButton.LightKick, currentTick, out int lkExpire) &&
+                   Mathf.Abs(lpExpire - lkExpire) <= 2;
+        }
+
+        public void ConsumeThrowTechInput()
+        {
+            _lastThrowAttemptTick = -999;
+            _bufferedButtonExpireTick.Remove(FighterInputButton.LightPunch);
+            _bufferedButtonExpireTick.Remove(FighterInputButton.LightKick);
         }
 
         public bool ConsumeBufferedButton(FighterInputButton button, int currentTick)
@@ -269,9 +388,51 @@ namespace UnDFight
 
         public bool ConsumeAttackInput(int currentTick, bool allowSpecial, out AttackType attackType)
         {
+            return ConsumeAttackInput(
+                currentTick,
+                allowSpecial,
+                isGrounded: true,
+                isCrouchingInput: _currentInput.MoveY < -0.5f,
+                out attackType);
+        }
+
+        public bool ConsumeAttackInput(
+            int currentTick,
+            bool allowSpecial,
+            bool isGrounded,
+            bool isCrouchingInput,
+            out AttackType attackType)
+        {
+            if (!isGrounded)
+            {
+                if (ConsumeBufferedButton(FighterInputButton.HeavyKick, currentTick) ||
+                    ConsumeBufferedButton(FighterInputButton.HeavyPunch, currentTick) ||
+                    ConsumeBufferedButton(FighterInputButton.LightKick, currentTick) ||
+                    ConsumeBufferedButton(FighterInputButton.LightPunch, currentTick))
+                {
+                    attackType = AttackType.JumpAttack;
+                    return true;
+                }
+
+                attackType = AttackType.None;
+                return false;
+            }
+
             if (allowSpecial && TryConsumeSpecialShortcutOrButton(currentTick))
             {
                 attackType = AttackType.Special;
+                return true;
+            }
+
+            if (TryConsumeThrowCombo(currentTick))
+            {
+                attackType = AttackType.Throw;
+                return true;
+            }
+
+            if (isCrouchingInput && ConsumeBufferedButton(FighterInputButton.HeavyKick, currentTick))
+            {
+                attackType = AttackType.CrouchKick;
                 return true;
             }
 
@@ -305,6 +466,14 @@ namespace UnDFight
             if (allowSpecial && IsChainCancelAllowed(currentAttack, AttackType.Special, true) && TryConsumeSpecialShortcutOrButton(currentTick))
             {
                 nextAttack = AttackType.Special;
+                return true;
+            }
+
+            if (_currentInput.MoveY < -0.5f &&
+                IsChainCancelAllowed(currentAttack, AttackType.CrouchKick, allowSpecial) &&
+                ConsumeBufferedButton(FighterInputButton.HeavyKick, currentTick))
+            {
+                nextAttack = AttackType.CrouchKick;
                 return true;
             }
 
@@ -347,8 +516,8 @@ namespace UnDFight
 
             return fromAttack switch
             {
-                AttackType.LightPunch => toAttack == AttackType.HeavyPunch || toAttack == AttackType.LightKick || toAttack == AttackType.HeavyKick,
-                AttackType.LightKick => toAttack == AttackType.HeavyPunch || toAttack == AttackType.HeavyKick,
+                AttackType.LightPunch => toAttack == AttackType.HeavyPunch || toAttack == AttackType.LightKick || toAttack == AttackType.HeavyKick || toAttack == AttackType.CrouchKick,
+                AttackType.LightKick => toAttack == AttackType.HeavyPunch || toAttack == AttackType.HeavyKick || toAttack == AttackType.CrouchKick,
                 _ => false
             };
         }

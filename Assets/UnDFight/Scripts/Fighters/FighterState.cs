@@ -13,7 +13,9 @@ namespace UnDFight
         KnockDown = 8,
         GetUp = 9,
         Victory = 10,
-        Defeat = 11
+        Defeat = 11,
+        DashForward = 12,
+        DashBackward = 13
     }
 
     public enum AttackType
@@ -23,6 +25,9 @@ namespace UnDFight
         HeavyPunch = 2,
         LightKick = 3,
         HeavyKick = 4,
-        Special = 5
+        Special = 5,
+        CrouchKick = 6,
+        JumpAttack = 7,
+        Throw = 8
     }
 }

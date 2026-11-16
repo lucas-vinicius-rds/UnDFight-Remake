@@ -22,6 +22,11 @@ MonoBehaviour:
   maxHealth: 1000
   walkForwardSpeed: 4.55
   walkBackwardSpeed: 3.55
+  dashForwardSpeed: 8.2
+  dashForwardTicks: 14
+  dashBackwardSpeed: 7
+  dashBackwardTicks: 16
+  backdashInvulnerableTicks: 5
   jumpForce: 13
   baseGravity: 34
   crouchHeightRatio: 0.62
@@ -30,4 +35,7 @@ MonoBehaviour:
   heavyPunch: {fileID: 11400000, guid: d0576152edd387d409397f7edcd0caf0, type: 2}
   lightKick: {fileID: 11400000, guid: c99bd0aac2f095f40a7f550fcda3cee6, type: 2}
   heavyKick: {fileID: 11400000, guid: 541c346f9ffd1664791ff8ec7eb7aca0, type: 2}
+  crouchKick: {fileID: 11400000, guid: 88dcbf53f0f6a33469631f98a4326d88, type: 2}
+  jumpAttack: {fileID: 11400000, guid: 0973c07d1808f0641ad6b4839b13577f, type: 2}
+  throwMove: {fileID: 11400000, guid: 46857fc0f52c4744ab0e4ccf948900dc, type: 2}
   specialMove: {fileID: 11400000, guid: aae86613fd69bf14d8044a3743ff85a6, type: 2}

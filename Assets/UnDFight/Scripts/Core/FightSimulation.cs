@@ -271,7 +271,7 @@ namespace UnDFight
                 return;
             }
 
-            // Evaluate both attackers first so simultaneous active overlaps trigger clean trades
+            // Evaluate both attackers first so simultaneous active overlaps trigger clean trades / throw techs
             PendingStrike p1Strike = EvaluateStrike(fighter1, fighter2);
             PendingStrike p2Strike = EvaluateStrike(fighter2, fighter1);
 
@@ -280,22 +280,38 @@ namespace UnDFight
                 return;
             }
 
-            bool isTrade = p1Strike.Valid && p2Strike.Valid;
             int maxHitstop = 0;
+            bool p1IsThrow = p1Strike.Valid && IsThrowMove(p1Strike.Move);
+            bool p2IsThrow = p2Strike.Valid && IsThrowMove(p2Strike.Move);
 
-            if (p1Strike.Valid)
+            if (p1IsThrow && p2IsThrow)
             {
-                ApplyStrike(p1Strike, isTrade, ref maxHitstop);
+                Vector2 midpoint = (p1Strike.ContactPoint + p2Strike.ContactPoint) * 0.5f;
+                ApplyThrowTech(p1Strike.Attacker, p2Strike.Attacker, p1Strike.Move, midpoint, isTrade: true, ref maxHitstop);
+                p2Strike.Attacker.MarkHitRegistered();
             }
-            if (p2Strike.Valid)
+            else
             {
-                ApplyStrike(p2Strike, isTrade, ref maxHitstop);
+                bool isTrade = p1Strike.Valid && p2Strike.Valid;
+                if (p1Strike.Valid)
+                {
+                    ApplyStrike(p1Strike, isTrade, ref maxHitstop);
+                }
+                if (p2Strike.Valid)
+                {
+                    ApplyStrike(p2Strike, isTrade, ref maxHitstop);
+                }
             }
 
             if (maxHitstop > 0)
             {
                 _hitstopTicksRemaining = maxHitstop;
             }
+        }
+
+        private static bool IsThrowMove(MoveData move)
+        {
+            return move != null && (move.isThrow || move.attackType == AttackType.Throw);
         }
 
         private static PendingStrike EvaluateStrike(FighterController attacker, FighterController defender)
@@ -308,6 +324,18 @@ namespace UnDFight
             if (!attacker.TryGetActiveHitbox(out Rect hitbox, out MoveData move))
             {
                 return default;
+            }
+
+            if (IsThrowMove(move))
+            {
+                if (!defender.IsGrounded ||
+                    defender.State == FighterState.Hit ||
+                    defender.State == FighterState.KnockDown ||
+                    defender.State == FighterState.GetUp ||
+                    (defender.State == FighterState.Block && defender.StateTotalTicks > 0))
+                {
+                    return default;
+                }
             }
 
             Rect hurtbox = defender.GetHurtboxRect();
@@ -331,8 +359,49 @@ namespace UnDFight
             };
         }
 
+        private void ApplyThrowTech(
+            FighterController attacker,
+            FighterController defender,
+            MoveData move,
+            Vector2 contactPoint,
+            bool isTrade,
+            ref int maxHitstop)
+        {
+            attacker.MarkHitRegistered();
+            attacker.InputHandler?.ConsumeThrowTechInput();
+            defender.InputHandler?.ConsumeThrowTechInput();
+
+            attacker.ApplyThrowTechPushback(defender.FacingSign);
+            defender.ApplyThrowTechPushback(attacker.FacingSign);
+
+            const int techHitstop = 6;
+            if (techHitstop > maxHitstop)
+            {
+                maxHitstop = techHitstop;
+            }
+
+            EmitCombatHitEffects(
+                attacker,
+                defender,
+                move,
+                contactPoint,
+                HitOutcomeType.ThrowTech,
+                damageDealt: 0,
+                knockbackVelocity: defender.SimVelocity.x,
+                wasTrade: isTrade,
+                comboCount: 0,
+                comboDamage: 0,
+                isSpecial: false);
+        }
+
         private void ApplyStrike(PendingStrike strike, bool isTrade, ref int maxHitstop)
         {
+            if (IsThrowMove(strike.Move) && strike.Defender.CanTechIncomingThrow(CurrentTick))
+            {
+                ApplyThrowTech(strike.Attacker, strike.Defender, strike.Move, strike.ContactPoint, isTrade, ref maxHitstop);
+                return;
+            }
+
             strike.Attacker.MarkHitRegistered();
             strike.Defender.ApplyIncomingAttack(
                 strike.Move,
@@ -437,11 +506,17 @@ namespace UnDFight
             int comboDamage,
             bool isSpecial)
         {
-            int hitstop = move != null ? move.hitstopTicks : 0;
+            int hitstop = outcome == HitOutcomeType.ThrowTech
+                ? 6
+                : (move != null ? move.hitstopTicks : 0);
 
             if (fightCamera != null)
             {
-                if (outcome == HitOutcomeType.Blocked)
+                if (outcome == HitOutcomeType.ThrowTech)
+                {
+                    fightCamera.TriggerImpactShake(0.08f, 0.10f);
+                }
+                else if (outcome == HitOutcomeType.Blocked)
                 {
                     fightCamera.TriggerImpactShake(isSpecial ? 0.07f : 0.03f, isSpecial ? 0.09f : 0.06f);
                 }

@@ -20,6 +20,9 @@ namespace UnDFight.Tests
             public MoveData HeavyPunch;
             public MoveData LightKick;
             public MoveData HeavyKick;
+            public MoveData CrouchKick;
+            public MoveData JumpAttack;
+            public MoveData ThrowMove;
             public MoveData Special;
         }
 
@@ -65,6 +68,15 @@ namespace UnDFight.Tests
             rig.HeavyKick = Track(ScriptableObject.CreateInstance<MoveData>());
             rig.HeavyKick.Configure("HeavyKick", AttackType.HeavyKick, 9, 4, 20, 135, 22, 14, 8, 3.6f, HitHeight.High, true, new Vector2(0.86f, 1.24f), new Vector2(1.10f, 0.56f));
 
+            rig.CrouchKick = Track(ScriptableObject.CreateInstance<MoveData>());
+            rig.CrouchKick.Configure("CrouchKick", AttackType.CrouchKick, 7, 4, 17, 95, 20, 13, 7, 2.8f, HitHeight.Low, true, new Vector2(0.88f, 0.36f), new Vector2(1.14f, 0.44f));
+
+            rig.JumpAttack = Track(ScriptableObject.CreateInstance<MoveData>());
+            rig.JumpAttack.Configure("JumpAttack", AttackType.JumpAttack, 4, 8, 6, 85, 18, 12, 6, 1.9f, HitHeight.Overhead, false, new Vector2(0.68f, 0.58f), new Vector2(0.98f, 0.76f), airOnlyValue: true);
+
+            rig.ThrowMove = Track(ScriptableObject.CreateInstance<MoveData>());
+            rig.ThrowMove.Configure("Throw", AttackType.Throw, 5, 3, 14, 115, 20, 10, 8, 3.5f, HitHeight.Unblockable, true, new Vector2(0.58f, 1.02f), new Vector2(0.64f, 0.56f), isThrowValue: true);
+
             rig.Special = Track(ScriptableObject.CreateInstance<MoveData>());
             rig.Special.Configure("Golpe Especial", AttackType.Special, 8, 5, 15, 220, 30, 14, 12, 4.4f, HitHeight.Mid, true, new Vector2(0.95f, 1.15f), new Vector2(1.25f, 0.72f), chip: 30, lungeSpeedValue: 5.5f);
 
@@ -100,6 +112,9 @@ namespace UnDFight.Tests
             data.heavyPunch = rig.HeavyPunch;
             data.lightKick = rig.LightKick;
             data.heavyKick = rig.HeavyKick;
+            data.crouchKick = rig.CrouchKick;
+            data.jumpAttack = rig.JumpAttack;
+            data.throwMove = rig.ThrowMove;
             data.specialMove = rig.Special;
             return data;
         }
@@ -587,6 +602,251 @@ namespace UnDFight.Tests
             p1.ResetForRound(-2.2f, 1);
             Assert.AreEqual(90f, p1.VisualYaw, 0.01f);
             Assert.IsFalse(p1.IsTurnAnimActive);
+        }
+
+        [Test]
+        public void DashForward_MovesQuickly_AndCanCancelIntoAttackAfterTick8()
+        {
+            FighterRig rig = CreateRig();
+            rig.P1.SetSimPositionX(-2.5f);
+            rig.P2.SetSimPositionX(2.5f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+
+            // Double-tap forward (+1 -> 0 -> +1) triggers DashForward
+            float startX = rig.P1.SimPosition.x;
+            rig.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f }, true);
+            rig.Sim.StepSimulationTicks(1);
+            rig.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 0f }, true);
+            rig.Sim.StepSimulationTicks(1);
+            rig.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f }, true);
+            rig.Sim.StepSimulationTicks(1);
+
+            Assert.AreEqual(FighterState.DashForward, rig.P1.State);
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+
+            // Tick 5 of dash: cannot cancel into attack yet (_stateTicks < 8)
+            rig.Sim.StepSimulationTicks(5);
+            Assert.AreEqual(FighterState.DashForward, rig.P1.State);
+            Assert.AreEqual(5, rig.P1.StateTicks);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.Sim.StepSimulationTicks(1);
+            Assert.AreEqual(FighterState.DashForward, rig.P1.State, "DashForward must not cancel into attack before tick 8.");
+
+            // Reach tick 8 -> buffered LightPunch cancels DashForward into Attack
+            rig.Sim.StepSimulationTicks(2);
+            Assert.AreEqual(FighterState.Attack, rig.P1.State);
+            Assert.AreEqual(AttackType.LightPunch, rig.P1.CurrentAttack);
+            Assert.Greater(rig.P1.SimPosition.x - startX, 0.8f);
+        }
+
+        [Test]
+        public void DashBackward_GrantsInvulnerabilityDuringFirst5Ticks_ThenRecovers()
+        {
+            FighterRig rig = CreateRig();
+            rig.P1.SetSimPositionX(-0.6f);
+            rig.P2.SetSimPositionX(0.6f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+
+            // P2 faces -1, so +1 is backward dash
+            float p2StartX = rig.P2.SimPosition.x;
+            rig.P2.InputHandler.BufferDashDirection(1, rig.Sim.CurrentTick + 1);
+            rig.Sim.StepSimulationTicks(1);
+
+            Assert.AreEqual(FighterState.DashBackward, rig.P2.State);
+            Assert.IsTrue(rig.P2.IsDashInvulnerable);
+            Assert.IsTrue(rig.P2.IsInvulnerable);
+
+            // Keep P1 overlapping during first 5 ticks of backdash -> attack must whiff cleanly
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.Sim.StepSimulationTicks(5); // StateTicks == 5 (still invulnerable)
+            Assert.IsTrue(rig.P2.IsDashInvulnerable);
+            Assert.AreEqual(1000, rig.P2.CurrentHealth);
+
+            // Tick 6 (_stateTicks == 6): invulnerability expires
+            rig.Sim.StepSimulationTicks(1);
+            Assert.IsFalse(rig.P2.IsDashInvulnerable);
+            Assert.IsFalse(rig.P2.IsInvulnerable);
+
+            // Finish 16-tick backdash -> returns cleanly to Idle further back
+            rig.Sim.StepSimulationTicks(12);
+            Assert.AreEqual(FighterState.Idle, rig.P2.State);
+            Assert.Greater(rig.P2.SimPosition.x, p2StartX + 0.9f);
+        }
+
+        [Test]
+        public void CrouchKick_HitsLow_RequiresCrouchGuard_AndCausesKnockdown()
+        {
+            // 1. Standing block fails against CrouchKick (Low) and results in KnockDown
+            FighterRig rigStand = CreateRig();
+            rigStand.P1.SetSimPositionX(-0.65f);
+            rigStand.P2.SetSimPositionX(0.65f);
+            rigStand.Sim.ForceUpdateFacing();
+            rigStand.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveY = -1f }, true);
+            rigStand.P2.InputHandler.SetSimulatedInput(new FighterInputState { HoldBlock = true }, true);
+
+            rigStand.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
+            rigStand.Sim.StepSimulationTicks(1);
+            Assert.AreEqual(FighterState.Attack, rigStand.P1.State);
+            Assert.AreEqual(AttackType.CrouchKick, rigStand.P1.CurrentAttack);
+            Assert.IsTrue(rigStand.P1.IsCrouching, "CrouchKick must preserve low crouching hurtbox.");
+
+            rigStand.Sim.StepSimulationTicks(8); // Startup 7 + active tick 8
+            Assert.AreEqual(905, rigStand.P2.CurrentHealth);
+            Assert.AreEqual(FighterState.KnockDown, rigStand.P2.State);
+
+            // 2. Crouch guard blocks CrouchKick cleanly
+            FighterRig rigCrouchBlock = CreateRig();
+            rigCrouchBlock.P1.SetSimPositionX(-0.65f);
+            rigCrouchBlock.P2.SetSimPositionX(0.65f);
+            rigCrouchBlock.Sim.ForceUpdateFacing();
+            rigCrouchBlock.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveY = -1f }, true);
+            rigCrouchBlock.P2.InputHandler.SetSimulatedInput(new FighterInputState { MoveY = -1f, HoldBlock = true }, true);
+
+            rigCrouchBlock.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
+            rigCrouchBlock.Sim.StepSimulationTicks(1 + 8);
+            Assert.AreEqual(1000, rigCrouchBlock.P2.CurrentHealth);
+            Assert.AreEqual(FighterState.Block, rigCrouchBlock.P2.State);
+        }
+
+        [Test]
+        public void JumpAttack_HitsOverhead_BreaksCrouchGuard_AndIsBlockedStanding()
+        {
+            // 1. Crouch guard fails against Overhead JumpAttack
+            FighterRig rigVsCrouch = CreateRig();
+            rigVsCrouch.P1.SetSimPositionX(-2.0f);
+            rigVsCrouch.P2.SetSimPositionX(0.55f);
+            rigVsCrouch.Sim.ForceUpdateFacing();
+            rigVsCrouch.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 1f }, true);
+            rigVsCrouch.P2.InputHandler.SetSimulatedInput(new FighterInputState { MoveY = -1f, HoldBlock = true }, true);
+
+            // Jump across toward P2 and press JumpAttack on descent (tick 29 of 44-tick jump arc)
+            rigVsCrouch.Sim.StepSimulationTicks(29);
+            Assert.IsFalse(rigVsCrouch.P1.IsGrounded);
+            rigVsCrouch.P1.InputHandler.SetSimulatedInput(default, true);
+            rigVsCrouch.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
+            rigVsCrouch.Sim.StepSimulationTicks(1);
+            Assert.AreEqual(FighterState.Attack, rigVsCrouch.P1.State);
+            Assert.AreEqual(AttackType.JumpAttack, rigVsCrouch.P1.CurrentAttack);
+            Assert.Greater(rigVsCrouch.P1.SimVelocity.x, 0.5f, "JumpAttack must preserve horizontal jump velocity.");
+
+            // Wait through descent until JumpAttack connects overhead against crouching defender
+            for (int t = 0; t < 20 && rigVsCrouch.P2.CurrentHealth == 1000; t++)
+            {
+                rigVsCrouch.Sim.StepSimulationTicks(1);
+            }
+            Assert.AreEqual(915, rigVsCrouch.P2.CurrentHealth);
+            Assert.AreEqual(FighterState.Hit, rigVsCrouch.P2.State);
+
+            // 2. Standing guard blocks Overhead JumpAttack
+            FighterRig rigVsStand = CreateRig();
+            rigVsStand.P1.SetSimPositionX(-2.0f);
+            rigVsStand.P2.SetSimPositionX(0.55f);
+            rigVsStand.Sim.ForceUpdateFacing();
+            rigVsStand.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 1f }, true);
+            rigVsStand.P2.InputHandler.SetSimulatedInput(new FighterInputState { HoldBlock = true }, true);
+
+            rigVsStand.Sim.StepSimulationTicks(29);
+            rigVsStand.P1.InputHandler.SetSimulatedInput(default, true);
+            rigVsStand.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
+
+            for (int t = 0; t < 20 && rigVsStand.P2.State != FighterState.Block; t++)
+            {
+                rigVsStand.Sim.StepSimulationTicks(1);
+            }
+            Assert.AreEqual(1000, rigVsStand.P2.CurrentHealth);
+            Assert.AreEqual(FighterState.Block, rigVsStand.P2.State);
+        }
+
+        [Test]
+        public void Throw_BeatsPassiveGuard_WhiffsOnAirborneOrHitstun_AndCausesKnockdown()
+        {
+            // 1. Throw beats passive guard (HoldBlock) and causes KnockDown
+            FighterRig rig = CreateRig();
+            rig.P1.SetSimPositionX(-0.45f);
+            rig.P2.SetSimPositionX(0.45f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(new FighterInputState { HoldBlock = true }, true);
+
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightPunch);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightKick);
+            rig.Sim.StepSimulationTicks(1);
+            Assert.AreEqual(FighterState.Attack, rig.P1.State);
+            Assert.AreEqual(AttackType.Throw, rig.P1.CurrentAttack);
+
+            rig.Sim.StepSimulationTicks(6); // Startup 5 + active tick 6
+            Assert.AreEqual(885, rig.P2.CurrentHealth);
+            Assert.AreEqual(FighterState.KnockDown, rig.P2.State);
+
+            // 2. Throw whiffs on airborne defender
+            FighterRig rigAir = CreateRig();
+            rigAir.P1.SetSimPositionX(-0.45f);
+            rigAir.P2.SetSimPositionX(0.45f);
+            rigAir.Sim.ForceUpdateFacing();
+            rigAir.P1.InputHandler.SetSimulatedInput(default, true);
+            rigAir.P2.InputHandler.SetSimulatedInput(new FighterInputState { MoveY = 1f }, true);
+            rigAir.Sim.StepSimulationTicks(2);
+            Assert.IsFalse(rigAir.P2.IsGrounded);
+            rigAir.P1.InputHandler.BufferThrowInput(rigAir.Sim.CurrentTick);
+            rigAir.Sim.StepSimulationTicks(8);
+            Assert.AreEqual(1000, rigAir.P2.CurrentHealth);
+
+            // 3. Throw whiffs on defender already in Hitstun
+            FighterRig rigHitstun = CreateRig();
+            rigHitstun.P1.SetSimPositionX(-0.45f);
+            rigHitstun.P2.SetSimPositionX(0.45f);
+            rigHitstun.Sim.ForceUpdateFacing();
+            rigHitstun.P1.InputHandler.SetSimulatedInput(default, true);
+            rigHitstun.P2.InputHandler.SetSimulatedInput(default, true);
+            rigHitstun.P2.ApplyIncomingAttack(rigHitstun.LightPunch, 1, out _, out _, out _);
+            Assert.AreEqual(FighterState.Hit, rigHitstun.P2.State);
+
+            rigHitstun.P1.InputHandler.BufferThrowInput(rigHitstun.Sim.CurrentTick);
+            rigHitstun.Sim.StepSimulationTicks(8);
+            Assert.AreEqual(950, rigHitstun.P2.CurrentHealth, "Throw must whiff on defender in Hitstun.");
+        }
+
+        [Test]
+        public void ThrowTech_CancelsThrowDamage_AndPushesBothFightersApart()
+        {
+            FighterRig rig = CreateRig();
+            rig.P1.SetSimPositionX(-0.45f);
+            rig.P2.SetSimPositionX(0.45f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+
+            var events = new List<CombatHitEvent>();
+            rig.Sim.OnCombatHit += e => events.Add(e);
+
+            float p1StartX = rig.P1.SimPosition.x;
+            float p2StartX = rig.P2.SimPosition.x;
+
+            // P1 attempts Throw on tick 1; P2 techs with LP+LK within window
+            rig.P1.InputHandler.BufferThrowInput(rig.Sim.CurrentTick + 1);
+            rig.Sim.StepSimulationTicks(3);
+            rig.P2.InputHandler.BufferThrowInput(rig.Sim.CurrentTick);
+            rig.Sim.StepSimulationTicks(4); // Reaches P1 Throw active tick
+
+            Assert.AreEqual(1000, rig.P1.CurrentHealth);
+            Assert.AreEqual(1000, rig.P2.CurrentHealth);
+            Assert.AreEqual(1, events.Count);
+            Assert.AreEqual(HitOutcomeType.ThrowTech, events[0].Outcome);
+            Assert.AreEqual(0, events[0].DamageDealt);
+            Assert.AreEqual(6, rig.Sim.HitstopTicksRemaining);
+            Assert.AreEqual(FighterState.Hit, rig.P1.State);
+            Assert.AreEqual(FighterState.Hit, rig.P2.State);
+
+            // Step through hitstop (6) + tech separation (10) -> both pushed apart and back to Idle
+            rig.Sim.StepSimulationTicks(6 + 10);
+            Assert.AreEqual(FighterState.Idle, rig.P1.State);
+            Assert.AreEqual(FighterState.Idle, rig.P2.State);
+            Assert.Less(rig.P1.SimPosition.x, p1StartX - 0.1f);
+            Assert.Greater(rig.P2.SimPosition.x, p2StartX + 0.1f);
         }
     }
 }

@@ -22,28 +22,38 @@ ModelImporter:
       warnings that might lower retargeting quality:\nNote: Activate translation
       DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
       that will be discarded.\n\t'RightUpperLeg' has scale animation that will be
-      discarded.\n\nClip 'Rochard_Armature|Defeat' has import animation warnings
+      discarded.\n\nClip 'Rochard_Armature|CrouchKick' has import animation warnings
       that might lower retargeting quality:\nNote: Activate translation DOF on avatar
       to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation that
-      will be discarded.\n\nClip 'Rochard_Armature|GetUp' has import animation warnings
+      will be discarded.\n\nClip 'Rochard_Armature|DashForward' has import animation
+      warnings that might lower retargeting quality:\nNote: Activate translation
+      DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
+      that will be discarded.\n\nClip 'Rochard_Armature|Defeat' has import animation
+      warnings that might lower retargeting quality:\nNote: Activate translation
+      DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
+      that will be discarded.\n\nClip 'Rochard_Armature|GetUp' has import animation
+      warnings that might lower retargeting quality:\nNote: Activate translation
+      DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
+      that will be discarded.\n\t'RightUpperLeg' has scale animation that will be
+      discarded.\n\nClip 'Rochard_Armature|HeavyKick' has import animation warnings
       that might lower retargeting quality:\nNote: Activate translation DOF on avatar
       to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation that
-      will be discarded.\n\t'RightUpperLeg' has scale animation that will be discarded.\n\nClip
-      'Rochard_Armature|HeavyKick' has import animation warnings that might lower
-      retargeting quality:\nNote: Activate translation DOF on avatar to improve retargeting
-      quality.\n\t'LeftUpperLeg' has scale animation that will be discarded.\n\nClip
-      'Rochard_Armature|Jump' has import animation warnings that might lower retargeting
-      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg'
-      has scale animation that will be discarded.\n\nClip 'Rochard_Armature|LightKick'
-      has import animation warnings that might lower retargeting quality:\nNote:
-      Activate translation DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg'
-      has scale animation that will be discarded.\n\nClip 'Rochard_Armature|Special'
-      has import animation warnings that might lower retargeting quality:\nNote:
-      Activate translation DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg'
-      has scale animation that will be discarded.\n\nClip 'Rochard_Armature|WalkForward'
-      has import animation warnings that might lower retargeting quality:\nNote:
-      Activate translation DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg'
-      has scale animation that will be discarded.\n"
+      will be discarded.\n\nClip 'Rochard_Armature|Jump' has import animation warnings
+      that might lower retargeting quality:\nNote: Activate translation DOF on avatar
+      to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation that
+      will be discarded.\n\nClip 'Rochard_Armature|JumpAttack' has import animation
+      warnings that might lower retargeting quality:\nNote: Activate translation
+      DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
+      that will be discarded.\n\nClip 'Rochard_Armature|LightKick' has import animation
+      warnings that might lower retargeting quality:\nNote: Activate translation
+      DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
+      that will be discarded.\n\nClip 'Rochard_Armature|Special' has import animation
+      warnings that might lower retargeting quality:\nNote: Activate translation
+      DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
+      that will be discarded.\n\nClip 'Rochard_Armature|WalkForward' has import animation
+      warnings that might lower retargeting quality:\nNote: Activate translation
+      DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
+      that will be discarded.\n"
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
@@ -128,6 +138,64 @@ ModelImporter:
       hasAdditiveReferencePose: 0
       loopTime: 1
       loopBlend: 1
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: DashForward
+      takeName: Rochard_Armature|DashForward
+      internalID: 2083175120156734594
+      firstFrame: 0
+      lastFrame: 14
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: DashBackward
+      takeName: Rochard_Armature|DashBackward
+      internalID: -8625361768277043956
+      firstFrame: 0
+      lastFrame: 16
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
       loopBlendOrientation: 1
       loopBlendPositionY: 1
       loopBlendPositionXZ: 1
@@ -323,6 +391,93 @@ ModelImporter:
       internalID: -98019129138290851
       firstFrame: 0
       lastFrame: 27
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: CrouchKick
+      takeName: Rochard_Armature|CrouchKick
+      internalID: 3863468711598253313
+      firstFrame: 0
+      lastFrame: 25
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: JumpAttack
+      takeName: Rochard_Armature|JumpAttack
+      internalID: -7617756103760432770
+      firstFrame: 0
+      lastFrame: 18
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Throw
+      takeName: Rochard_Armature|Throw
+      internalID: -6673377593089833171
+      firstFrame: 0
+      lastFrame: 22
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

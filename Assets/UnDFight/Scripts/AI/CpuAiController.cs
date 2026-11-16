@@ -66,6 +66,7 @@ namespace UnDFight
         private AttackType _prevRecordedOppAttack = AttackType.None;
         private int _evaluatedDefenseEpisode = -1;
         private bool _willGuardEpisode;
+        private int _evaluatedThrowTechEpisode = -1;
         private int _punishedEpisode = -1;
         private int _attackCooldownTicks;
 
@@ -216,6 +217,7 @@ namespace UnDFight
             _prevRecordedOppAttack = AttackType.None;
             _evaluatedDefenseEpisode = -1;
             _willGuardEpisode = false;
+            _evaluatedThrowTechEpisode = -1;
             _punishedEpisode = -1;
             _attackCooldownTicks = 0;
         }
@@ -365,26 +367,62 @@ namespace UnDFight
                 }
             }
 
-            // 1. Reactive defense based purely on delayed simulation snapshot
+            // 0b. Aerial JumpAttack during offensive jumps when approaching opponent
+            if (!controlledFighter.IsGrounded &&
+                controlledFighter.State == FighterState.Jump &&
+                absDx <= 1.75f &&
+                _attackCooldownTicks <= 0 &&
+                _rng.NextDouble() < (difficulty == CpuDifficulty.Easy ? 0.35 : 0.72))
+            {
+                TriggerAttack(AttackType.JumpAttack, inputHandler, currentTick);
+                inputHandler.SetSimulatedInput(_plannedInput, true);
+                return;
+            }
+
+            // 1. Reactive defense & Throw Tech based purely on delayed simulation snapshot
             if (observed.State == FighterState.Attack && !observed.IsInRecovery && absDx <= DefenseRange)
             {
-                if (_evaluatedDefenseEpisode != observed.AttackEpisodeId)
+                if (observed.Attack == AttackType.Throw || observed.MoveHeight == HitHeight.Unblockable)
                 {
-                    _evaluatedDefenseEpisode = observed.AttackEpisodeId;
-                    _willGuardEpisode = _rng.NextDouble() <= _profile.GuardProbability;
-                }
-
-                if (_willGuardEpisode)
-                {
-                    bool lowAttack = observed.MoveHeight == HitHeight.Low || observed.Attack == AttackType.LightKick;
-                    _plannedInput = new FighterInputState
+                    if (_evaluatedThrowTechEpisode != observed.AttackEpisodeId && absDx <= CloseRange)
                     {
-                        MoveX = -controlledFighter.FacingSign,
-                        MoveY = lowAttack ? -1f : 0f,
-                        HoldBlock = true
-                    };
-                    inputHandler.SetSimulatedInput(_plannedInput, true);
-                    return;
+                        _evaluatedThrowTechEpisode = observed.AttackEpisodeId;
+                        float techChance = difficulty switch
+                        {
+                            CpuDifficulty.Easy => 0.15f,
+                            CpuDifficulty.Hard => 0.80f,
+                            _ => 0.45f
+                        };
+                        if (_rng.NextDouble() < techChance)
+                        {
+                            inputHandler.BufferThrowInput(currentTick);
+                            _attackCooldownTicks = 14;
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    if (_evaluatedDefenseEpisode != observed.AttackEpisodeId)
+                    {
+                        _evaluatedDefenseEpisode = observed.AttackEpisodeId;
+                        _willGuardEpisode = _rng.NextDouble() <= _profile.GuardProbability;
+                    }
+
+                    if (_willGuardEpisode)
+                    {
+                        bool lowAttack = observed.MoveHeight == HitHeight.Low ||
+                                         observed.Attack == AttackType.LightKick ||
+                                         observed.Attack == AttackType.CrouchKick;
+                        _plannedInput = new FighterInputState
+                        {
+                            MoveX = -controlledFighter.FacingSign,
+                            MoveY = lowAttack ? -1f : 0f,
+                            HoldBlock = true
+                        };
+                        inputHandler.SetSimulatedInput(_plannedInput, true);
+                        return;
+                    }
                 }
             }
 
@@ -421,7 +459,15 @@ namespace UnDFight
 
             if (absDx > ApproachThreshold)
             {
-                // Advance toward opponent cleanly; Easy difficulty occasionally pauses briefly
+                // Advance toward opponent cleanly; dash forward at long range based on Aggression
+                if (canAct && absDx > 2.80f && _attackCooldownTicks <= 0 && _rng.NextDouble() < _profile.Aggression * 0.45)
+                {
+                    inputHandler.BufferDashDirection(controlledFighter.FacingSign, currentTick);
+                    _attackCooldownTicks = 18;
+                    _plannedInput = default;
+                    return;
+                }
+
                 bool advance = difficulty != CpuDifficulty.Easy || _rng.NextDouble() < 0.85;
                 _plannedInput = new FighterInputState
                 {
@@ -434,12 +480,17 @@ namespace UnDFight
 
             if (absDx > CloseRange)
             {
-                // Footsies / mid-range (1.35..1.85): advance, micro-step back, or poke with mid/low kick
+                // Footsies / mid-range (1.35..1.85): advance, dash, jump-in, micro-step back, or poke
                 double roll = _rng.NextDouble();
                 if (canAct && _attackCooldownTicks <= 0 && roll < _profile.Aggression * 0.42f)
                 {
                     AttackType poke = _rng.NextDouble() < 0.55 ? AttackType.LightKick : AttackType.HeavyPunch;
                     TriggerAttack(poke, inputHandler, currentTick);
+                }
+                else if (canAct && difficulty != CpuDifficulty.Easy && roll < _profile.Aggression * 0.58f)
+                {
+                    _plannedInput = new FighterInputState { MoveX = facing, MoveY = 1f };
+                    _attackCooldownTicks = 12;
                 }
                 else if (roll < _profile.Aggression + 0.15f)
                 {
@@ -453,6 +504,16 @@ namespace UnDFight
             }
 
             // Close combat range (<= 1.35)
+            bool opponentGuarding = opponentFighter != null &&
+                                    (opponentFighter.State == FighterState.Block ||
+                                     (opponentFighter.State == FighterState.Crouch && absDx <= 1.05f));
+            if (canAct && _attackCooldownTicks <= 0 && opponentGuarding && absDx <= 1.05f &&
+                _rng.NextDouble() < _profile.Aggression * 0.65)
+            {
+                TriggerAttack(AttackType.Throw, inputHandler, currentTick);
+                return;
+            }
+
             if (canAct && _attackCooldownTicks <= 0 && _rng.NextDouble() <= _profile.Aggression)
             {
                 AttackType move = ChooseCloseRangeAttack(absDx);
@@ -489,29 +550,47 @@ namespace UnDFight
             double r = _rng.NextDouble();
             if (absDx <= PointBlankRange)
             {
-                if (r < 0.38) return AttackType.LightPunch;
-                if (r < 0.66) return AttackType.LightKick;
-                if (r < 0.86) return AttackType.HeavyPunch;
+                if (r < 0.30) return AttackType.LightPunch;
+                if (r < 0.52) return AttackType.LightKick;
+                if (r < 0.70) return AttackType.CrouchKick;
+                if (r < 0.85) return AttackType.HeavyPunch;
+                if (r < 0.94) return AttackType.Throw;
                 return AttackType.HeavyKick;
             }
 
-            if (r < 0.30) return AttackType.LightKick;
-            if (r < 0.62) return AttackType.HeavyPunch;
-            if (r < 0.84) return AttackType.HeavyKick;
+            if (r < 0.25) return AttackType.LightKick;
+            if (r < 0.45) return AttackType.CrouchKick;
+            if (r < 0.72) return AttackType.HeavyPunch;
+            if (r < 0.88) return AttackType.HeavyKick;
             return AttackType.LightPunch;
         }
 
         private void TriggerAttack(AttackType attack, PlayerInputHandler inputHandler, int currentTick)
         {
-            _plannedInput = default;
+            _plannedInput = attack == AttackType.CrouchKick
+                ? new FighterInputState { MoveY = -1f, LastTickSampled = currentTick }
+                : default;
             inputHandler.SyncSimulationTick(currentTick);
-            inputHandler.BufferButton(AttackToButton(attack));
+            inputHandler.SetSimulatedInput(_plannedInput, true);
+
+            if (attack == AttackType.Throw)
+            {
+                inputHandler.BufferThrowInput(currentTick);
+            }
+            else
+            {
+                inputHandler.BufferButton(AttackToButton(attack));
+            }
+
             _attackCooldownTicks = attack switch
             {
                 AttackType.LightPunch => 18,
                 AttackType.LightKick => 22,
                 AttackType.HeavyPunch => 28,
                 AttackType.HeavyKick => 34,
+                AttackType.CrouchKick => 32,
+                AttackType.JumpAttack => 22,
+                AttackType.Throw => 26,
                 AttackType.Special => 38,
                 _ => 20
             };
@@ -564,6 +643,8 @@ namespace UnDFight
                 AttackType.HeavyPunch => FighterInputButton.HeavyPunch,
                 AttackType.LightKick => FighterInputButton.LightKick,
                 AttackType.HeavyKick => FighterInputButton.HeavyKick,
+                AttackType.CrouchKick => FighterInputButton.HeavyKick,
+                AttackType.JumpAttack => FighterInputButton.HeavyKick,
                 AttackType.Special => FighterInputButton.Special,
                 _ => FighterInputButton.LightPunch
             };
@@ -574,7 +655,10 @@ namespace UnDFight
             return attack switch
             {
                 AttackType.LightKick => HitHeight.Low,
+                AttackType.CrouchKick => HitHeight.Low,
                 AttackType.HeavyKick => HitHeight.High,
+                AttackType.JumpAttack => HitHeight.Overhead,
+                AttackType.Throw => HitHeight.Unblockable,
                 _ => HitHeight.Mid
             };
         }
@@ -587,6 +671,9 @@ namespace UnDFight
                 AttackType.HeavyPunch => 11,
                 AttackType.LightKick => 8,
                 AttackType.HeavyKick => 13,
+                AttackType.CrouchKick => 12,
+                AttackType.JumpAttack => 12,
+                AttackType.Throw => 8,
                 AttackType.Special => 15,
                 _ => 8
             };

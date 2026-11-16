@@ -232,7 +232,12 @@ namespace UnDFight
             TextMeshProUGUI targetCallout = defenderIsP1 ? p1CalloutText : p2CalloutText;
             if (targetCallout != null)
             {
-                if (hit.Outcome == HitOutcomeType.Blocked)
+                if (hit.Outcome == HitOutcomeType.ThrowTech)
+                {
+                    targetCallout.text = "TECH!";
+                    targetCallout.color = new Color(0.45f, 0.96f, 1.0f, 1f);
+                }
+                else if (hit.Outcome == HitOutcomeType.Blocked)
                 {
                     targetCallout.text = "BLOCK!";
                     targetCallout.color = new Color(0.35f, 0.85f, 1.0f, 1f);
@@ -261,7 +266,7 @@ namespace UnDFight
             }
 
             // Show combo counter on the attacker's side from 2 hits onward
-            if (hit.Outcome != HitOutcomeType.Blocked && hit.Attacker != null && hit.ComboCount >= 2)
+            if (hit.Outcome != HitOutcomeType.Blocked && hit.Outcome != HitOutcomeType.ThrowTech && hit.Attacker != null && hit.ComboCount >= 2)
             {
                 bool attackerIsP1 = hit.Attacker == simulation.Fighter1;
                 TextMeshProUGUI comboText = attackerIsP1 ? p1ComboText : p2ComboText;

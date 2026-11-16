@@ -90,6 +90,9 @@ namespace UnDFight.Tests
             Assert.AreNotSame(jompes.heavyPunch, rochard.heavyPunch);
             Assert.AreNotSame(jompes.lightKick, rochard.lightKick);
             Assert.AreNotSame(jompes.heavyKick, rochard.heavyKick);
+            Assert.AreNotSame(jompes.crouchKick, rochard.crouchKick);
+            Assert.AreNotSame(jompes.jumpAttack, rochard.jumpAttack);
+            Assert.AreNotSame(jompes.throwMove, rochard.throwMove);
             Assert.AreNotSame(jompes.specialMove, rochard.specialMove);
 
             AssertLightTicks(jompes);
@@ -112,6 +115,9 @@ namespace UnDFight.Tests
             Assert.AreEqual(21, data.heavyPunch.TotalTicks);
             Assert.AreEqual(16, data.lightKick.TotalTicks);
             Assert.AreEqual(27, data.heavyKick.TotalTicks);
+            Assert.AreEqual(25, data.crouchKick.TotalTicks);
+            Assert.AreEqual(18, data.jumpAttack.TotalTicks);
+            Assert.AreEqual(22, data.throwMove.TotalTicks);
         }
 
         [Test]
@@ -136,6 +142,9 @@ namespace UnDFight.Tests
             Assert.AreNotSame(lucas.heavyPunch, tiago.heavyPunch);
             Assert.AreNotSame(lucas.lightKick, tiago.lightKick);
             Assert.AreNotSame(lucas.heavyKick, tiago.heavyKick);
+            Assert.AreNotSame(lucas.crouchKick, tiago.crouchKick);
+            Assert.AreNotSame(lucas.jumpAttack, tiago.jumpAttack);
+            Assert.AreNotSame(lucas.throwMove, tiago.throwMove);
             Assert.AreNotSame(lucas.specialMove, tiago.specialMove);
 
             AssertMovesetMatchesFbx(lucas, "Assets/UnDFight/Art/Models/Lucas/Lucas.fbx", "AOC_Lucas");
@@ -161,14 +170,25 @@ namespace UnDFight.Tests
                 }
             }
 
-            Assert.AreEqual(17, clips.Count, $"Expected 17 clips in {fbxPath}");
+            Assert.AreEqual(22, clips.Count, $"Expected 22 clips in {fbxPath}");
             Assert.IsTrue(clips.TryGetValue("Turn180", out AnimationClip turnClip), $"Missing Turn180 clip in {fbxPath}");
             Assert.IsFalse(turnClip.isLooping, $"{fbxPath} Turn180 must not loop");
             Assert.AreEqual(60, Mathf.RoundToInt(turnClip.frameRate), $"Turn180 clip must be 60 fps in {fbxPath}");
             Assert.AreEqual(8, Mathf.RoundToInt(turnClip.length * 60f), $"Turn180 clip must be 8 frames in {fbxPath}");
 
+            foreach (var (clipName, expectedFrames) in new[] { ("DashForward", 14), ("DashBackward", 16) })
+            {
+                Assert.IsTrue(clips.TryGetValue(clipName, out AnimationClip dashClip), $"Missing {clipName} clip in {fbxPath}");
+                Assert.IsFalse(dashClip.isLooping, $"{fbxPath} {clipName} must not loop");
+                Assert.AreEqual(60, Mathf.RoundToInt(dashClip.frameRate), $"{clipName} clip must be 60 fps in {fbxPath}");
+                Assert.AreEqual(expectedFrames, Mathf.RoundToInt(dashClip.length * 60f), $"{clipName} clip must be {expectedFrames} frames in {fbxPath}");
+            }
+
             foreach (AttackType attackType in new[]
-                     { AttackType.LightPunch, AttackType.HeavyPunch, AttackType.LightKick, AttackType.HeavyKick, AttackType.Special })
+                     {
+                         AttackType.LightPunch, AttackType.HeavyPunch, AttackType.LightKick, AttackType.HeavyKick,
+                         AttackType.CrouchKick, AttackType.JumpAttack, AttackType.Throw, AttackType.Special
+                     })
             {
                 MoveData move = data.GetMoveData(attackType);
                 Assert.IsNotNull(move, $"{data.fighterName} missing {attackType}");
@@ -290,9 +310,20 @@ namespace UnDFight.Tests
             }
 
             foreach (string requiredTarget in new[]
-                     { "Idle", "WalkForward", "WalkBackward", "Crouch", "Jump", "Block", "HitReact", "KnockDown", "GetUp", "Victory", "Defeat" })
+                     { "Idle", "WalkForward", "WalkBackward", "Crouch", "DashForward", "DashBackward", "Jump", "Block", "HitReact", "KnockDown", "GetUp", "Victory", "Defeat" })
             {
                 Assert.IsTrue(transitionTargets.Contains(requiredTarget), $"Turn180 missing exit transition to {requiredTarget}");
+            }
+
+            var stateNames = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var cs in sm.states)
+            {
+                stateNames.Add(cs.state.name);
+            }
+
+            foreach (string requiredState in new[] { "DashForward", "DashBackward", "CrouchKick", "JumpAttack", "Throw" })
+            {
+                Assert.IsTrue(stateNames.Contains(requiredState), $"AC_Fighter missing required state '{requiredState}'");
             }
         }
     }

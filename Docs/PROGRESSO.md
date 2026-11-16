@@ -32,4 +32,6 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 - [x] Fase 12.1 - Base reutilizavel de interacao de cenario com NVIDIA PhysX (layers StagePhysics/StageDebris/FighterHurtbox) e objetos quebraveis na Arena_Favela
 - [x] Fase 12.2 - Interacao de mapa estilo Mortal Kombat (arremesso de objetos com PhysX, combo HoldBlock+LightPunch, prompt contextual na HUD e Kinematic Rigidbody nas hurtboxes)
 
+- [x] Fase 13.1 - Movimentacao avancada e golpes direcionais (Dash/Backdash, Throw + Throw Tech, CrouchKick e JumpAttack em 60 Hz)
+
 - Decisao: animacoes em 60 fps (1 frame anim = 1 tick de simulacao)

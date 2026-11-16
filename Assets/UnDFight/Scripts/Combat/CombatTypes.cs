@@ -6,7 +6,9 @@ namespace UnDFight
     {
         High = 0,
         Mid = 1,
-        Low = 2
+        Low = 2,
+        Overhead = 3,
+        Unblockable = 4
     }
 
     public enum HitOutcomeType
@@ -14,7 +16,8 @@ namespace UnDFight
         None = 0,
         Hit = 1,
         Blocked = 2,
-        KnockDown = 3
+        KnockDown = 3,
+        ThrowTech = 4
     }
 
     public enum MatchPhase
