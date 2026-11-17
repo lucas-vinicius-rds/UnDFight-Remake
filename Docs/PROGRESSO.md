@@ -34,5 +34,6 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 
 - [x] Fase 13.1 - Movimentacao avancada e golpes direcionais (Dash/Backdash, Throw + Throw Tech, CrouchKick e JumpAttack em 60 Hz)
 - [x] Fase 13.2 - Especiais unicos por arquetipo, golpes EX (50%) e Super Flash com zoom de camera (100%)
+- [x] Fase 13.3 - Polimento cinematografico e detalhamento das 22 animacoes 60 fps por lutador (`character_pipeline.py`)
 
 - Decisao: animacoes em 60 fps (1 frame anim = 1 tick de simulacao)

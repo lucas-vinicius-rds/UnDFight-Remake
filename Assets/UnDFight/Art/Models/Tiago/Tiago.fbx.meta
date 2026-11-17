@@ -22,13 +22,10 @@ ModelImporter:
       warnings that might lower retargeting quality:\nNote: Activate translation
       DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
       that will be discarded.\n\t'RightUpperLeg' has scale animation that will be
-      discarded.\n\nClip 'Tiago_Armature|HeavyKick' has import animation warnings
-      that might lower retargeting quality:\nNote: Activate translation DOF on avatar
-      to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation that
-      will be discarded.\n\nClip 'Tiago_Armature|LightKick' has import animation
-      warnings that might lower retargeting quality:\nNote: Activate translation
-      DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
-      that will be discarded.\n"
+      discarded.\n\nClip 'Tiago_Armature|GetUp' has import animation warnings that
+      might lower retargeting quality:\nNote: Activate translation DOF on avatar
+      to improve retargeting quality.\n\t'RightUpperLeg' has scale animation that
+      will be discarded.\n"
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0

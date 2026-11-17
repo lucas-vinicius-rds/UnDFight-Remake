@@ -21,7 +21,13 @@ ModelImporter:
     animationImportWarnings: "\nClip 'Lucas_Armature|Crouch' has import animation
       warnings that might lower retargeting quality:\nNote: Activate translation
       DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg' has scale
+      animation that will be discarded.\n\nClip 'Lucas_Armature|CrouchKick' has import
+      animation warnings that might lower retargeting quality:\nNote: Activate translation
+      DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg' has scale
       animation that will be discarded.\n\nClip 'Lucas_Armature|GetUp' has import
+      animation warnings that might lower retargeting quality:\nNote: Activate translation
+      DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg' has scale
+      animation that will be discarded.\n\nClip 'Lucas_Armature|Jump' has import
       animation warnings that might lower retargeting quality:\nNote: Activate translation
       DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg' has scale
       animation that will be discarded.\n"

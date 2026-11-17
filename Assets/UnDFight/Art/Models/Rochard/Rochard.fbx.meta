@@ -25,32 +25,40 @@ ModelImporter:
       discarded.\n\nClip 'Rochard_Armature|CrouchKick' has import animation warnings
       that might lower retargeting quality:\nNote: Activate translation DOF on avatar
       to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation that
-      will be discarded.\n\nClip 'Rochard_Armature|DashForward' has import animation
+      will be discarded.\n\t'RightUpperLeg' has scale animation that will be discarded.\n\nClip
+      'Rochard_Armature|DashBackward' has import animation warnings that might lower
+      retargeting quality:\nNote: Activate translation DOF on avatar to improve retargeting
+      quality.\n\t'LeftUpperLeg' has scale animation that will be discarded.\n\nClip
+      'Rochard_Armature|DashForward' has import animation warnings that might lower
+      retargeting quality:\nNote: Activate translation DOF on avatar to improve retargeting
+      quality.\n\t'LeftUpperLeg' has scale animation that will be discarded.\n\nClip
+      'Rochard_Armature|Defeat' has import animation warnings that might lower retargeting
+      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg'
+      has scale animation that will be discarded.\n\nClip 'Rochard_Armature|GetUp'
+      has import animation warnings that might lower retargeting quality:\nNote:
+      Activate translation DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg'
+      has scale animation that will be discarded.\n\t'RightUpperLeg' has scale animation
+      that will be discarded.\n\nClip 'Rochard_Armature|HeavyKick' has import animation
       warnings that might lower retargeting quality:\nNote: Activate translation
       DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
-      that will be discarded.\n\nClip 'Rochard_Armature|Defeat' has import animation
-      warnings that might lower retargeting quality:\nNote: Activate translation
-      DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
-      that will be discarded.\n\nClip 'Rochard_Armature|GetUp' has import animation
+      that will be discarded.\n\nClip 'Rochard_Armature|Jump' has import animation
       warnings that might lower retargeting quality:\nNote: Activate translation
       DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
       that will be discarded.\n\t'RightUpperLeg' has scale animation that will be
-      discarded.\n\nClip 'Rochard_Armature|HeavyKick' has import animation warnings
+      discarded.\n\nClip 'Rochard_Armature|JumpAttack' has import animation warnings
       that might lower retargeting quality:\nNote: Activate translation DOF on avatar
       to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation that
-      will be discarded.\n\nClip 'Rochard_Armature|Jump' has import animation warnings
-      that might lower retargeting quality:\nNote: Activate translation DOF on avatar
-      to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation that
-      will be discarded.\n\nClip 'Rochard_Armature|JumpAttack' has import animation
-      warnings that might lower retargeting quality:\nNote: Activate translation
-      DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
-      that will be discarded.\n\nClip 'Rochard_Armature|LightKick' has import animation
+      will be discarded.\n\nClip 'Rochard_Armature|LightKick' has import animation
       warnings that might lower retargeting quality:\nNote: Activate translation
       DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
       that will be discarded.\n\nClip 'Rochard_Armature|Special' has import animation
       warnings that might lower retargeting quality:\nNote: Activate translation
       DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
-      that will be discarded.\n\nClip 'Rochard_Armature|WalkForward' has import animation
+      that will be discarded.\n\t'RightUpperLeg' has scale animation that will be
+      discarded.\n\nClip 'Rochard_Armature|Throw' has import animation warnings that
+      might lower retargeting quality:\nNote: Activate translation DOF on avatar
+      to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation that
+      will be discarded.\n\nClip 'Rochard_Armature|WalkForward' has import animation
       warnings that might lower retargeting quality:\nNote: Activate translation
       DOF on avatar to improve retargeting quality.\n\t'LeftUpperLeg' has scale animation
       that will be discarded.\n"
