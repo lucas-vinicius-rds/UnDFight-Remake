@@ -15,7 +15,9 @@ namespace UnDFight
         Victory = 10,
         Defeat = 11,
         DashForward = 12,
-        DashBackward = 13
+        DashBackward = 13,
+        CrouchWalkForward = 14,
+        CrouchWalkBackward = 15
     }
 
     public enum AttackType

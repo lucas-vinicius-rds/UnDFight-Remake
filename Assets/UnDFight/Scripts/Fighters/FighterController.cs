@@ -129,6 +129,8 @@ namespace UnDFight
         public int TicksSinceLastHit => _ticksSinceLastHit;
         public bool IsCrouching =>
             _state == FighterState.Crouch ||
+            _state == FighterState.CrouchWalkForward ||
+            _state == FighterState.CrouchWalkBackward ||
             (_state == FighterState.Block && _blockFromCrouch) ||
             (_state == FighterState.Attack && _currentAttack == AttackType.CrouchKick);
         public bool IsDashInvulnerable
@@ -413,7 +415,9 @@ namespace UnDFight
                                    (_state == FighterState.Idle ||
                                     _state == FighterState.WalkForward ||
                                     _state == FighterState.WalkBackward ||
-                                    _state == FighterState.Crouch);
+                                    _state == FighterState.Crouch ||
+                                    _state == FighterState.CrouchWalkForward ||
+                                    _state == FighterState.CrouchWalkBackward);
             if (canPlayTurnAnim)
             {
                 _turnStartState = _state;
@@ -489,6 +493,7 @@ namespace UnDFight
                 _state == FighterState.Idle ||
                 _state == FighterState.WalkBackward ||
                 _state == FighterState.Crouch ||
+                _state == FighterState.CrouchWalkBackward ||
                 _state == FighterState.Block;
 
             if (!inBlockableState)
@@ -1085,12 +1090,38 @@ namespace UnDFight
                 return;
             }
 
-            // Crouch (supports holding Down + Block/Back as crouch guard with low hurtbox)
+            // Crouch & CrouchWalk (supports holding Down + Left/Right to advance/retreat crouched, or Down + Block to hold crouch guard)
             if (input.MoveY < -0.5f)
             {
-                _simVelocity.x = 0f;
                 _blockFromCrouch = false;
-                EnterState(FighterState.Crouch);
+                if (input.HoldBlock)
+                {
+                    _simVelocity.x = 0f;
+                    EnterState(FighterState.Crouch);
+                }
+                else
+                {
+                    float crouchRelativeMove = input.MoveX * _facingSign;
+                    if (crouchRelativeMove > 0.2f)
+                    {
+                        float crouchFwdSpeed = fighterData != null ? fighterData.EffectiveCrouchWalkForwardSpeed : 2.3f;
+                        _simVelocity.x = _facingSign * crouchFwdSpeed;
+                        EnterState(FighterState.CrouchWalkForward);
+                    }
+                    else if (crouchRelativeMove < -0.2f)
+                    {
+                        float crouchBackSpeed = fighterData != null ? fighterData.EffectiveCrouchWalkBackwardSpeed : 1.8f;
+                        _simVelocity.x = -_facingSign * crouchBackSpeed;
+                        EnterState(FighterState.CrouchWalkBackward);
+                    }
+                    else
+                    {
+                        _simVelocity.x = 0f;
+                        EnterState(FighterState.Crouch);
+                    }
+                }
+
+                ApplyGravityAndIntegrate(dt);
                 UpdateHurtboxDimensions();
                 StepAnimatorTick(dt);
                 return;

@@ -83,12 +83,15 @@ namespace UnDFight.Editor
         {
             "Idle",
             "WalkForward",
-            "WalkBackward"
+            "WalkBackward",
+            "CrouchWalkForward",
+            "CrouchWalkBackward"
         };
 
         private static readonly string[] RequiredClips =
         {
-            "Idle", "WalkForward", "WalkBackward", "DashForward", "DashBackward",
+            "Idle", "WalkForward", "WalkBackward", "CrouchWalkForward", "CrouchWalkBackward",
+            "DashForward", "DashBackward",
             "Jump", "Crouch", "BlockStand",
             "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
             "CrouchKick", "JumpAttack", "Throw", "Special",
@@ -233,7 +236,7 @@ namespace UnDFight.Editor
             int tiagoBones = CountMappedHumanBones(TiagoFbxPath);
             int jompesBones = CountMappedHumanBones(JompesFbxPath);
             int rochardBones = CountMappedHumanBones(RochardFbxPath);
-            return $"Phase 11 setup complete: Lucas({lucasBones}), Tiago({tiagoBones}), Jompes({jompesBones}), Rochard({rochardBones}) [16 clips, heightFromFeet=false, Special ready].";
+            return $"Phase 13.4 setup complete: Lucas({lucasBones}), Tiago({tiagoBones}), Jompes({jompesBones}), Rochard({rochardBones}) [24 clips, heightFromFeet=false].";
         }
 
         public static int CountMappedHumanBones(string fbxPath)
@@ -511,10 +514,49 @@ namespace UnDFight.Editor
                 }
             }
 
+            EnsureCrouchWalkStatesAndTransitions(sm, "IsTurning");
             EnsureTurn180StateAndTransitions(controller, sm, idleState);
             EnsureDashStatesAndTransitions(sm, idleState);
 
             EditorUtility.SetDirty(controller);
+        }
+
+        private static void EnsureCrouchWalkStatesAndTransitions(AnimatorStateMachine sm, string isTurningParam)
+        {
+            (string stateName, FighterState fState, Vector3 pos)[] crouchWalkDefs =
+            {
+                ("CrouchWalkForward", FighterState.CrouchWalkForward, new Vector3(480f, -300f, 0f)),
+                ("CrouchWalkBackward", FighterState.CrouchWalkBackward, new Vector3(480f, -360f, 0f)),
+            };
+
+            foreach (var (stateName, fState, pos) in crouchWalkDefs)
+            {
+                AnimatorState dst = EnsureAnimatorStateFromBaseFbx(sm, stateName, pos);
+
+                AnimatorStateTransition anyTr = null;
+                foreach (AnimatorStateTransition tr in sm.anyStateTransitions)
+                {
+                    if (tr.destinationState == dst)
+                    {
+                        anyTr = tr;
+                        break;
+                    }
+                }
+                if (anyTr == null)
+                {
+                    anyTr = sm.AddAnyStateTransition(dst);
+                }
+
+                anyTr.hasExitTime = false;
+                anyTr.duration = 0.06f;
+                anyTr.hasFixedDuration = true;
+                anyTr.canTransitionToSelf = false;
+                anyTr.conditions = new[]
+                {
+                    new AnimatorCondition { mode = AnimatorConditionMode.Equals, parameter = "State", threshold = (int)fState },
+                    new AnimatorCondition { mode = AnimatorConditionMode.IfNot, parameter = isTurningParam, threshold = 0f },
+                };
+            }
         }
 
         private static AnimatorState EnsureAnimatorStateFromBaseFbx(
@@ -650,7 +692,7 @@ namespace UnDFight.Editor
             // Guard AnyState grounded-locomotion transitions on IsTurning == false so Turn180 is not immediately aborted
             var guardedAnyTargets = new HashSet<string>(StringComparer.Ordinal)
             {
-                "Idle", "WalkForward", "WalkBackward", "Crouch"
+                "Idle", "WalkForward", "WalkBackward", "Crouch", "CrouchWalkForward", "CrouchWalkBackward"
             };
             foreach (AnimatorStateTransition tr in sm.anyStateTransitions)
             {
@@ -723,6 +765,8 @@ namespace UnDFight.Editor
                 ("WalkForward", FighterState.WalkForward, true),
                 ("WalkBackward", FighterState.WalkBackward, true),
                 ("Crouch", FighterState.Crouch, true),
+                ("CrouchWalkForward", FighterState.CrouchWalkForward, true),
+                ("CrouchWalkBackward", FighterState.CrouchWalkBackward, true),
                 ("DashForward", FighterState.DashForward, false),
                 ("DashBackward", FighterState.DashBackward, false),
                 ("Jump", FighterState.Jump, false),

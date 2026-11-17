@@ -190,11 +190,19 @@ namespace UnDFight.Tests
                 }
             }
 
-            Assert.AreEqual(22, clips.Count, $"Expected 22 clips in {fbxPath}");
+            Assert.AreEqual(24, clips.Count, $"Expected 24 clips in {fbxPath}");
             Assert.IsTrue(clips.TryGetValue("Turn180", out AnimationClip turnClip), $"Missing Turn180 clip in {fbxPath}");
             Assert.IsFalse(turnClip.isLooping, $"{fbxPath} Turn180 must not loop");
             Assert.AreEqual(60, Mathf.RoundToInt(turnClip.frameRate), $"Turn180 clip must be 60 fps in {fbxPath}");
             Assert.AreEqual(8, Mathf.RoundToInt(turnClip.length * 60f), $"Turn180 clip must be 8 frames in {fbxPath}");
+
+            foreach (string crouchWalkClipName in new[] { "CrouchWalkForward", "CrouchWalkBackward" })
+            {
+                Assert.IsTrue(clips.TryGetValue(crouchWalkClipName, out AnimationClip cwClip), $"Missing {crouchWalkClipName} clip in {fbxPath}");
+                Assert.IsTrue(cwClip.isLooping, $"{fbxPath} {crouchWalkClipName} must loop");
+                Assert.AreEqual(60, Mathf.RoundToInt(cwClip.frameRate), $"{crouchWalkClipName} clip must be 60 fps in {fbxPath}");
+                Assert.AreEqual(48, Mathf.RoundToInt(cwClip.length * 60f), $"{crouchWalkClipName} clip must be 48 frames in {fbxPath}");
+            }
 
             foreach (var (clipName, expectedFrames) in new[] { ("DashForward", 14), ("DashBackward", 16) })
             {
@@ -340,7 +348,7 @@ namespace UnDFight.Tests
             }
 
             foreach (string requiredTarget in new[]
-                     { "Idle", "WalkForward", "WalkBackward", "Crouch", "DashForward", "DashBackward", "Jump", "Block", "HitReact", "KnockDown", "GetUp", "Victory", "Defeat" })
+                     { "Idle", "WalkForward", "WalkBackward", "Crouch", "CrouchWalkForward", "CrouchWalkBackward", "DashForward", "DashBackward", "Jump", "Block", "HitReact", "KnockDown", "GetUp", "Victory", "Defeat" })
             {
                 Assert.IsTrue(transitionTargets.Contains(requiredTarget), $"Turn180 missing exit transition to {requiredTarget}");
             }
@@ -351,7 +359,7 @@ namespace UnDFight.Tests
                 stateNames.Add(cs.state.name);
             }
 
-            foreach (string requiredState in new[] { "DashForward", "DashBackward", "CrouchKick", "JumpAttack", "Throw" })
+            foreach (string requiredState in new[] { "CrouchWalkForward", "CrouchWalkBackward", "DashForward", "DashBackward", "CrouchKick", "JumpAttack", "Throw" })
             {
                 Assert.IsTrue(stateNames.Contains(requiredState), $"AC_Fighter missing required state '{requiredState}'");
             }

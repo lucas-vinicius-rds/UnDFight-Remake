@@ -24,6 +24,8 @@ namespace UnDFight
         [Min(100)] public int maxHealth = 1000;
         [Min(0.5f)] public float walkForwardSpeed = 4.2f;
         [Min(0.5f)] public float walkBackwardSpeed = 3.2f;
+        [Min(0.5f)] public float crouchWalkForwardSpeed = 2.3f;
+        [Min(0.5f)] public float crouchWalkBackwardSpeed = 1.8f;
         [Min(1f)] public float dashForwardSpeed = 8.2f;
         [Min(1)] public int dashForwardTicks = 14;
         [Min(1f)] public float dashBackwardSpeed = 7.0f;
@@ -58,6 +60,8 @@ namespace UnDFight
         public float EffectiveGravity => FighterScaling.ComputeEffectiveGravity(baseGravity, weightKg);
         public float EffectiveWalkForwardSpeed => FighterScaling.ComputeEffectiveWalkSpeed(walkForwardSpeed, weightKg);
         public float EffectiveWalkBackwardSpeed => FighterScaling.ComputeEffectiveWalkSpeed(walkBackwardSpeed, weightKg);
+        public float EffectiveCrouchWalkForwardSpeed => FighterScaling.ComputeEffectiveWalkSpeed(crouchWalkForwardSpeed, weightKg);
+        public float EffectiveCrouchWalkBackwardSpeed => FighterScaling.ComputeEffectiveWalkSpeed(crouchWalkBackwardSpeed, weightKg);
         public float EffectiveDashForwardSpeed => FighterScaling.ComputeEffectiveWalkSpeed(dashForwardSpeed, weightKg);
         public float EffectiveDashBackwardSpeed => FighterScaling.ComputeEffectiveWalkSpeed(dashBackwardSpeed, weightKg);
         public float KnockbackMultiplier => FighterScaling.ComputeKnockbackMultiplier(weightKg);

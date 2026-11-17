@@ -22,6 +22,8 @@ MonoBehaviour:
   maxHealth: 1000
   walkForwardSpeed: 4.35
   walkBackwardSpeed: 3.35
+  crouchWalkForwardSpeed: 2.3
+  crouchWalkBackwardSpeed: 1.8
   dashForwardSpeed: 8.2
   dashForwardTicks: 14
   dashBackwardSpeed: 7

@@ -760,7 +760,10 @@ def _enforce_continuous_grounding_and_knees(arm_obj, act, clip_name, mesh_obj, f
 
     # Determine whether every frame is a grounded two-foot/one-foot contact clip
     all_both = clip_name in ("Idle", "BlockStand", "Crouch", "Victory", "HitReact", "LightPunch", "HeavyPunch", "Throw")
-    keep_support_floor = clip_name in ("WalkForward", "WalkBackward", "DashForward", "DashBackward", "Turn180")
+    keep_support_floor = clip_name in (
+        "WalkForward", "WalkBackward", "CrouchWalkForward", "CrouchWalkBackward",
+        "DashForward", "DashBackward", "Turn180",
+    )
 
     pb_hips = arm_obj.pose.bones["Hips"]
     m_hips_rest = pb_hips.bone.matrix_local.to_3x3()
@@ -1261,6 +1264,226 @@ def build_style_locomotion(style, idle0):
     anims["WalkBackward"] = {
         1: wb_1, 7: wb_7, 13: wb_13, 19: wb_19,
         25: wb_25, 31: wb_31, 37: wb_37, 43: wb_43, 49: wb_1,
+    }
+
+    # CrouchWalkForward & CrouchWalkBackward (48 frames: 1..49, low tactical stealth walk matching crouch_pose height & guard)
+    crouch_arm_style = {
+        "street_scrappy": {
+            "LeftUpperArm":  (-8.0, 56.0, -40.0),
+            "LeftLowerArm":  (10.0, -22.0, -76.0),
+            "RightUpperArm": (-6.0, -56.0, 38.0),
+            "RightLowerArm": (10.0, 26.0, 82.0),
+        },
+        "technical_striker": {
+            "LeftUpperArm":  (-14.0, 42.0, -56.0),
+            "LeftLowerArm":  (14.0, -34.0, -104.0),
+            "RightUpperArm": (-10.0, -42.0, 68.0),
+            "RightLowerArm": (16.0, 42.0, 120.0),
+        },
+        "agile_striker": {
+            "LeftUpperArm":  (-10.0, 50.0, -54.0),
+            "LeftLowerArm":  (14.0, -32.0, -98.0),
+            "RightUpperArm": (-10.0, -50.0, 54.0),
+            "RightLowerArm": (14.0, 34.0, 102.0),
+        },
+    }.get(style, {
+        "LeftUpperArm":  (-12.0, 44.0, -64.0),
+        "LeftLowerArm":  (16.0, -38.0, -112.0),
+        "RightUpperArm": (-12.0, -44.0, 64.0),
+        "RightLowerArm": (16.0, 40.0, 114.0),
+    })
+    crouch_walk_base = merge_pose(idle0, merge_pose(crouch_arm_style, {
+        "HipsOffset": (0.0, 0.0, -0.36),
+        "Hips":       (14.0, 0.0, 20.0),
+        "Spine":      (10.0, 0.0, 4.0),
+        "Chest":      (8.0, 0.0, 2.0),
+        "Neck":       (-14.0, 0.0, -14.0),
+        "Head":       (-12.0, 0.0, -12.0),
+    }))
+
+    cwf_1 = merge_pose(crouch_walk_base, {
+        "HipsOffset":    (0.0, 0.0, -0.37),
+        "Hips":          (14.0, 1.5, 16.0),
+        "Spine":         (11.0, 1.0, 6.0),
+        "LeftUpperLeg":  (-102.0, -8.0, 10.0),
+        "LeftLowerLeg":  (88.0, 0.0, 0.0),
+        "LeftFoot":      (10.0, 0.0, 0.0),
+        "LeftToes":      (-8.0, 0.0, 0.0),
+        "RightUpperLeg": (-74.0, 8.0, -10.0),
+        "RightLowerLeg": (98.0, 0.0, 0.0),
+        "RightFoot":     (-24.0, 0.0, 0.0),
+        "RightToes":     (-18.0, 0.0, 0.0),
+    })
+    cwf_7 = merge_pose(cwf_1, {
+        "HipsOffset":    (0.0, 0.0, -0.38),
+        "Hips":          (14.0, 0.5, 18.0),
+        "LeftUpperLeg":  (-96.0, -8.0, 10.0),
+        "LeftLowerLeg":  (98.0, 0.0, 0.0),
+        "LeftFoot":      (-4.0, 0.0, 0.0),
+        "LeftToes":      (0.0, 0.0, 0.0),
+        "RightUpperLeg": (-70.0, 8.0, -10.0),
+        "RightLowerLeg": (102.0, 0.0, 0.0),
+        "RightFoot":     (-30.0, 0.0, 0.0),
+    })
+    cwf_13 = merge_pose(crouch_walk_base, {
+        "HipsOffset":    (0.0, 0.0, -0.35),
+        "Hips":          (13.0, -1.5, 20.0),
+        "Spine":         (10.0, -1.0, 3.0),
+        "LeftUpperLeg":  (-88.0, -6.0, 8.0),
+        "LeftLowerLeg":  (94.0, 0.0, 0.0),
+        "LeftFoot":      (-6.0, 0.0, 0.0),
+        "RightUpperLeg": (-98.0, 6.0, -8.0),
+        "RightLowerLeg": (118.0, 0.0, 0.0),
+        "RightFoot":     (-14.0, 0.0, 0.0),
+        "RightToes":     (8.0, 0.0, 0.0),
+    })
+    cwf_19 = merge_pose(cwf_13, {
+        "HipsOffset":    (0.0, 0.0, -0.36),
+        "Hips":          (14.0, -1.5, 22.0),
+        "LeftUpperLeg":  (-78.0, -7.0, 8.0),
+        "LeftLowerLeg":  (96.0, 0.0, 0.0),
+        "LeftFoot":      (-18.0, 0.0, 0.0),
+        "LeftToes":      (-12.0, 0.0, 0.0),
+        "RightUpperLeg": (-104.0, 7.0, -8.0),
+        "RightLowerLeg": (106.0, 0.0, 0.0),
+        "RightFoot":     (6.0, 0.0, 0.0),
+        "RightToes":     (-4.0, 0.0, 0.0),
+    })
+    cwf_25 = merge_pose(crouch_walk_base, {
+        "HipsOffset":    (0.0, 0.0, -0.37),
+        "Hips":          (14.0, -1.5, 24.0),
+        "Spine":         (11.0, -1.0, 1.0),
+        "LeftUpperLeg":  (-74.0, -8.0, 10.0),
+        "LeftLowerLeg":  (98.0, 0.0, 0.0),
+        "LeftFoot":      (-24.0, 0.0, 0.0),
+        "LeftToes":      (-18.0, 0.0, 0.0),
+        "RightUpperLeg": (-102.0, 8.0, -10.0),
+        "RightLowerLeg": (88.0, 0.0, 0.0),
+        "RightFoot":     (10.0, 0.0, 0.0),
+        "RightToes":     (-8.0, 0.0, 0.0),
+    })
+    cwf_31 = merge_pose(cwf_25, {
+        "HipsOffset":    (0.0, 0.0, -0.38),
+        "Hips":          (14.0, -0.5, 22.0),
+        "LeftUpperLeg":  (-70.0, -8.0, 10.0),
+        "LeftLowerLeg":  (102.0, 0.0, 0.0),
+        "LeftFoot":      (-30.0, 0.0, 0.0),
+        "RightUpperLeg": (-96.0, 8.0, -10.0),
+        "RightLowerLeg": (98.0, 0.0, 0.0),
+        "RightFoot":     (-4.0, 0.0, 0.0),
+        "RightToes":     (0.0, 0.0, 0.0),
+    })
+    cwf_37 = merge_pose(crouch_walk_base, {
+        "HipsOffset":    (0.0, 0.0, -0.35),
+        "Hips":          (13.0, 1.5, 20.0),
+        "Spine":         (10.0, 1.0, 4.0),
+        "LeftUpperLeg":  (-98.0, -6.0, 8.0),
+        "LeftLowerLeg":  (118.0, 0.0, 0.0),
+        "LeftFoot":      (-14.0, 0.0, 0.0),
+        "LeftToes":      (8.0, 0.0, 0.0),
+        "RightUpperLeg": (-88.0, 6.0, -8.0),
+        "RightLowerLeg": (94.0, 0.0, 0.0),
+        "RightFoot":     (-6.0, 0.0, 0.0),
+    })
+    cwf_43 = merge_pose(cwf_37, {
+        "HipsOffset":    (0.0, 0.0, -0.36),
+        "Hips":          (14.0, 1.5, 18.0),
+        "LeftUpperLeg":  (-104.0, -7.0, 8.0),
+        "LeftLowerLeg":  (106.0, 0.0, 0.0),
+        "LeftFoot":      (6.0, 0.0, 0.0),
+        "LeftToes":      (-4.0, 0.0, 0.0),
+        "RightUpperLeg": (-78.0, 7.0, -8.0),
+        "RightLowerLeg": (96.0, 0.0, 0.0),
+        "RightFoot":     (-18.0, 0.0, 0.0),
+        "RightToes":     (-12.0, 0.0, 0.0),
+    })
+    anims["CrouchWalkForward"] = {
+        1: cwf_1, 7: cwf_7, 13: cwf_13, 19: cwf_19,
+        25: cwf_25, 31: cwf_31, 37: cwf_37, 43: cwf_43, 49: cwf_1,
+    }
+
+    # CrouchWalkBackward: cautious low retreat keeping guard tight & center of gravity low
+    cwb_1 = merge_pose(crouch_walk_base, {
+        "HipsOffset":    (0.0, 0.0, -0.37),
+        "Hips":          (14.0, 1.0, 18.0),
+        "LeftUpperLeg":  (-78.0, -7.0, 8.0),
+        "LeftLowerLeg":  (94.0, 0.0, 0.0),
+        "LeftFoot":      (-18.0, 0.0, 0.0),
+        "LeftToes":      (8.0, 0.0, 0.0),
+        "RightUpperLeg": (-100.0, 7.0, -8.0),
+        "RightLowerLeg": (92.0, 0.0, 0.0),
+        "RightFoot":     (6.0, 0.0, 0.0),
+        "RightToes":     (-14.0, 0.0, 0.0),
+    })
+    cwb_7 = merge_pose(cwb_1, {
+        "HipsOffset":    (0.0, 0.0, -0.38),
+        "Hips":          (14.0, 0.5, 20.0),
+        "LeftUpperLeg":  (-84.0, -7.0, 8.0),
+        "LeftLowerLeg":  (98.0, 0.0, 0.0),
+        "LeftFoot":      (-12.0, 0.0, 0.0),
+        "RightUpperLeg": (-94.0, 7.0, -8.0),
+        "RightLowerLeg": (96.0, 0.0, 0.0),
+        "RightFoot":     (-2.0, 0.0, 0.0),
+    })
+    cwb_13 = merge_pose(crouch_walk_base, {
+        "HipsOffset":    (0.0, 0.0, -0.35),
+        "Hips":          (13.0, -1.0, 22.0),
+        "LeftUpperLeg":  (-96.0, -6.0, 8.0),
+        "LeftLowerLeg":  (116.0, 0.0, 0.0),
+        "LeftFoot":      (-12.0, 0.0, 0.0),
+        "RightUpperLeg": (-88.0, 6.0, -8.0),
+        "RightLowerLeg": (94.0, 0.0, 0.0),
+        "RightFoot":     (-6.0, 0.0, 0.0),
+    })
+    cwb_19 = merge_pose(cwb_13, {
+        "HipsOffset":    (0.0, 0.0, -0.36),
+        "LeftUpperLeg":  (-100.0, -7.0, 8.0),
+        "LeftLowerLeg":  (102.0, 0.0, 0.0),
+        "RightUpperLeg": (-80.0, 7.0, -8.0),
+        "RightLowerLeg": (94.0, 0.0, 0.0),
+    })
+    cwb_25 = merge_pose(crouch_walk_base, {
+        "HipsOffset":    (0.0, 0.0, -0.37),
+        "Hips":          (14.0, -1.0, 24.0),
+        "LeftUpperLeg":  (-100.0, -7.0, 8.0),
+        "LeftLowerLeg":  (92.0, 0.0, 0.0),
+        "LeftFoot":      (6.0, 0.0, 0.0),
+        "LeftToes":      (-14.0, 0.0, 0.0),
+        "RightUpperLeg": (-78.0, 7.0, -8.0),
+        "RightLowerLeg": (94.0, 0.0, 0.0),
+        "RightFoot":     (-18.0, 0.0, 0.0),
+        "RightToes":     (8.0, 0.0, 0.0),
+    })
+    cwb_31 = merge_pose(cwb_25, {
+        "HipsOffset":    (0.0, 0.0, -0.38),
+        "Hips":          (14.0, -0.5, 22.0),
+        "LeftUpperLeg":  (-94.0, -7.0, 8.0),
+        "LeftLowerLeg":  (96.0, 0.0, 0.0),
+        "LeftFoot":      (-2.0, 0.0, 0.0),
+        "RightUpperLeg": (-84.0, 7.0, -8.0),
+        "RightLowerLeg": (98.0, 0.0, 0.0),
+        "RightFoot":     (-12.0, 0.0, 0.0),
+    })
+    cwb_37 = merge_pose(crouch_walk_base, {
+        "HipsOffset":    (0.0, 0.0, -0.35),
+        "Hips":          (13.0, 1.0, 20.0),
+        "LeftUpperLeg":  (-88.0, -6.0, 8.0),
+        "LeftLowerLeg":  (94.0, 0.0, 0.0),
+        "LeftFoot":      (-6.0, 0.0, 0.0),
+        "RightUpperLeg": (-96.0, 6.0, -8.0),
+        "RightLowerLeg": (116.0, 0.0, 0.0),
+        "RightFoot":     (-12.0, 0.0, 0.0),
+    })
+    cwb_43 = merge_pose(cwb_37, {
+        "HipsOffset":    (0.0, 0.0, -0.36),
+        "LeftUpperLeg":  (-80.0, -7.0, 8.0),
+        "LeftLowerLeg":  (94.0, 0.0, 0.0),
+        "RightUpperLeg": (-100.0, 7.0, -8.0),
+        "RightLowerLeg": (102.0, 0.0, 0.0),
+    })
+    anims["CrouchWalkBackward"] = {
+        1: cwb_1, 7: cwb_7, 13: cwb_13, 19: cwb_19,
+        25: cwb_25, 31: cwb_31, 37: cwb_37, 43: cwb_43, 49: cwb_1,
     }
     return anims
 
@@ -2773,44 +2996,108 @@ def build_common_actions(idle0):
     })
     anims["HitReact"] = {1: idle0, 3: hr_whip, 6: hr_peak, 11: hr_recover_arms, 16: hr_rechamber, 21: idle0}
 
-    # KnockDown (45 frames: stagger 8 -> midfall 20 -> impact 33 -> bounce settle 38 -> grounded 42..46)
+    # KnockDown (45 frames: 1..46 — heavy chained fall: stagger 6 -> midfall 15 -> hip touch 26 -> back impact 32 -> limb/head slap 36 -> bounce 39 -> rest 43..46)
     kd_stagger = merge_pose(idle0, {
         "HipsOffset":    (0.0, 0.0, -0.09),
-        "Hips":          (-18.0, 0.0, 15.0),
-        "Spine":         (-16.0, 0.0, 0.0),
+        "Hips":          (-20.0, 0.0, 14.0),
+        "Spine":         (-18.0, 0.0, 0.0),
         "Chest":         (-16.0, 0.0, 0.0),
-        "Neck":          (-15.0, 0.0, -10.0),
-        "LeftUpperArm":  (-15.0, 30.0, -25.0),
-        "RightUpperArm": (-15.0, -30.0, 25.0),
+        "Neck":          (-16.0, 0.0, -10.0),
+        "LeftUpperArm":  (-16.0, 28.0, -24.0),
+        "RightUpperArm": (-16.0, -28.0, 24.0),
     })
     kd_midfall = merge_pose(idle0, {
-        "HipsOffset":    (0.0, 0.0, -0.42),
-        "Hips":          (-55.0, 0.0, 0.0),
-        "Spine":         (-10.0, 0.0, 0.0),
-        "Chest":         (-8.0, 0.0, 0.0),
-        "Neck":          (15.0, 0.0, 0.0),
-        "LeftUpperArm":  (-10.0, 25.0, -25.0),
-        "LeftLowerArm":  (0.0, -10.0, -35.0),
-        "RightUpperArm": (-10.0, -25.0, 25.0),
-        "RightLowerArm": (0.0, 10.0, 35.0),
-        "LeftUpperLeg":  (-25.0, -8.0, 8.0),
-        "LeftLowerLeg":  (35.0, 0.0, 0.0),
-        "RightUpperLeg": (-20.0, 8.0, -8.0),
-        "RightLowerLeg": (30.0, 0.0, 0.0),
+        "HipsOffset":    (0.0, 0.0, -0.44),
+        "Hips":          (-54.0, 0.0, 0.0),
+        "Spine":         (-12.0, 0.0, 0.0),
+        "Chest":         (-10.0, 0.0, 0.0),
+        "Neck":          (18.0, 0.0, 0.0),
+        "Head":          (14.0, 0.0, 0.0),
+        "LeftUpperArm":  (-12.0, 22.0, -24.0),
+        "LeftLowerArm":  (0.0, -10.0, -34.0),
+        "RightUpperArm": (-12.0, -22.0, 24.0),
+        "RightLowerArm": (0.0, 10.0, 34.0),
+        "LeftUpperLeg":  (-28.0, -8.0, 8.0),
+        "LeftLowerLeg":  (42.0, 0.0, 0.0),
+        "RightUpperLeg": (-22.0, 8.0, -8.0),
+        "RightLowerLeg": (34.0, 0.0, 0.0),
     })
+    kd_hip_touch = {
+        "HipsOffset":    (0.0, 0.0, -0.72),
+        "Hips":          (-66.0, 0.0, 0.0),
+        "Spine":         (12.0, 0.0, 0.0),
+        "Chest":         (14.0, 0.0, 0.0),
+        "UpperChest":    (10.0, 0.0, 0.0),
+        "Neck":          (18.0, 0.0, 0.0),
+        "Head":          (18.0, 0.0, 0.0),
+        "LeftShoulder":  (0.0, 8.0, 0.0),
+        "LeftUpperArm":  (-18.0, 16.0, -22.0),
+        "LeftLowerArm":  (0.0, -10.0, -28.0),
+        "RightShoulder": (0.0, -8.0, 0.0),
+        "RightUpperArm": (-18.0, -16.0, 22.0),
+        "RightLowerArm": (0.0, 10.0, 28.0),
+        "LeftUpperLeg":  (-38.0, -7.0, 8.0),
+        "LeftLowerLeg":  (54.0, 0.0, 0.0),
+        "LeftFoot":      (14.0, 0.0, 0.0),
+        "RightUpperLeg": (-32.0, 7.0, -8.0),
+        "RightLowerLeg": (46.0, 0.0, 0.0),
+        "RightFoot":     (14.0, 0.0, 0.0),
+    }
+    kd_back_impact = {
+        "HipsOffset":    (0.0, 0.0, -0.76),
+        "Hips":          (-86.0, 0.0, 0.0),
+        "Spine":         (4.0, 0.0, 0.0),
+        "Chest":         (6.0, 0.0, 0.0),
+        "UpperChest":    (8.0, 0.0, 0.0),
+        "Neck":          (22.0, 0.0, 0.0),
+        "Head":          (22.0, 0.0, 0.0),
+        "LeftShoulder":  (0.0, 10.0, 0.0),
+        "LeftUpperArm":  (-18.0, 16.0, -26.0),
+        "LeftLowerArm":  (0.0, 0.0, -28.0),
+        "RightShoulder": (0.0, -10.0, 0.0),
+        "RightUpperArm": (-18.0, -16.0, 26.0),
+        "RightLowerArm": (0.0, 0.0, 28.0),
+        "LeftUpperLeg":  (-26.0, -6.0, 8.0),
+        "LeftLowerLeg":  (42.0, 0.0, 0.0),
+        "LeftFoot":      (12.0, 0.0, 0.0),
+        "RightUpperLeg": (-22.0, 6.0, -8.0),
+        "RightLowerLeg": (34.0, 0.0, 0.0),
+        "RightFoot":     (12.0, 0.0, 0.0),
+    }
+    kd_limbs_slap = {
+        "HipsOffset":    (0.0, 0.0, -0.77),
+        "Hips":          (-88.0, 0.0, 0.0),
+        "Spine":         (1.0, 0.0, 0.0),
+        "Chest":         (1.0, 0.0, 0.0),
+        "UpperChest":    (1.0, 0.0, 0.0),
+        "Neck":          (2.0, 0.0, 6.0),
+        "Head":          (2.0, 0.0, 10.0),
+        "LeftShoulder":  (0.0, 6.0, 0.0),
+        "LeftUpperArm":  (4.0, 6.0, -34.0),
+        "LeftLowerArm":  (0.0, 0.0, -14.0),
+        "RightShoulder": (0.0, -6.0, 0.0),
+        "RightUpperArm": (4.0, -6.0, 34.0),
+        "RightLowerArm": (0.0, 0.0, 14.0),
+        "LeftUpperLeg":  (-12.0, -6.0, 8.0),
+        "LeftLowerLeg":  (22.0, 0.0, 0.0),
+        "LeftFoot":      (10.0, 0.0, 0.0),
+        "RightUpperLeg": (-10.0, 6.0, -8.0),
+        "RightLowerLeg": (18.0, 0.0, 0.0),
+        "RightFoot":     (10.0, 0.0, 0.0),
+    }
     kd_ground = {
         "HipsOffset":    (0.0, 0.0, -0.76),
         "Hips":          (-88.0, 0.0, 0.0),
         "Spine":         (2.0, 0.0, 0.0),
         "Chest":         (2.0, 0.0, 0.0),
         "UpperChest":    (2.0, 0.0, 0.0),
-        "Neck":          (5.0, 0.0, 0.0),
-        "Head":          (6.0, 0.0, 0.0),
+        "Neck":          (4.0, 0.0, 8.0),
+        "Head":          (4.0, 0.0, 12.0),
         "LeftShoulder":  (0.0, 8.0, 0.0),
-        "LeftUpperArm":  (0.0, 8.0, -28.0),
+        "LeftUpperArm":  (2.0, 8.0, -30.0),
         "LeftLowerArm":  (0.0, 0.0, -18.0),
         "RightShoulder": (0.0, -8.0, 0.0),
-        "RightUpperArm": (0.0, -8.0, 28.0),
+        "RightUpperArm": (2.0, -8.0, 30.0),
         "RightLowerArm": (0.0, 0.0, 18.0),
         "LeftUpperLeg":  (-10.0, -6.0, 8.0),
         "LeftLowerLeg":  (18.0, 0.0, 0.0),
@@ -2820,20 +3107,30 @@ def build_common_actions(idle0):
         "RightFoot":     (10.0, 0.0, 0.0),
     }
     kd_bounce = merge_pose(kd_ground, {
-        "HipsOffset":    (0.0, 0.0, -0.71),
+        "HipsOffset":    (0.0, 0.0, -0.72),
         "Spine":         (-2.0, 0.0, 0.0),
-        "Neck":          (12.0, 0.0, 0.0),
-        "Head":          (14.0, 0.0, 0.0),
-        "LeftUpperArm":  (-8.0, 12.0, -34.0),
-        "RightUpperArm": (-8.0, -12.0, 34.0),
-        "LeftUpperLeg":  (-22.0, -6.0, 8.0),
-        "LeftLowerLeg":  (32.0, 0.0, 0.0),
-        "RightUpperLeg": (-18.0, 6.0, -8.0),
-        "RightLowerLeg": (28.0, 0.0, 0.0),
+        "Neck":          (10.0, 0.0, 6.0),
+        "Head":          (12.0, 0.0, 8.0),
+        "LeftUpperArm":  (-6.0, 10.0, -32.0),
+        "RightUpperArm": (-6.0, -10.0, 32.0),
+        "LeftUpperLeg":  (-18.0, -6.0, 8.0),
+        "LeftLowerLeg":  (28.0, 0.0, 0.0),
+        "RightUpperLeg": (-15.0, 6.0, -8.0),
+        "RightLowerLeg": (24.0, 0.0, 0.0),
     })
-    anims["KnockDown"] = {1: idle0, 8: kd_stagger, 20: kd_midfall, 33: kd_ground, 38: kd_bounce, 42: kd_ground, 46: kd_ground}
+    anims["KnockDown"] = {
+        1: idle0,
+        6: kd_stagger,
+        15: kd_midfall,
+        26: kd_hip_touch,
+        32: kd_back_impact,
+        36: kd_limbs_slap,
+        39: kd_bounce,
+        43: kd_ground,
+        46: kd_ground,
+    }
 
-    # GetUp (40 frames: supine 1 -> hand/forearm roll 11 -> knee & hand push 21 -> crouch guard 31 -> rise -> Idle 41)
+    # GetUp (40 frames: supine 1 -> hand/forearm roll 11 -> knee & hand push 21 -> crouch guard 31 -> rise 36 -> Idle 41)
     gu_roll = merge_pose(kd_ground, {
         "HipsOffset":    (0.0, 0.0, -0.62),
         "Hips":          (-36.0, 14.0, 22.0),
@@ -2873,39 +3170,95 @@ def build_common_actions(idle0):
     })
     anims["GetUp"] = {1: kd_ground, 11: gu_roll, 21: gu_push, 31: crouch_pose, 36: gu_rise, 41: idle0}
 
-    # Defeat (50 frames: stagger 14 -> fall to knees 24 -> slump forward 35 -> collapse impact 44 -> grounded 48..51)
+    # Defeat (50 frames: 1..51 — single continuous forward/side collapse:
+    # stagger 8 -> drop to knees 18 -> brace hand/forearm 28 -> face/side collapse (+84 deg prone) 37 -> cushioned settle 44 -> rest 51)
     def_stumble = merge_pose(idle0, {
-        "HipsOffset":    (0.0, 0.0, -0.12),
-        "Hips":          (8.0, 0.0, 10.0),
-        "Spine":         (10.0, 0.0, 0.0),
-        "Chest":         (12.0, 0.0, 0.0),
-        "Neck":          (14.0, 0.0, 0.0),
-        "LeftUpperLeg":  (-46.0, -5.0, 6.0),
-        "LeftLowerLeg":  (68.0, 0.0, 0.0),
+        "HipsOffset":    (0.0, 0.0, -0.10),
+        "Hips":          (10.0, 2.0, 12.0),
+        "Spine":         (12.0, 2.0, 2.0),
+        "Chest":         (12.0, 2.0, 2.0),
+        "Neck":          (10.0, 0.0, -6.0),
+        "LeftUpperLeg":  (-44.0, -5.0, 6.0),
+        "LeftLowerLeg":  (66.0, 0.0, 0.0),
     })
     def_knees = merge_pose(idle0, {
         "HipsOffset":    (0.0, 0.0, -0.46),
-        "Hips":          (18.0, 0.0, 0.0),
-        "Spine":         (24.0, 0.0, 0.0),
-        "Chest":         (22.0, 0.0, 0.0),
-        "Neck":          (20.0, 0.0, 0.0),
-        "Head":          (20.0, 0.0, 0.0),
-        "LeftUpperArm":  (0.0, 65.0, -20.0),
-        "LeftLowerArm":  (0.0, 0.0, -35.0),
-        "RightUpperArm": (0.0, -65.0, 20.0),
-        "RightLowerArm": (0.0, 0.0, 35.0),
-        "LeftUpperLeg":  (-55.0, -5.0, 6.0),
+        "Hips":          (22.0, 4.0, 4.0),
+        "Spine":         (24.0, 4.0, 2.0),
+        "Chest":         (22.0, 4.0, 2.0),
+        "Neck":          (18.0, 0.0, -4.0),
+        "Head":          (16.0, 0.0, -4.0),
+        "LeftUpperArm":  (-8.0, 58.0, -24.0),
+        "LeftLowerArm":  (0.0, 0.0, -36.0),
+        "RightUpperArm": (-8.0, -58.0, 24.0),
+        "RightLowerArm": (0.0, 0.0, 36.0),
+        "LeftUpperLeg":  (-56.0, -5.0, 6.0),
         "LeftLowerLeg":  (110.0, 0.0, 0.0),
-        "RightUpperLeg": (-55.0, 5.0, -6.0),
+        "RightUpperLeg": (-56.0, 5.0, -6.0),
         "RightLowerLeg": (110.0, 0.0, 0.0),
     })
-    def_slump = merge_pose(def_knees, {
-        "HipsOffset":    (0.0, 0.0, -0.50),
-        "Spine":         (30.0, 0.0, 0.0),
-        "Chest":         (28.0, 0.0, 0.0),
-        "Neck":          (26.0, 0.0, 0.0),
+    def_hand_brace = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.56),
+        "Hips":          (54.0, 8.0, 6.0),
+        "Spine":         (22.0, 6.0, 4.0),
+        "Chest":         (18.0, 6.0, 4.0),
+        "Neck":          (-10.0, 12.0, -10.0),
+        "Head":          (-10.0, 18.0, -10.0),
+        "LeftShoulder":  (0.0, 10.0, -16.0),
+        "LeftUpperArm":  (-22.0, 20.0, -48.0),
+        "LeftLowerArm":  (8.0, -12.0, -24.0),
+        "RightShoulder": (0.0, -10.0, 14.0),
+        "RightUpperArm": (-10.0, -46.0, 36.0),
+        "RightLowerArm": (6.0, 18.0, 52.0),
+        "LeftUpperLeg":  (-40.0, -6.0, 8.0),
+        "LeftLowerLeg":  (92.0, 0.0, 0.0),
+        "RightUpperLeg": (-34.0, 6.0, -8.0),
+        "RightLowerLeg": (84.0, 0.0, 0.0),
     })
-    anims["Defeat"] = {1: idle0, 14: def_stumble, 24: def_knees, 35: def_slump, 44: kd_ground, 51: kd_ground}
+    def_faceplant = {
+        "HipsOffset":    (0.0, 0.0, -0.78),
+        "Hips":          (86.0, 10.0, 0.0),
+        "Spine":         (2.0, 4.0, 0.0),
+        "Chest":         (2.0, 4.0, 0.0),
+        "UpperChest":    (0.0, 2.0, 0.0),
+        "Neck":          (-6.0, 24.0, -14.0),
+        "Head":          (-6.0, 46.0, -14.0),
+        "LeftShoulder":  (0.0, -4.0, 6.0),
+        "LeftUpperArm":  (-4.0, -6.0, 38.0),
+        "LeftLowerArm":  (0.0, -6.0, -28.0),
+        "RightShoulder": (0.0, 4.0, -6.0),
+        "RightUpperArm": (4.0, 6.0, 22.0),
+        "RightLowerArm": (0.0, 8.0, 56.0),
+        "LeftUpperLeg":  (-12.0, -6.0, 10.0),
+        "LeftLowerLeg":  (34.0, 0.0, 0.0),
+        "LeftFoot":      (-14.0, 0.0, 0.0),
+        "RightUpperLeg": (-4.0, 6.0, -8.0),
+        "RightLowerLeg": (12.0, 0.0, 0.0),
+        "RightFoot":     (-10.0, 0.0, 0.0),
+    }
+    def_settle = merge_pose(def_faceplant, {
+        "HipsOffset":    (0.0, 0.0, -0.80),
+        "Hips":          (87.0, 12.0, 0.0),
+        "Neck":          (-4.0, 28.0, -16.0),
+        "Head":          (-4.0, 50.0, -16.0),
+        "LeftUpperArm":  (0.0, -5.0, 44.0),
+        "LeftLowerArm":  (0.0, -4.0, -22.0),
+        "RightUpperArm": (2.0, 5.0, 26.0),
+        "RightLowerArm": (0.0, 6.0, 48.0),
+        "LeftUpperLeg":  (-10.0, -6.0, 10.0),
+        "LeftLowerLeg":  (26.0, 0.0, 0.0),
+        "RightLowerLeg": (10.0, 0.0, 0.0),
+    })
+    anims["Defeat"] = {
+        1: idle0,
+        8: def_stumble,
+        18: def_knees,
+        28: def_hand_brace,
+        37: def_faceplant,
+        44: def_settle,
+        48: def_settle,
+        51: def_settle,
+    }
 
     # Turn180 (8 frames: quick planted foot-pivot turn for 180-deg cross-up side swap)
     base_hz = idle0.get("HipsOffset", (0.0, 0.0, 0.0))[2]
@@ -3083,16 +3436,16 @@ def _get_clip_ground_modes(clip_name, style, keyframes):
         return {1: "both", 3: "both", 6: "min", 10: "min", 12: "both", 15: "both"}
     if clip_name == "DashBackward":
         return {1: "both", 3: "both", 6: "min", 11: "min", 14: "both", 17: "both"}
-    if clip_name in ("WalkForward", "WalkBackward"):
+    if clip_name in ("WalkForward", "WalkBackward", "CrouchWalkForward", "CrouchWalkBackward"):
         return {f: "min" for f in frames}
     if clip_name == "Jump":
         return {1: "both", 5: "both", 32: "both", 37: "both"}
     if clip_name == "KnockDown":
-        return {1: "both", 8: "both", 20: "min", 33: "min", 38: "min", 42: "min", 46: "min"}
+        return {f: ("both" if f in (1, 6) else "min") for f in frames}
     if clip_name == "GetUp":
         return {1: "min", 11: "min", 21: "min", 31: "both", 36: "both", 41: "both"}
     if clip_name == "Defeat":
-        return {1: "both", 14: "both", 24: "min", 35: "min", 44: "min", 51: "min"}
+        return {f: ("both" if f in (1, 8) else "min") for f in frames}
     if clip_name == "Turn180":
         return {1: "both", 3: "both", 5: "min", 7: "both", 9: "both"}
     return {}
@@ -3103,7 +3456,7 @@ def _get_clip_tangent_modes(clip_name, style, keyframes, framedata):
     frames = sorted(keyframes.keys())
     first_f, last_f = frames[0], frames[-1]
 
-    if clip_name in ("Idle", "WalkForward", "WalkBackward"):
+    if clip_name in ("Idle", "WalkForward", "WalkBackward", "CrouchWalkForward", "CrouchWalkBackward"):
         modes = {f: "AUTO" for f in frames}
         modes[first_f] = "LOOP"
         modes[last_f] = "LOOP"
@@ -3135,13 +3488,19 @@ def _get_clip_tangent_modes(clip_name, style, keyframes, framedata):
     if clip_name == "Jump":
         return {1: "AUTO_CLAMPED", 5: "SNAP_OUT", 10: "SNAP_IN", 18: "AUTO", 28: "AUTO", 32: "EASE_OUT", 37: "SETTLE_IN"}
     if clip_name == "KnockDown":
-        return {1: "AUTO_CLAMPED", 8: "AUTO", 20: "AUTO", 33: "VECTOR", 38: "AUTO", 42: "FLAT", 46: "FLAT"}
+        return {
+            1: "AUTO_CLAMPED", 6: "SNAP_OUT", 15: "AUTO", 26: "VECTOR",
+            32: "VECTOR", 36: "AUTO", 39: "AUTO", 43: "FLAT", 46: "FLAT",
+        }
     if clip_name == "GetUp":
         return {1: "FLAT", 11: "AUTO", 21: "AUTO", 31: "AUTO", 36: "EASE_OUT", 41: "SETTLE_IN"}
     if clip_name == "Victory":
         return {1: "AUTO_CLAMPED", 7: "SNAP_OUT", 18: "AUTO", 32: "SETTLE_IN", 46: "AUTO", 61: "SETTLE_IN"}
     if clip_name == "Defeat":
-        return {1: "AUTO_CLAMPED", 14: "AUTO", 24: "AUTO", 35: "AUTO", 44: "VECTOR", 51: "FLAT"}
+        return {
+            1: "AUTO_CLAMPED", 8: "AUTO", 18: "AUTO", 28: "AUTO",
+            37: "VECTOR", 44: "AUTO", 48: "FLAT", 51: "FLAT",
+        }
     if clip_name == "Turn180":
         return {1: "AUTO_CLAMPED", 3: "SNAP_OUT", 5: "AUTO", 7: "EASE_OUT", 9: "SETTLE_IN"}
     return {}
@@ -3149,7 +3508,7 @@ def _get_clip_tangent_modes(clip_name, style, keyframes, framedata):
 
 def verify_and_report_grounding(arm_obj, mesh_obj, foot_vdata, name, framedata):
     """
-    Dense per-frame audit across ALL 22 clips verifying:
+    Dense per-frame audit across ALL 24 clips verifying:
     - Idle sole Z == 0.000 m and L/R difference
     - All grounded clips stay above Z = -0.003 m on every interpolated frame
     - Knee flexion stays >= MIN_KNEE_FLEX (4.0 deg) on every interpolated frame
@@ -3162,7 +3521,8 @@ def verify_and_report_grounding(arm_obj, mesh_obj, foot_vdata, name, framedata):
     MIN_KNEE_TOL = 3.9  # 4.0 deg anatomical floor with 0.1 deg numerical epsilon
 
     all_ground_audit = [
-        "Idle", "WalkForward", "WalkBackward", "DashForward", "DashBackward",
+        "Idle", "WalkForward", "WalkBackward", "CrouchWalkForward", "CrouchWalkBackward",
+        "DashForward", "DashBackward",
         "BlockStand", "Crouch", "Victory", "HitReact",
         "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
         "CrouchKick", "Throw", "Special", "Turn180",
@@ -3273,7 +3633,8 @@ def generate_all_animations(arm_obj, config=None):
             kf[frame_idx] = merge_pose(hand_pose, pose_dict)
 
     ordered_names = [
-        "Idle", "WalkForward", "WalkBackward", "DashForward", "DashBackward",
+        "Idle", "WalkForward", "WalkBackward", "CrouchWalkForward", "CrouchWalkBackward",
+        "DashForward", "DashBackward",
         "Jump", "Crouch", "BlockStand",
         "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
         "CrouchKick", "JumpAttack", "Throw", "Special",
@@ -4304,16 +4665,18 @@ def write_frame_data_doc(config):
         f"| **Idle** | 60 (1–61) | 1,000 s | Sim | Não | {style_notes['Idle']} |",
         f"| **WalkForward** | 48 (1–49) | 0,800 s | Sim | Não | {style_notes['Walk']} (avanço) |",
         f"| **WalkBackward** | 48 (1–49) | 0,800 s | Sim | Não | {style_notes['Walk']} (recuo) |",
+        "| **CrouchWalkForward** | 48 (1–49) | 0,800 s | Sim | Não | Deslocamento tático agachado para frente mantendo guarda baixa e altura de hurtbox reduzida |",
+        "| **CrouchWalkBackward** | 48 (1–49) | 0,800 s | Sim | Não | Recuo tático agachado mantendo guarda baixa fechada e altura de hurtbox reduzida |",
         "| **DashForward** | 14 (1–15) | 0,233 s | Não | Não | Impulso explosivo para frente com inclinação de tronco, guarda firme e retorno ao `Idle` (cancelável após tick 8) |",
         "| **DashBackward** | 16 (1–17) | 0,267 s | Não | Não | Recuo elástico rápido afastando tronco/cabeça para trás e amortecendo na base (evasão nos 5 primeiros ticks) |",
         "| **Jump** | 36 (1–37) | 0,600 s | Não | Não | Antecipação, elevação vertical local e pouso retornando ao `Idle` |",
         "| **Crouch** | 30 (1–31) | 0,500 s | Não | Não | Agachamento em guarda baixa mantido até o frame 31 enquanto segurado |",
         f"| **BlockStand** | 24 (1–25) | 0,400 s | Não | Não | {style_notes['BlockStand']} |",
         "| **HitReact** | 20 (1–21) | 0,333 s | Não | Não | Recuo de tronco e cabeça ao sofrer golpe, recuperando para `Idle` |",
-        "| **KnockDown** | 45 (1–46) | 0,750 s | Não | Não | Desequilíbrio e queda de costas no chão |",
+        "| **KnockDown** | 45 (1–46) | 0,750 s | Não | Não | Queda pesada em cadeia (quadril -> costas -> atraso de cabeça/braços -> quique e repouso relaxado no chão) |",
         "| **GetUp** | 40 (1–41) | 0,667 s | Não | Não | Levantamento a partir do chão até `Idle` |",
         f"| **Victory** | 60 (1–61) | 1,000 s | Não | Não | {style_notes['Victory']} |",
-        "| **Defeat** | 50 (1–51) | 0,833 s | Não | Não | Queda de joelhos e colapso final no chão |",
+        "| **Defeat** | 50 (1–51) | 0,833 s | Não | Não | Queda contínua para frente/lado: joelhos -> apoio breve de mão -> colapso de bruços/lado no chão sem inversão |",
         "| **Turn180** | 8 (1–9) | 0,133 s | Não | Não | Pivô de troca de lado em pé: flexão leve nos joelhos, giro de tronco/cabeça, passo curto e retorno ao `Idle` |",
     ]
     os.makedirs(os.path.dirname(doc_path), exist_ok=True)
@@ -4356,6 +4719,9 @@ def render_style_poses(arm_obj, config, out_dir):
         "Special": sp_hit_frame,
         "BlockStand": 20,
         "Victory": 50,
+        "CrouchWalkForward": 13,
+        "KnockDown": 36,
+        "Defeat": 44,
     }
 
     arm_obj.data.pose_position = 'POSE'

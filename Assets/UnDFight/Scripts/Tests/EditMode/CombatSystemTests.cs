@@ -1112,5 +1112,58 @@ namespace UnDFight.Tests
             Assert.IsFalse(cam.IsSuperCameraActive);
             Assert.AreEqual(1, rig.P1.StateTicks);
         }
+
+        [Test]
+        public void CrouchWalkForward_MovesAtReducedSpeed_AndKeepsCrouchedHurtbox()
+        {
+            FighterRig rig = CreateRig();
+            rig.P1.SetSimPositionX(-2.0f);
+            rig.P2.SetSimPositionX(2.0f);
+            rig.Sim.ForceUpdateFacing();
+
+            float startX = rig.P1.SimPosition.x;
+            float fullHeight = rig.P1.CurrentHurtboxHeight;
+
+            // Hold Down + Forward (crouch walk forward) for 30 ticks (0.5 s)
+            rig.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = -1f }, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+            rig.Sim.StepSimulationTicks(30);
+
+            Assert.AreEqual(FighterState.CrouchWalkForward, rig.P1.State);
+            Assert.IsTrue(rig.P1.IsCrouching, "CrouchWalkForward must preserve crouched state.");
+            Assert.Less(rig.P1.CurrentHurtboxHeight, fullHeight * 0.70f, "CrouchWalkForward must maintain low hurtbox.");
+            float moved = rig.P1.SimPosition.x - startX;
+            float expected = rig.LucasData.EffectiveCrouchWalkForwardSpeed * 0.5f;
+            Assert.AreEqual(expected, moved, 0.02f);
+            Assert.Less(rig.P1.SimVelocity.x, rig.LucasData.EffectiveWalkForwardSpeed, "CrouchWalkForward must be slower than standing WalkForward.");
+        }
+
+        [Test]
+        public void CrouchWalkBackward_MovesBackward_KeepsLowHurtbox_AndBlocksLowAttacks()
+        {
+            FighterRig rig = CreateRig();
+            rig.P1.SetSimPositionX(-0.65f);
+            rig.P2.SetSimPositionX(0.65f);
+            rig.Sim.ForceUpdateFacing();
+
+            float p2StartX = rig.P2.SimPosition.x;
+
+            // P2 holds Down + Right (Back relative to FacingSign=-1) while P1 steps crouched or throws Low LightKick
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = -1f }, true);
+            rig.Sim.StepSimulationTicks(15);
+
+            Assert.AreEqual(FighterState.CrouchWalkBackward, rig.P2.State);
+            Assert.IsTrue(rig.P2.IsCrouching);
+            Assert.Greater(rig.P2.SimPosition.x, p2StartX + 0.35f, "CrouchWalkBackward must retreat backward.");
+
+            // Re-close distance while P2 keeps walking backward crouched and tests automatic Low guard
+            rig.P1.SetSimPositionX(rig.P2.SimPosition.x - 0.85f);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.LightKick);
+            rig.Sim.StepSimulationTicks(1 + rig.LightKick.FirstActiveTick); // start + FirstActiveTick of LightKick (Low)
+
+            Assert.AreEqual(1000, rig.P2.CurrentHealth, "CrouchWalkBackward must block Low attacks without taking full damage.");
+            Assert.AreEqual(FighterState.Block, rig.P2.State);
+        }
     }
 }
