@@ -43,3 +43,66 @@ MonoBehaviour:
   exHeavyPunch: {fileID: 11400000, guid: e40e2d55e5707464aba2e5697fca070b, type: 2}
   exHeavyKick: {fileID: 11400000, guid: 17df3e4f01fe5a14484a4bef8910c298, type: 2}
   specialMove: {fileID: 11400000, guid: d967afcb26237454185c0a7ba34ef44b, type: 2}
+  comboPunchFinisher: {fileID: 11400000, guid: dab1c3a183886c24685aaeed9f759203, type: 2}
+  comboKickFinisher: {fileID: 11400000, guid: 85e08e98f535fc04cb95c169f2cdccb1, type: 2}
+  comboStrings:
+  - stringName: QUEBRA-GUARDA
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 11
+      stepMoveOverride: {fileID: 11400000, guid: a72c60c83e559e642bf349718487448d, type: 2}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: "DEMOLI\xC7\xC3O PESADA"
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 2
+      requireCrouch: 0
+      attackType: 3
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 3
+      requireCrouch: 0
+      attackType: 12
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: RASTEIRA BRUTAL
+    steps:
+    - inputButton: 2
+      requireCrouch: 0
+      attackType: 3
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 3
+      requireCrouch: 1
+      attackType: 6
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: ESMAGAMENTO
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 2
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 11
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1

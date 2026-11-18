@@ -146,6 +146,8 @@ namespace UnDFight.Tests
             Assert.AreEqual(27, data.heavyPunch.TotalTicks);
             Assert.AreEqual(19, data.lightKick.TotalTicks);
             Assert.AreEqual(33, data.heavyKick.TotalTicks);
+            Assert.AreEqual(27, data.comboPunchFinisher.TotalTicks);
+            Assert.AreEqual(29, data.comboKickFinisher.TotalTicks);
             Assert.AreEqual(28, data.crouchKick.TotalTicks);
             Assert.AreEqual(18, data.jumpAttack.TotalTicks);
             Assert.AreEqual(22, data.throwMove.TotalTicks);
@@ -230,6 +232,8 @@ namespace UnDFight.Tests
             Assert.AreEqual(21, data.heavyPunch.TotalTicks);
             Assert.AreEqual(16, data.lightKick.TotalTicks);
             Assert.AreEqual(27, data.heavyKick.TotalTicks);
+            Assert.AreEqual(24, data.comboPunchFinisher.TotalTicks);
+            Assert.AreEqual(26, data.comboKickFinisher.TotalTicks);
             Assert.AreEqual(25, data.crouchKick.TotalTicks);
             Assert.AreEqual(18, data.jumpAttack.TotalTicks);
             Assert.AreEqual(22, data.throwMove.TotalTicks);
@@ -295,7 +299,7 @@ namespace UnDFight.Tests
                 }
             }
 
-            Assert.AreEqual(24, clips.Count, $"Expected 24 clips in {fbxPath}");
+            Assert.AreEqual(26, clips.Count, $"Expected 26 clips in {fbxPath}");
             Assert.IsTrue(clips.TryGetValue("Turn180", out AnimationClip turnClip), $"Missing Turn180 clip in {fbxPath}");
             Assert.IsFalse(turnClip.isLooping, $"{fbxPath} Turn180 must not loop");
             Assert.AreEqual(60, Mathf.RoundToInt(turnClip.frameRate), $"Turn180 clip must be 60 fps in {fbxPath}");
@@ -320,6 +324,7 @@ namespace UnDFight.Tests
             foreach (AttackType attackType in new[]
                      {
                          AttackType.LightPunch, AttackType.HeavyPunch, AttackType.LightKick, AttackType.HeavyKick,
+                         AttackType.ComboPunchFinisher, AttackType.ComboKickFinisher,
                          AttackType.CrouchKick, AttackType.JumpAttack, AttackType.Throw, AttackType.Special
                      })
             {
@@ -328,10 +333,39 @@ namespace UnDFight.Tests
                 Assert.Greater(move.TotalTicks, 0);
                 Assert.Greater(move.damage, 0);
                 Assert.IsTrue(clips.TryGetValue(attackType.ToString(), out AnimationClip clip), $"Missing clip {attackType} in {fbxPath}");
+                Assert.IsFalse(clip.isLooping, $"{fbxPath} {attackType} must not loop");
                 Assert.AreEqual(60, Mathf.RoundToInt(clip.frameRate), $"Clip {clip.name} must be 60 fps");
                 int clipFrames = Mathf.RoundToInt(clip.length * 60f);
                 Assert.AreEqual(move.TotalTicks, clipFrames, $"{data.fighterName} {attackType} MoveData.TotalTicks must equal FBX clip frame length");
             }
+
+            Assert.IsNotNull(data.comboStrings, $"{data.fighterName} missing comboStrings");
+            Assert.GreaterOrEqual(data.comboStrings.Length, 3, $"{data.fighterName} must have at least 3 comboStrings");
+            bool hasOverheadFinisher = false;
+            bool hasLowFinisher = false;
+            foreach (ComboStringDefinition def in data.comboStrings)
+            {
+                Assert.IsNotNull(def);
+                Assert.IsFalse(string.IsNullOrWhiteSpace(def.stringName), $"{data.fighterName} has comboString without stringName");
+                Assert.IsNotNull(def.steps);
+                Assert.GreaterOrEqual(def.steps.Length, 3, $"{data.fighterName} comboString '{def.stringName}' must have >= 3 steps");
+
+                ComboStringStep lastStep = def.steps[def.steps.Length - 1];
+                MoveData lastMove = lastStep.stepMoveOverride != null
+                    ? lastStep.stepMoveOverride
+                    : data.GetMoveData(lastStep.attackType);
+                Assert.IsNotNull(lastMove, $"{data.fighterName} comboString '{def.stringName}' final step missing MoveData");
+                if (lastMove.hitHeight == HitHeight.Overhead)
+                {
+                    hasOverheadFinisher = true;
+                }
+                if (lastMove.hitHeight == HitHeight.Low || (lastStep.requireCrouch && lastStep.attackType == AttackType.CrouchKick))
+                {
+                    hasLowFinisher = true;
+                }
+            }
+            Assert.IsTrue(hasOverheadFinisher, $"{data.fighterName} comboStrings must include at least one Overhead finisher mix-up");
+            Assert.IsTrue(hasLowFinisher, $"{data.fighterName} comboStrings must include at least one Low/CrouchKick finisher mix-up");
 
             Assert.IsNotNull(data.exHeavyPunch, $"{data.fighterName} missing exHeavyPunch");
             Assert.IsTrue(data.exHeavyPunch.isExMove);
@@ -464,7 +498,11 @@ namespace UnDFight.Tests
                 stateNames.Add(cs.state.name);
             }
 
-            foreach (string requiredState in new[] { "CrouchWalkForward", "CrouchWalkBackward", "DashForward", "DashBackward", "CrouchKick", "JumpAttack", "Throw" })
+            foreach (string requiredState in new[]
+                     {
+                         "CrouchWalkForward", "CrouchWalkBackward", "DashForward", "DashBackward",
+                         "CrouchKick", "JumpAttack", "Throw", "ComboPunchFinisher", "ComboKickFinisher"
+                     })
             {
                 Assert.IsTrue(stateNames.Contains(requiredState), $"AC_Fighter missing required state '{requiredState}'");
             }

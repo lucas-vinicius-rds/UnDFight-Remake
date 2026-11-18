@@ -53,5 +53,6 @@ namespace UnDFight
         public bool IsSpecial;
         public bool IsExMove;
         public bool WasArmorAbsorbed;
+        public string ComboStringName;
     }
 }

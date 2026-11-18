@@ -52,6 +52,11 @@ namespace UnDFight
         public MoveData exHeavyPunch;
         public MoveData exHeavyKick;
         public MoveData specialMove;
+        public MoveData comboPunchFinisher;
+        public MoveData comboKickFinisher;
+
+        [Header("Combo Strings (MK-Style Dial-a-Combo)")]
+        public ComboStringDefinition[] comboStrings;
 
         public WeightClass WeightCategory => FighterScaling.GetWeightClass(weightKg);
         public float ModelScale => FighterScaling.ComputeModelScale(heightMeters);
@@ -80,6 +85,8 @@ namespace UnDFight
                 AttackType.ExHeavyPunch => exHeavyPunch,
                 AttackType.ExHeavyKick => exHeavyKick,
                 AttackType.Special => specialMove,
+                AttackType.ComboPunchFinisher => comboPunchFinisher,
+                AttackType.ComboKickFinisher => comboKickFinisher,
                 _ => null
             };
         }

@@ -32,6 +32,8 @@ namespace UnDFight
         JumpAttack = 7,
         Throw = 8,
         ExHeavyPunch = 9,
-        ExHeavyKick = 10
+        ExHeavyKick = 10,
+        ComboPunchFinisher = 11,
+        ComboKickFinisher = 12
     }
 }

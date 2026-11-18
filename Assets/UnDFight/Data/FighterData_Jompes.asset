@@ -43,3 +43,66 @@ MonoBehaviour:
   exHeavyPunch: {fileID: 11400000, guid: 9f72a8cc0c2ad65449349f17efd8aedd, type: 2}
   exHeavyKick: {fileID: 11400000, guid: b5d780a24f2d8ff41874443f4ad061fa, type: 2}
   specialMove: {fileID: 11400000, guid: 87876c63a2c598f4a862a8ceff9ba387, type: 2}
+  comboPunchFinisher: {fileID: 11400000, guid: 9e22e82712a0ee749bce1397760ad370, type: 2}
+  comboKickFinisher: {fileID: 11400000, guid: 0a2d09cbb6eb75a408229667650159a8, type: 2}
+  comboStrings:
+  - stringName: GOLPE CELESTE
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 11
+      stepMoveOverride: {fileID: 11400000, guid: a289e014e1388c348b6d9248c5788dcf, type: 2}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: "ROTA\xC7\xC3O MARCIAL"
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 2
+      requireCrouch: 0
+      attackType: 3
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 3
+      requireCrouch: 0
+      attackType: 12
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: VARREDURA SOMBRIA
+    steps:
+    - inputButton: 2
+      requireCrouch: 0
+      attackType: 3
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 3
+      requireCrouch: 1
+      attackType: 6
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: ESTILO PRECISO
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 2
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 11
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1

@@ -15,6 +15,8 @@
 | **HeavyPunch** | 5 | 4 | 12 | 21 | 0,350 s | 6–9 | Mata-cobra aberto e largo inclinando o tronco junto com o golpe (`RightHand`) |
 | **LightKick** | 4 | 3 | 9 | 16 | 0,267 s | 5–7 | Bico/chute baixo improvisado de rua (`LeftFoot`) |
 | **HeavyKick** | 7 | 4 | 16 | 27 | 0,450 s | 8–11 | Chute alto desengonçado erguendo o braço oposto para equilíbrio (`LeftFoot`) |
+| **ComboPunchFinisher** | 6 | 4 | 14 | 24 | 0,400 s | 7–10 | Finalizador de mão de combo string: cotovelada/cruzado giratório agressivo de rua (`RightHand`) |
+| **ComboKickFinisher** | 7 | 4 | 15 | 26 | 0,433 s | 8–11 | Finalizador de chute de combo string: chute giratório baixo/médio estiloso de rua (`LeftFoot`) |
 | **CrouchKick** | 6 | 4 | 15 | 25 | 0,417 s | 7–10 | Rasteira agachada baixa varrendo o chão com a perna estendida à frente (`LeftFoot`, `HitHeight.Low`, derruba) |
 | **JumpAttack** | 4 | 8 | 6 | 18 | 0,300 s | 5–12 | Voadora aérea descendente em diagonal (`LeftFoot`, `HitHeight.Overhead`, quebra guarda agachada) |
 | **Throw** | 5 | 3 | 14 | 22 | 0,367 s | 6–8 | Agarrão de curto alcance com ambas as mãos (`relaxed_grip`) seguido de arremesso firme de ombro/tronco (`Unblockable`) |

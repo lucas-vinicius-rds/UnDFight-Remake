@@ -13,6 +13,7 @@ namespace UnDFight
         public static event Action<FighterController, AttackType> OnAnyAttackStarted;
         public static event Action<FighterController, bool> OnAnyDashStarted;
         public static event Action<FighterController, MoveData> OnAnyProjectileFired;
+        public static event Action<FighterController, string> OnComboStringCompleted;
         public const int KnockDownDurationTicks = 45;
         public const int GetUpDurationTicks = 40;
         public const int WakeupInvincibilityGraceTicks = 6;
@@ -65,6 +66,13 @@ namespace UnDFight
         private int _stateTotalTicks;
         private int _currentHealth;
         private bool _hasRegisteredHit;
+        private bool _hasRegisteredBlock;
+        private bool _hasRegisteredContactOnMove;
+        private ComboStringDefinition _activeComboString;
+        private int _activeComboStepIndex = -1;
+        private readonly FighterInputButton[] _executedComboButtons = new FighterInputButton[4];
+        private readonly bool[] _executedComboCrouch = new bool[4];
+        private readonly AttackType[] _executedComboAttacks = new AttackType[4];
         private bool _blockFromCrouch;
         private bool _enteredCrouchFromCrouch;
         private bool _inputsEnabled = true;
@@ -126,6 +134,14 @@ namespace UnDFight
         public int ReceivedComboHits => _receivedComboHits;
         public int ReceivedComboDamage => _receivedComboDamage;
         public bool HasRegisteredHit => _hasRegisteredHit;
+        public bool HasRegisteredBlock => _hasRegisteredBlock;
+        public bool HasRegisteredContactOnMove => _hasRegisteredContactOnMove;
+        public ComboStringDefinition ActiveComboString => _activeComboString;
+        public int ActiveComboStepIndex => _activeComboStepIndex;
+        public string ActiveComboStringName =>
+            (_state == FighterState.Attack && _activeComboString != null && _activeComboStepIndex >= 1)
+                ? _activeComboString.stringName
+                : string.Empty;
         public bool InputsEnabled => _inputsEnabled;
         public int WakeupInvincibilityTicks => _wakeupInvincibilityTicks;
         public int TicksSinceLastHit => _ticksSinceLastHit;
@@ -253,6 +269,9 @@ namespace UnDFight
             _stateTicks = 0;
             _stateTotalTicks = 0;
             _hasRegisteredHit = false;
+            _hasRegisteredBlock = false;
+            _hasRegisteredContactOnMove = false;
+            ClearComboStringState();
             _blockFromCrouch = false;
             _enteredCrouchFromCrouch = false;
             _wakeupInvincibilityTicks = 0;
@@ -289,6 +308,9 @@ namespace UnDFight
             _stateTicks = 0;
             _stateTotalTicks = 0;
             _hasRegisteredHit = false;
+            _hasRegisteredBlock = false;
+            _hasRegisteredContactOnMove = false;
+            ClearComboStringState();
             _blockFromCrouch = false;
             _enteredCrouchFromCrouch = false;
             _wakeupInvincibilityTicks = 0;
@@ -339,6 +361,7 @@ namespace UnDFight
         {
             _prevSimPos = _currSimPos;
             _prevVisualYaw = _visualYaw;
+            _inputHandler?.ExtendBufferedWindowsForHitstop();
         }
 
         /// <summary>
@@ -446,7 +469,35 @@ namespace UnDFight
         public void MarkHitRegistered()
         {
             _hasRegisteredHit = true;
+            _hasRegisteredContactOnMove = true;
             _attackHitCount++;
+        }
+
+        public void MarkContactRegistered(HitOutcomeType outcome)
+        {
+            _hasRegisteredContactOnMove = true;
+            if (outcome == HitOutcomeType.Blocked)
+            {
+                _hasRegisteredBlock = true;
+            }
+            else if (outcome != HitOutcomeType.None)
+            {
+                _hasRegisteredHit = true;
+                _attackHitCount++;
+            }
+
+            if (_activeComboString != null &&
+                _activeComboString.steps != null &&
+                _activeComboStepIndex == _activeComboString.steps.Length - 1)
+            {
+                OnComboStringCompleted?.Invoke(this, _activeComboString.stringName);
+            }
+        }
+
+        private void ClearComboStringState()
+        {
+            _activeComboString = null;
+            _activeComboStepIndex = -1;
         }
 
         /// <summary>
@@ -467,6 +518,7 @@ namespace UnDFight
         public bool TryGetActiveHitbox(out Rect worldHitbox, out MoveData moveData)
         {
             if (_state == FighterState.Attack &&
+                !_hasRegisteredContactOnMove &&
                 !_hasRegisteredHit &&
                 _currentMoveData != null &&
                 !_currentMoveData.spawnsProjectile &&
@@ -851,9 +903,14 @@ namespace UnDFight
                     {
                         // Preserve parabolic horizontal & vertical jump trajectory under gravity
                     }
-                    else if (_currentMoveData != null && _currentMoveData.lungeSpeed > 0f && _stateTicks <= _currentMoveData.LastActiveTick)
+                    else if (_currentMoveData != null &&
+                             (_currentMoveData.lungeSpeed > 0f || _activeComboStepIndex >= 1) &&
+                             _stateTicks <= _currentMoveData.LastActiveTick)
                     {
-                        _simVelocity.x = _facingSign * _currentMoveData.lungeSpeed;
+                        float effectiveLunge = _activeComboStepIndex >= 1
+                            ? Mathf.Max(_currentMoveData.lungeSpeed, 2.4f)
+                            : _currentMoveData.lungeSpeed;
+                        _simVelocity.x = _facingSign * effectiveLunge;
                     }
                     else if (_currentMoveData != null &&
                              _currentMoveData.specialMechanic == SpecialMechanicType.MultiHitRush &&
@@ -875,6 +932,7 @@ namespace UnDFight
                         {
                             _hasResetSecondActiveWindow = true;
                             _hasRegisteredHit = false;
+                            _hasRegisteredContactOnMove = false;
                         }
 
                         if (_currentMoveData.spawnsProjectile &&
@@ -920,15 +978,27 @@ namespace UnDFight
                 if (_state == FighterState.Attack &&
                     _inputsEnabled &&
                     _isGrounded &&
-                    _hasRegisteredHit &&
                     hitstopCleared &&
-                    _inputHandler != null &&
-                    _inputHandler.ConsumeChainAttackInput(tick, _currentAttack, CanUseSpecial, CanUseEx, out AttackType cancelAttack) &&
-                    StartAttack(cancelAttack))
+                    _inputHandler != null)
                 {
-                    UpdateHurtboxDimensions();
-                    StepAnimatorTick(dt);
-                    return;
+                    if (_hasRegisteredContactOnMove && TryAdvanceComboString(tick))
+                    {
+                        UpdateHurtboxDimensions();
+                        StepAnimatorTick(dt);
+                        return;
+                    }
+
+                    bool allowChainCancel = _hasRegisteredHit &&
+                                            (_activeComboString == null ||
+                                             _activeComboString.allowSpecialOrExCancelOnEnd);
+                    if (allowChainCancel &&
+                        _inputHandler.ConsumeChainAttackInput(tick, _currentAttack, CanUseSpecial, CanUseEx, out AttackType cancelAttack) &&
+                        StartAttack(cancelAttack, moveOverride: null, isComboChain: true))
+                    {
+                        UpdateHurtboxDimensions();
+                        StepAnimatorTick(dt);
+                        return;
+                    }
                 }
 
                 if (_stateTicks >= _stateTotalTicks && _isGrounded)
@@ -1336,14 +1406,16 @@ namespace UnDFight
             return true;
         }
 
-        private bool StartAttack(AttackType attackType)
+        private bool StartAttack(AttackType attackType, MoveData moveOverride = null, bool isComboChain = false)
         {
             if (attackType == AttackType.None || (attackType == AttackType.JumpAttack && _isGrounded))
             {
                 return false;
             }
 
-            MoveData resolvedMove = fighterData != null ? fighterData.GetMoveData(attackType) : null;
+            MoveData resolvedMove = moveOverride != null
+                ? moveOverride
+                : (fighterData != null ? fighterData.GetMoveData(attackType) : null);
             bool isEx = attackType == AttackType.ExHeavyPunch || attackType == AttackType.ExHeavyKick;
 
             if (attackType == AttackType.Special)
@@ -1372,9 +1444,16 @@ namespace UnDFight
                 _grantedStartSuperOnCurrentMove = true;
             }
 
+            if (!isComboChain)
+            {
+                InitializeOpenerComboStringTracking(attackType);
+            }
+
             _simVelocity.x = 0f;
             _blockFromCrouch = false;
             _hasRegisteredHit = false;
+            _hasRegisteredBlock = false;
+            _hasRegisteredContactOnMove = false;
             _hasAbsorbedArmorThisAttack = false;
             _hasResetSecondActiveWindow = false;
             _hasSpawnedProjectileThisAttack = false;
@@ -1397,6 +1476,160 @@ namespace UnDFight
             }
 
             return true;
+        }
+
+        private void InitializeOpenerComboStringTracking(AttackType openerAttack)
+        {
+            ClearComboStringState();
+            if (fighterData == null || fighterData.comboStrings == null || fighterData.comboStrings.Length == 0)
+            {
+                return;
+            }
+
+            if (!TryMapAttackToComboInput(openerAttack, out FighterInputButton openerButton, out bool openerCrouch))
+            {
+                return;
+            }
+
+            for (int i = 0; i < fighterData.comboStrings.Length; i++)
+            {
+                ComboStringDefinition def = fighterData.comboStrings[i];
+                if (def?.steps == null || def.steps.Length == 0)
+                {
+                    continue;
+                }
+
+                ComboStringStep step0 = def.steps[0];
+                if (step0.inputButton == openerButton &&
+                    step0.attackType == openerAttack &&
+                    step0.requireCrouch == openerCrouch)
+                {
+                    _activeComboStepIndex = 0;
+                    _executedComboButtons[0] = openerButton;
+                    _executedComboCrouch[0] = openerCrouch;
+                    _executedComboAttacks[0] = openerAttack;
+                    return;
+                }
+            }
+        }
+
+        private bool TryAdvanceComboString(int currentTick)
+        {
+            if (fighterData == null ||
+                fighterData.comboStrings == null ||
+                fighterData.comboStrings.Length == 0 ||
+                _inputHandler == null ||
+                _activeComboStepIndex < 0)
+            {
+                return false;
+            }
+
+            int nextStepIndex = _activeComboStepIndex + 1;
+            if (nextStepIndex >= _executedComboButtons.Length)
+            {
+                return false;
+            }
+
+            if (!_inputHandler.TryPeekNextDialComboInput(currentTick, out PlayerInputHandler.DialComboInputEntry dialEntry))
+            {
+                return false;
+            }
+
+            bool effectiveCrouch = dialEntry.IsCrouching || (_inputHandler.CurrentInput.MoveY < -0.5f);
+            ComboStringDefinition matchedDef = FindMatchingComboString(nextStepIndex, dialEntry.Button, effectiveCrouch, requireExactCrouch: true)
+                                               ?? (effectiveCrouch ? FindMatchingComboString(nextStepIndex, dialEntry.Button, effectiveCrouch, requireExactCrouch: false) : null);
+
+            if (matchedDef == null)
+            {
+                return false;
+            }
+
+            ComboStringStep nextStep = matchedDef.steps[nextStepIndex];
+            _inputHandler.ConsumeFrontDialComboInput(currentTick, out _);
+            _activeComboString = matchedDef;
+            _activeComboStepIndex = nextStepIndex;
+            _executedComboButtons[nextStepIndex] = nextStep.inputButton;
+            _executedComboCrouch[nextStepIndex] = nextStep.requireCrouch;
+            _executedComboAttacks[nextStepIndex] = nextStep.attackType;
+
+            return StartAttack(nextStep.attackType, nextStep.stepMoveOverride, isComboChain: true);
+        }
+
+        private ComboStringDefinition FindMatchingComboString(
+            int nextStepIndex,
+            FighterInputButton button,
+            bool effectiveCrouch,
+            bool requireExactCrouch)
+        {
+            for (int i = 0; i < fighterData.comboStrings.Length; i++)
+            {
+                ComboStringDefinition def = fighterData.comboStrings[i];
+                if (def?.steps == null || def.steps.Length <= nextStepIndex)
+                {
+                    continue;
+                }
+
+                bool prefixMatches = true;
+                for (int s = 0; s < nextStepIndex; s++)
+                {
+                    if (def.steps[s].inputButton != _executedComboButtons[s] ||
+                        def.steps[s].attackType != _executedComboAttacks[s] ||
+                        def.steps[s].requireCrouch != _executedComboCrouch[s])
+                    {
+                        prefixMatches = false;
+                        break;
+                    }
+                }
+
+                if (!prefixMatches)
+                {
+                    continue;
+                }
+
+                ComboStringStep candidateStep = def.steps[nextStepIndex];
+                if (candidateStep.inputButton != button)
+                {
+                    continue;
+                }
+
+                if (requireExactCrouch)
+                {
+                    if (candidateStep.requireCrouch == effectiveCrouch)
+                    {
+                        return def;
+                    }
+                }
+                else if (!candidateStep.requireCrouch)
+                {
+                    return def;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool TryMapAttackToComboInput(AttackType attack, out FighterInputButton button, out bool crouch)
+        {
+            crouch = attack == AttackType.CrouchKick;
+            switch (attack)
+            {
+                case AttackType.LightPunch:
+                    button = FighterInputButton.LightPunch;
+                    return true;
+                case AttackType.HeavyPunch:
+                    button = FighterInputButton.HeavyPunch;
+                    return true;
+                case AttackType.LightKick:
+                    button = FighterInputButton.LightKick;
+                    return true;
+                case AttackType.HeavyKick:
+                case AttackType.CrouchKick:
+                    button = FighterInputButton.HeavyKick;
+                    return true;
+                default:
+                    button = default;
+                    return false;
+            }
         }
 
         private void EnterState(FighterState newState, bool triggerAttack = false, bool forceResetTicks = false)
@@ -1442,6 +1675,9 @@ namespace UnDFight
                 _currentAttack = AttackType.None;
                 _currentMoveData = null;
                 _hasRegisteredHit = false;
+                _hasRegisteredBlock = false;
+                _hasRegisteredContactOnMove = false;
+                ClearComboStringState();
                 _hasAbsorbedArmorThisAttack = false;
                 _hasResetSecondActiveWindow = false;
                 _hasSpawnedProjectileThisAttack = false;
@@ -1548,6 +1784,8 @@ namespace UnDFight
                 AttackType.Throw => 22,
                 AttackType.ExHeavyPunch => 24,
                 AttackType.ExHeavyKick => 30,
+                AttackType.ComboPunchFinisher => 27,
+                AttackType.ComboKickFinisher => 29,
                 _ => 16
             };
         }

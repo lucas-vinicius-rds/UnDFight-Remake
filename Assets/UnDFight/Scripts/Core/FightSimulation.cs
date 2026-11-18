@@ -535,7 +535,6 @@ namespace UnDFight
                                   strike.Move.specialMechanic == SpecialMechanicType.MultiHitRush &&
                                   strike.Move.IsSecondaryActiveTick(strike.Attacker.StateTicks);
 
-            strike.Attacker.MarkHitRegistered();
             strike.Defender.ApplyIncomingAttack(
                 strike.Move,
                 strike.Attacker.FacingSign,
@@ -546,6 +545,7 @@ namespace UnDFight
                 out int comboDamage,
                 out bool wasArmorAbsorbed,
                 isSecondaryMultiHit: isSecondaryHit);
+            strike.Attacker.MarkContactRegistered(outcome);
 
             bool isSpecial = strike.Move.attackType == AttackType.Special;
             bool isExMove = strike.Move.isExMove ||
@@ -565,7 +565,9 @@ namespace UnDFight
                 if (!isSpecial && !isExMove)
                 {
                     bool isHeavy = strike.Move.attackType == AttackType.HeavyPunch ||
-                                   strike.Move.attackType == AttackType.HeavyKick;
+                                   strike.Move.attackType == AttackType.HeavyKick ||
+                                   strike.Move.attackType == AttackType.ComboPunchFinisher ||
+                                   strike.Move.attackType == AttackType.ComboKickFinisher;
                     int hitGain = isHeavy ? FighterController.SuperGainHeavyHitAttacker : FighterController.SuperGainLightHitAttacker;
                     strike.Attacker.AddSuperGauge(Mathf.Max(0, hitGain - consumedStartBonus));
                 }
@@ -839,7 +841,9 @@ namespace UnDFight
                          (move != null &&
                           (move.causesKnockdown ||
                            move.attackType == AttackType.HeavyPunch ||
-                           move.attackType == AttackType.HeavyKick)))
+                           move.attackType == AttackType.HeavyKick ||
+                           move.attackType == AttackType.ComboPunchFinisher ||
+                           move.attackType == AttackType.ComboKickFinisher)))
                 {
                     fightCamera.TriggerImpactShake(0.14f, 0.16f);
                 }
@@ -864,7 +868,8 @@ namespace UnDFight
                 ComboDamage = comboDamage,
                 IsSpecial = isSpecial,
                 IsExMove = isExMove,
-                WasArmorAbsorbed = wasArmorAbsorbed
+                WasArmorAbsorbed = wasArmorAbsorbed,
+                ComboStringName = attacker != null ? attacker.ActiveComboStringName : string.Empty
             });
         }
 

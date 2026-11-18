@@ -112,6 +112,7 @@ namespace UnDFight.Editor
             "DashForward", "DashBackward",
             "Jump", "Crouch", "BlockStand",
             "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
+            "ComboPunchFinisher", "ComboKickFinisher",
             "CrouchKick", "JumpAttack", "Throw", "Special",
             "HitReact", "KnockDown", "GetUp", "Victory", "Defeat", "Turn180"
         };
@@ -122,33 +123,39 @@ namespace UnDFight.Editor
             {
                 WeightClass.Light => new[]
                 {
-                    new MoveSpec { Type = AttackType.LightPunch, Startup = 3, Active = 3, Recovery = 7,  Damage = 42,  Hitstun = 11, Blockstun = 7,  Hitstop = 4, Knockback = 1.1f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.66f, 1.15f), HitboxSize = new Vector2(0.76f, 0.40f) },
-                    new MoveSpec { Type = AttackType.HeavyPunch, Startup = 5, Active = 4, Recovery = 12, Damage = 92,  Hitstun = 16, Blockstun = 11, Hitstop = 6, Knockback = 2.2f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 1.15f), HitboxSize = new Vector2(0.88f, 0.44f) },
-                    new MoveSpec { Type = AttackType.LightKick,  Startup = 4, Active = 3, Recovery = 9,  Damage = 52,  Hitstun = 12, Blockstun = 8,  Hitstop = 4, Knockback = 1.4f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.72f, 0.50f), HitboxSize = new Vector2(0.88f, 0.42f) },
-                    new MoveSpec { Type = AttackType.HeavyKick,  Startup = 7, Active = 4, Recovery = 16, Damage = 112, Hitstun = 20, Blockstun = 13, Hitstop = 7, Knockback = 2.9f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.84f, 1.20f), HitboxSize = new Vector2(1.04f, 0.54f) },
-                    new MoveSpec { Type = AttackType.CrouchKick, Startup = 6, Active = 4, Recovery = 15, Damage = 85,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 2.4f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 0.34f), HitboxSize = new Vector2(1.10f, 0.42f) },
-                    new MoveSpec { Type = AttackType.JumpAttack, Startup = 4, Active = 8, Recovery = 6,  Damage = 75,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 1.6f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.66f, 0.56f), HitboxSize = new Vector2(0.96f, 0.74f) },
-                    new MoveSpec { Type = AttackType.Throw,      Startup = 5, Active = 3, Recovery = 14, Damage = 110, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 3.2f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
+                    new MoveSpec { Type = AttackType.LightPunch,         Startup = 3, Active = 3, Recovery = 7,  Damage = 42,  Hitstun = 11, Blockstun = 7,  Hitstop = 4, Knockback = 1.1f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.66f, 1.15f), HitboxSize = new Vector2(0.76f, 0.40f) },
+                    new MoveSpec { Type = AttackType.HeavyPunch,         Startup = 5, Active = 4, Recovery = 12, Damage = 92,  Hitstun = 16, Blockstun = 11, Hitstop = 6, Knockback = 2.2f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 1.15f), HitboxSize = new Vector2(0.88f, 0.44f) },
+                    new MoveSpec { Type = AttackType.LightKick,          Startup = 4, Active = 3, Recovery = 9,  Damage = 52,  Hitstun = 12, Blockstun = 8,  Hitstop = 4, Knockback = 1.4f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.72f, 0.50f), HitboxSize = new Vector2(0.88f, 0.42f) },
+                    new MoveSpec { Type = AttackType.HeavyKick,          Startup = 7, Active = 4, Recovery = 16, Damage = 112, Hitstun = 20, Blockstun = 13, Hitstop = 7, Knockback = 2.9f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.84f, 1.20f), HitboxSize = new Vector2(1.04f, 0.54f) },
+                    new MoveSpec { Type = AttackType.ComboPunchFinisher, Startup = 6, Active = 4, Recovery = 14, Damage = 104, Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.6f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.78f, 1.16f), HitboxSize = new Vector2(0.96f, 0.50f), ChipDamage = 14, LungeSpeed = 2.8f },
+                    new MoveSpec { Type = AttackType.ComboKickFinisher,  Startup = 7, Active = 4, Recovery = 15, Damage = 118, Hitstun = 21, Blockstun = 13, Hitstop = 8, Knockback = 3.1f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 1.18f), HitboxSize = new Vector2(1.08f, 0.56f), ChipDamage = 16, LungeSpeed = 3.0f },
+                    new MoveSpec { Type = AttackType.CrouchKick,         Startup = 6, Active = 4, Recovery = 15, Damage = 85,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 2.4f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 0.34f), HitboxSize = new Vector2(1.10f, 0.42f) },
+                    new MoveSpec { Type = AttackType.JumpAttack,         Startup = 4, Active = 8, Recovery = 6,  Damage = 75,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 1.6f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.66f, 0.56f), HitboxSize = new Vector2(0.96f, 0.74f) },
+                    new MoveSpec { Type = AttackType.Throw,              Startup = 5, Active = 3, Recovery = 14, Damage = 110, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 3.2f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
                 },
                 WeightClass.Medium => new[]
                 {
-                    new MoveSpec { Type = AttackType.LightPunch, Startup = 4, Active = 3, Recovery = 9,  Damage = 48,  Hitstun = 12, Blockstun = 8,  Hitstop = 4, Knockback = 1.3f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
-                    new MoveSpec { Type = AttackType.HeavyPunch, Startup = 7, Active = 4, Recovery = 16, Damage = 108, Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.7f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.76f, 1.18f), HitboxSize = new Vector2(0.92f, 0.46f) },
-                    new MoveSpec { Type = AttackType.LightKick,  Startup = 5, Active = 3, Recovery = 11, Damage = 62,  Hitstun = 14, Blockstun = 9,  Hitstop = 5, Knockback = 1.7f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
-                    new MoveSpec { Type = AttackType.HeavyKick,  Startup = 9, Active = 4, Recovery = 20, Damage = 130, Hitstun = 22, Blockstun = 14, Hitstop = 8, Knockback = 3.5f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 1.24f), HitboxSize = new Vector2(1.10f, 0.56f) },
-                    new MoveSpec { Type = AttackType.CrouchKick, Startup = 7, Active = 4, Recovery = 17, Damage = 95,  Hitstun = 20, Blockstun = 13, Hitstop = 7, Knockback = 2.8f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 0.36f), HitboxSize = new Vector2(1.14f, 0.44f) },
-                    new MoveSpec { Type = AttackType.JumpAttack, Startup = 4, Active = 8, Recovery = 6,  Damage = 85,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 1.9f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.68f, 0.58f), HitboxSize = new Vector2(0.98f, 0.76f) },
-                    new MoveSpec { Type = AttackType.Throw,      Startup = 5, Active = 3, Recovery = 14, Damage = 115, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 3.5f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
+                    new MoveSpec { Type = AttackType.LightPunch,         Startup = 4, Active = 3, Recovery = 9,  Damage = 48,  Hitstun = 12, Blockstun = 8,  Hitstop = 4, Knockback = 1.3f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
+                    new MoveSpec { Type = AttackType.HeavyPunch,         Startup = 7, Active = 4, Recovery = 16, Damage = 108, Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.7f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.76f, 1.18f), HitboxSize = new Vector2(0.92f, 0.46f) },
+                    new MoveSpec { Type = AttackType.LightKick,          Startup = 5, Active = 3, Recovery = 11, Damage = 62,  Hitstun = 14, Blockstun = 9,  Hitstop = 5, Knockback = 1.7f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
+                    new MoveSpec { Type = AttackType.HeavyKick,          Startup = 9, Active = 4, Recovery = 20, Damage = 130, Hitstun = 22, Blockstun = 14, Hitstop = 8, Knockback = 3.5f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 1.24f), HitboxSize = new Vector2(1.10f, 0.56f) },
+                    new MoveSpec { Type = AttackType.ComboPunchFinisher, Startup = 7, Active = 4, Recovery = 16, Damage = 120, Hitstun = 20, Blockstun = 13, Hitstop = 8, Knockback = 3.0f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.80f, 1.18f), HitboxSize = new Vector2(1.00f, 0.52f), ChipDamage = 16, LungeSpeed = 2.6f },
+                    new MoveSpec { Type = AttackType.ComboKickFinisher,  Startup = 8, Active = 4, Recovery = 17, Damage = 138, Hitstun = 23, Blockstun = 14, Hitstop = 8, Knockback = 3.6f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 1.20f), HitboxSize = new Vector2(1.12f, 0.58f), ChipDamage = 18, LungeSpeed = 2.8f },
+                    new MoveSpec { Type = AttackType.CrouchKick,         Startup = 7, Active = 4, Recovery = 17, Damage = 95,  Hitstun = 20, Blockstun = 13, Hitstop = 7, Knockback = 2.8f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 0.36f), HitboxSize = new Vector2(1.14f, 0.44f) },
+                    new MoveSpec { Type = AttackType.JumpAttack,         Startup = 4, Active = 8, Recovery = 6,  Damage = 85,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 1.9f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.68f, 0.58f), HitboxSize = new Vector2(0.98f, 0.76f) },
+                    new MoveSpec { Type = AttackType.Throw,              Startup = 5, Active = 3, Recovery = 14, Damage = 115, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 3.5f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
                 },
                 _ => new[]
                 {
-                    new MoveSpec { Type = AttackType.LightPunch, Startup = 5, Active = 3, Recovery = 11, Damage = 62,  Hitstun = 14, Blockstun = 10, Hitstop = 5, Knockback = 1.9f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
-                    new MoveSpec { Type = AttackType.HeavyPunch, Startup = 9, Active = 5, Recovery = 19, Damage = 140, Hitstun = 22, Blockstun = 15, Hitstop = 9, Knockback = 3.7f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.78f, 1.18f), HitboxSize = new Vector2(0.94f, 0.48f) },
-                    new MoveSpec { Type = AttackType.LightKick,  Startup = 6, Active = 4, Recovery = 13, Damage = 78,  Hitstun = 16, Blockstun = 11, Hitstop = 6, Knockback = 2.3f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
-                    new MoveSpec { Type = AttackType.HeavyKick,  Startup = 11, Active = 5, Recovery = 24, Damage = 165, Hitstun = 26, Blockstun = 17, Hitstop = 10, Knockback = 4.6f, Height = HitHeight.High,       CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 1.24f), HitboxSize = new Vector2(1.12f, 0.56f) },
-                    new MoveSpec { Type = AttackType.CrouchKick, Startup = 8, Active = 5, Recovery = 19, Damage = 110, Hitstun = 22, Blockstun = 14, Hitstop = 8, Knockback = 3.4f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.90f, 0.36f), HitboxSize = new Vector2(1.18f, 0.44f) },
-                    new MoveSpec { Type = AttackType.JumpAttack, Startup = 4, Active = 8, Recovery = 6,  Damage = 98,  Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.2f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.70f, 0.60f), HitboxSize = new Vector2(1.02f, 0.78f) },
-                    new MoveSpec { Type = AttackType.Throw,      Startup = 5, Active = 3, Recovery = 14, Damage = 125, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 4.0f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
+                    new MoveSpec { Type = AttackType.LightPunch,         Startup = 5, Active = 3, Recovery = 11, Damage = 62,  Hitstun = 14, Blockstun = 10, Hitstop = 5, Knockback = 1.9f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
+                    new MoveSpec { Type = AttackType.HeavyPunch,         Startup = 9, Active = 5, Recovery = 19, Damage = 140, Hitstun = 22, Blockstun = 15, Hitstop = 9, Knockback = 3.7f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.78f, 1.18f), HitboxSize = new Vector2(0.94f, 0.48f) },
+                    new MoveSpec { Type = AttackType.LightKick,          Startup = 6, Active = 4, Recovery = 13, Damage = 78,  Hitstun = 16, Blockstun = 11, Hitstop = 6, Knockback = 2.3f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
+                    new MoveSpec { Type = AttackType.HeavyKick,          Startup = 11, Active = 5, Recovery = 24, Damage = 165, Hitstun = 26, Blockstun = 17, Hitstop = 10, Knockback = 4.6f, Height = HitHeight.High,       CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 1.24f), HitboxSize = new Vector2(1.12f, 0.56f) },
+                    new MoveSpec { Type = AttackType.ComboPunchFinisher, Startup = 9, Active = 5, Recovery = 18, Damage = 152, Hitstun = 23, Blockstun = 15, Hitstop = 9, Knockback = 3.9f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.82f, 1.20f), HitboxSize = new Vector2(1.04f, 0.54f), ChipDamage = 20, LungeSpeed = 2.5f },
+                    new MoveSpec { Type = AttackType.ComboKickFinisher,  Startup = 10, Active = 5, Recovery = 20, Damage = 172, Hitstun = 26, Blockstun = 17, Hitstop = 10, Knockback = 4.6f, Height = HitHeight.Mid,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.90f, 1.18f), HitboxSize = new Vector2(1.14f, 0.58f), ChipDamage = 22, LungeSpeed = 2.6f },
+                    new MoveSpec { Type = AttackType.CrouchKick,         Startup = 8, Active = 5, Recovery = 19, Damage = 110, Hitstun = 22, Blockstun = 14, Hitstop = 8, Knockback = 3.4f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.90f, 0.36f), HitboxSize = new Vector2(1.18f, 0.44f) },
+                    new MoveSpec { Type = AttackType.JumpAttack,         Startup = 4, Active = 8, Recovery = 6,  Damage = 98,  Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.2f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.70f, 0.60f), HitboxSize = new Vector2(1.02f, 0.78f) },
+                    new MoveSpec { Type = AttackType.Throw,              Startup = 5, Active = 3, Recovery = 14, Damage = 125, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 4.0f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
                 }
             };
         }
@@ -339,7 +346,7 @@ namespace UnDFight.Editor
             int isaacBones = CountMappedHumanBones(IsaacFbxPath);
             int enomotoBones = CountMappedHumanBones(EnomotoFbxPath);
             int gabubuBones = CountMappedHumanBones(GabubuFbxPath);
-            return $"Phase 14.1 setup complete: Lucas({lucasBones}), Tiago({tiagoBones}), Jompes({jompesBones}), Rochard({rochardBones}), Isaac({isaacBones}), Enomoto({enomotoBones}), Gabubu({gabubuBones}) [24 clips, heightFromFeet=false].";
+            return $"Phase 14.1.1 setup complete: Lucas({lucasBones}), Tiago({tiagoBones}), Jompes({jompesBones}), Rochard({rochardBones}), Isaac({isaacBones}), Enomoto({enomotoBones}), Gabubu({gabubuBones}) [26 clips, heightFromFeet=false].";
         }
 
         public static int CountMappedHumanBones(string fbxPath)
@@ -425,27 +432,35 @@ namespace UnDFight.Editor
 
         public static void ReimportAndConfigureFbxClips(string fbxPath, string expectedTakePrefix)
         {
-            AssetDatabase.ImportAsset(fbxPath, ImportAssetOptions.ForceUpdate);
             var importer = AssetImporter.GetAtPath(fbxPath) as ModelImporter;
+            if (importer == null || importer.defaultClipAnimations == null || importer.defaultClipAnimations.Length < RequiredClips.Length)
+            {
+                AssetDatabase.ImportAsset(fbxPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+                System.Threading.Thread.Sleep(100);
+                importer = AssetImporter.GetAtPath(fbxPath) as ModelImporter;
+            }
             if (importer == null)
             {
                 throw new InvalidOperationException($"ModelImporter not found at {fbxPath}");
             }
 
-            // Reset humanDescription once so Unity regenerates the pure T-Pose bind skeleton
             importer.materialImportMode = ModelImporterMaterialImportMode.None;
-            importer.humanDescription = new HumanDescription();
             importer.animationType = ModelImporterAnimationType.Human;
             importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
-            importer.SaveAndReimport();
 
             var fbxRoot = AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath);
+            if (fbxRoot == null)
+            {
+                System.Threading.Thread.Sleep(100);
+                importer.SaveAndReimport();
+                fbxRoot = AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath);
+            }
             if (fbxRoot == null)
             {
                 throw new InvalidOperationException($"FBX root GameObject not found at {fbxPath}");
             }
 
-            HumanDescription fullDesc = BuildFullHumanoidDescription(fbxRoot, importer.humanDescription);
+            HumanDescription fullDesc = BuildFullHumanoidDescription(fbxRoot, new HumanDescription());
             if (fullDesc.human.Length != 52)
             {
                 throw new InvalidOperationException($"Expected 52 mapped Humanoid bones in {fbxPath}, got {fullDesc.human.Length}");
@@ -514,7 +529,9 @@ namespace UnDFight.Editor
             AnimatorState crouchKickState = EnsureAnimatorStateFromBaseFbx(sm, "CrouchKick", new Vector3(480f, 320f, 0f));
             AnimatorState jumpAttackState = EnsureAnimatorStateFromBaseFbx(sm, "JumpAttack", new Vector3(480f, 380f, 0f));
             AnimatorState throwState = EnsureAnimatorStateFromBaseFbx(sm, "Throw", new Vector3(480f, 440f, 0f));
-            _ = (specialState, crouchKickState, jumpAttackState, throwState);
+            AnimatorState comboPunchFinisherState = EnsureAnimatorStateFromBaseFbx(sm, "ComboPunchFinisher", new Vector3(480f, 500f, 0f));
+            AnimatorState comboKickFinisherState = EnsureAnimatorStateFromBaseFbx(sm, "ComboKickFinisher", new Vector3(480f, 560f, 0f));
+            _ = (specialState, crouchKickState, jumpAttackState, throwState, comboPunchFinisherState, comboKickFinisherState);
 
             (string stateName, AttackType atkType)[] attackAnyStates =
             {
@@ -528,6 +545,8 @@ namespace UnDFight.Editor
                 ("Throw", AttackType.Throw),
                 ("HeavyPunch", AttackType.ExHeavyPunch),
                 ("HeavyKick", AttackType.ExHeavyKick),
+                ("ComboPunchFinisher", AttackType.ComboPunchFinisher),
+                ("ComboKickFinisher", AttackType.ComboKickFinisher),
             };
 
             foreach (var (stateName, atkType) in attackAnyStates)
@@ -566,6 +585,7 @@ namespace UnDFight.Editor
             string[] attackStates =
             {
                 "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
+                "ComboPunchFinisher", "ComboKickFinisher",
                 "Special", "CrouchKick", "JumpAttack", "Throw"
             };
             foreach (string stateName in attackStates)
@@ -1172,11 +1192,134 @@ namespace UnDFight.Editor
                     case AttackType.Special:
                         data.specialMove = move;
                         break;
+                    case AttackType.ComboPunchFinisher:
+                        data.comboPunchFinisher = move;
+                        break;
+                    case AttackType.ComboKickFinisher:
+                        data.comboKickFinisher = move;
+                        break;
                 }
             }
 
+            MoveData overheadFinisher = CreateOrUpdateOverheadFinisherOverride(fighterName, archetype, folder, data.comboPunchFinisher);
+            data.comboStrings = BuildArchetypeComboStrings(archetype, overheadFinisher);
             data.archetype = archetype;
             EditorUtility.SetDirty(data);
+        }
+
+        private static MoveData CreateOrUpdateOverheadFinisherOverride(
+            string fighterName,
+            FightingArchetype archetype,
+            string folder,
+            MoveData basePunchFinisher)
+        {
+            if (basePunchFinisher == null)
+            {
+                return null;
+            }
+
+            string assetPath = $"{folder}/MoveData_{fighterName}_OverheadFinisher.asset";
+            MoveData move = AssetDatabase.LoadAssetAtPath<MoveData>(assetPath);
+            if (move == null)
+            {
+                move = ScriptableObject.CreateInstance<MoveData>();
+                AssetDatabase.CreateAsset(move, assetPath);
+            }
+
+            string displayName = archetype switch
+            {
+                FightingArchetype.HeavyBrawler => "Quebra-Guarda Pesado",
+                FightingArchetype.StreetScrappy => "Martelada de Rua",
+                FightingArchetype.TechnicalStriker => "Golpe Celeste",
+                _ => "Impacto Relâmpago"
+            };
+
+            move.Configure(
+                displayName,
+                AttackType.ComboPunchFinisher,
+                basePunchFinisher.startupTicks,
+                basePunchFinisher.activeTicks,
+                basePunchFinisher.recoveryTicks,
+                basePunchFinisher.damage + 8,
+                basePunchFinisher.hitstunTicks + 2,
+                basePunchFinisher.blockstunTicks + 1,
+                basePunchFinisher.hitstopTicks,
+                basePunchFinisher.knockback + 0.3f,
+                HitHeight.Overhead,
+                knockdown: true,
+                basePunchFinisher.hitboxCenterOffset,
+                basePunchFinisher.hitboxSize,
+                basePunchFinisher.chipDamage + 4,
+                Mathf.Max(2.8f, basePunchFinisher.lungeSpeed),
+                isThrowValue: false,
+                airOnlyValue: false);
+            EditorUtility.SetDirty(move);
+            return move;
+        }
+
+        private static ComboStringDefinition[] BuildArchetypeComboStrings(
+            FightingArchetype archetype,
+            MoveData overheadFinisherOverride)
+        {
+            (string overheadName, string kickName, string lowName, string pressureName) = archetype switch
+            {
+                FightingArchetype.HeavyBrawler => ("QUEBRA-GUARDA", "DEMOLIÇÃO PESADA", "RASTEIRA BRUTAL", "ESMAGAMENTO"),
+                FightingArchetype.StreetScrappy => ("QUEBRA-CRÂNIO", "GIRO DE RUA", "CORTE BAIXO", "PRESSÃO DA QUEBRADA"),
+                FightingArchetype.TechnicalStriker => ("GOLPE CELESTE", "ROTAÇÃO MARCIAL", "VARREDURA SOMBRIA", "ESTILO PRECISO"),
+                _ => ("IMPACTO VELOZ", "FURACÃO ÁGIL", "RELÂMPAGO RASTEIRO", "COMBO RELÂMPAGO")
+            };
+
+            return new[]
+            {
+                // 1. LP -> LP -> HP (ComboPunchFinisher with Overhead stepMoveOverride — breaks crouch guard!)
+                new ComboStringDefinition
+                {
+                    stringName = overheadName,
+                    allowSpecialOrExCancelOnEnd = true,
+                    steps = new[]
+                    {
+                        new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.HeavyPunch, requireCrouch = false, attackType = AttackType.ComboPunchFinisher, stepMoveOverride = overheadFinisherOverride },
+                    }
+                },
+                // 2. LP -> LK -> HK (3 distinct attacks ending in ComboKickFinisher knockdown)
+                new ComboStringDefinition
+                {
+                    stringName = kickName,
+                    allowSpecialOrExCancelOnEnd = true,
+                    steps = new[]
+                    {
+                        new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.LightKick,  requireCrouch = false, attackType = AttackType.LightKick },
+                        new ComboStringStep { inputButton = FighterInputButton.HeavyKick,  requireCrouch = false, attackType = AttackType.ComboKickFinisher },
+                    }
+                },
+                // 3. LK -> LP -> Down+HK (Low starter into punch into CrouchKick sweep — breaks standing guard!)
+                new ComboStringDefinition
+                {
+                    stringName = lowName,
+                    allowSpecialOrExCancelOnEnd = true,
+                    steps = new[]
+                    {
+                        new ComboStringStep { inputButton = FighterInputButton.LightKick,  requireCrouch = false, attackType = AttackType.LightKick },
+                        new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.HeavyKick,  requireCrouch = true,  attackType = AttackType.CrouchKick },
+                    }
+                },
+                // 4. LP -> HP -> HK (Heavy pressure string ending in ComboPunchFinisher / ComboKickFinisher)
+                new ComboStringDefinition
+                {
+                    stringName = pressureName,
+                    allowSpecialOrExCancelOnEnd = true,
+                    steps = new[]
+                    {
+                        new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.HeavyPunch, requireCrouch = false, attackType = AttackType.HeavyPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.HeavyPunch, requireCrouch = false, attackType = AttackType.ComboPunchFinisher },
+                    }
+                },
+            };
         }
 
         /// <summary>

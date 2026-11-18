@@ -15,6 +15,8 @@
 | **HeavyPunch** | 5 | 4 | 12 | 21 | 0,350 s | 6–9 | Golpe penetrante/cruzado firme com giro limpo de quadril (`RightHand`) |
 | **LightKick** | 4 | 3 | 9 | 16 | 0,267 s | 5–7 | Chute frontal/snap rápido na altura baixa/média (`LeftFoot`) |
 | **HeavyKick** | 7 | 4 | 16 | 27 | 0,450 s | 8–11 | Chute alto circular técnico com rotação de quadril e guarda fechada (`LeftFoot`) |
+| **ComboPunchFinisher** | 6 | 4 | 14 | 24 | 0,400 s | 7–10 | Finalizador de mão de combo string: palma/estocada dupla marcial rápida com retorno preciso à guarda (`RightHand`) |
+| **ComboKickFinisher** | 7 | 4 | 15 | 26 | 0,433 s | 8–11 | Finalizador de chute de combo string: chute giratório alto técnico (*back kick* / *spinning hook*) com controle limpo de eixo (`LeftFoot`) |
 | **CrouchKick** | 6 | 4 | 15 | 25 | 0,417 s | 7–10 | Rasteira agachada baixa varrendo o chão com a perna estendida à frente (`LeftFoot`, `HitHeight.Low`, derruba) |
 | **JumpAttack** | 4 | 8 | 6 | 18 | 0,300 s | 5–12 | Voadora aérea descendente em diagonal (`LeftFoot`, `HitHeight.Overhead`, quebra guarda agachada) |
 | **Throw** | 5 | 3 | 14 | 22 | 0,367 s | 6–8 | Agarrão de curto alcance com ambas as mãos (`relaxed_grip`) seguido de arremesso firme de ombro/tronco (`Unblockable`) |

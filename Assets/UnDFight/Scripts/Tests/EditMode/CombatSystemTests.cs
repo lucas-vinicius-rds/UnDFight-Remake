@@ -1165,5 +1165,265 @@ namespace UnDFight.Tests
             Assert.AreEqual(1000, rig.P2.CurrentHealth, "CrouchWalkBackward must block Low attacks without taking full damage.");
             Assert.AreEqual(FighterState.Block, rig.P2.State);
         }
+
+        private void SetupTestComboStrings(
+            FighterRig rig,
+            out MoveData comboPunchFinisher,
+            out MoveData comboKickFinisher,
+            out MoveData overheadFinisher)
+        {
+            comboPunchFinisher = Track(ScriptableObject.CreateInstance<MoveData>());
+            comboPunchFinisher.Configure(
+                "ComboPunchFinisher",
+                AttackType.ComboPunchFinisher,
+                startup: 6,
+                active: 4,
+                recovery: 14,
+                dmg: 120,
+                hitstun: 20,
+                blockstun: 13,
+                hitstop: 6,
+                kb: 2.6f,
+                height: HitHeight.Mid,
+                knockdown: false,
+                centerOffset: new Vector2(0.80f, 1.18f),
+                size: new Vector2(1.02f, 0.52f),
+                chip: 0,
+                lungeSpeedValue: 2.8f);
+
+            comboKickFinisher = Track(ScriptableObject.CreateInstance<MoveData>());
+            comboKickFinisher.Configure(
+                "ComboKickFinisher",
+                AttackType.ComboKickFinisher,
+                startup: 7,
+                active: 4,
+                recovery: 15,
+                dmg: 135,
+                hitstun: 22,
+                blockstun: 14,
+                hitstop: 6,
+                kb: 3.2f,
+                height: HitHeight.High,
+                knockdown: true,
+                centerOffset: new Vector2(0.88f, 1.20f),
+                size: new Vector2(1.12f, 0.58f),
+                chip: 0,
+                lungeSpeedValue: 3.0f);
+
+            overheadFinisher = Track(ScriptableObject.CreateInstance<MoveData>());
+            overheadFinisher.Configure(
+                "Quebra-Guarda",
+                AttackType.ComboPunchFinisher,
+                startup: 6,
+                active: 4,
+                recovery: 14,
+                dmg: 125,
+                hitstun: 22,
+                blockstun: 14,
+                hitstop: 6,
+                kb: 2.8f,
+                height: HitHeight.Overhead,
+                knockdown: true,
+                centerOffset: new Vector2(0.82f, 1.18f),
+                size: new Vector2(1.06f, 0.54f),
+                chip: 0,
+                lungeSpeedValue: 3.0f);
+
+            rig.LucasData.comboPunchFinisher = comboPunchFinisher;
+            rig.LucasData.comboKickFinisher = comboKickFinisher;
+            rig.LucasData.comboStrings = new[]
+            {
+                new ComboStringDefinition
+                {
+                    stringName = "QUEBRA-GUARDA",
+                    allowSpecialOrExCancelOnEnd = true,
+                    steps = new[]
+                    {
+                        new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.HeavyPunch, requireCrouch = false, attackType = AttackType.ComboPunchFinisher, stepMoveOverride = overheadFinisher },
+                    }
+                },
+                new ComboStringDefinition
+                {
+                    stringName = "GIRO DE RUA",
+                    allowSpecialOrExCancelOnEnd = true,
+                    steps = new[]
+                    {
+                        new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.LightKick,  requireCrouch = false, attackType = AttackType.LightKick },
+                        new ComboStringStep { inputButton = FighterInputButton.HeavyKick,  requireCrouch = false, attackType = AttackType.ComboKickFinisher },
+                    }
+                },
+                new ComboStringDefinition
+                {
+                    stringName = "RASTEIRA BRUTAL",
+                    allowSpecialOrExCancelOnEnd = true,
+                    steps = new[]
+                    {
+                        new ComboStringStep { inputButton = FighterInputButton.LightKick,  requireCrouch = false, attackType = AttackType.LightKick },
+                        new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.HeavyKick,  requireCrouch = true,  attackType = AttackType.CrouchKick },
+                    }
+                },
+                new ComboStringDefinition
+                {
+                    stringName = "ESMAGAMENTO",
+                    allowSpecialOrExCancelOnEnd = true,
+                    steps = new[]
+                    {
+                        new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.HeavyPunch, requireCrouch = false, attackType = AttackType.HeavyPunch },
+                        new ComboStringStep { inputButton = FighterInputButton.HeavyPunch, requireCrouch = false, attackType = AttackType.ComboPunchFinisher },
+                    }
+                },
+            };
+        }
+
+        [Test]
+        public void ComboString_DialInput_ChainsThreeDistinctAttacksOnHit_WithComboScaling()
+        {
+            FighterRig rig = CreateRig();
+            SetupTestComboStrings(rig, out _, out MoveData comboKickFinisher, out _);
+
+            rig.P1.SetSimPositionX(-0.55f);
+            rig.P2.SetSimPositionX(0.55f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+
+            var events = new List<CombatHitEvent>();
+            rig.Sim.OnCombatHit += e => events.Add(e);
+
+            string completedStringName = null;
+            void HandleCompleted(FighterController attacker, string name)
+            {
+                if (attacker == rig.P1) completedStringName = name;
+            }
+            FighterController.OnComboStringCompleted += HandleCompleted;
+
+            try
+            {
+                // Dial-a-Combo rapid input: LP -> LK -> HK ("GIRO DE RUA": LightPunch -> LightKick -> ComboKickFinisher)
+                rig.P1.InputHandler.BufferDialComboSequence(
+                    FighterInputButton.LightPunch,
+                    FighterInputButton.LightKick,
+                    FighterInputButton.HeavyKick);
+
+                // Step through all 3 hits + hitstops
+                rig.Sim.StepSimulationTicks(42);
+
+                Assert.AreEqual(3, events.Count, "Dial-a-Combo string LP -> LK -> HK must land all 3 hits.");
+                Assert.AreEqual(AttackType.LightPunch, events[0].Move.attackType);
+                Assert.AreEqual(AttackType.LightKick, events[1].Move.attackType);
+                Assert.AreEqual(AttackType.ComboKickFinisher, events[2].Move.attackType);
+                Assert.AreSame(comboKickFinisher, events[2].Move);
+
+                // Verify deterministic combo counter, scaling (100% -> 85% -> 72%), and string name
+                int expectedHit1 = 50;                                      // 50 * 1.00
+                int expectedHit2 = Mathf.RoundToInt(65 * 0.85f);            // 55
+                int expectedHit3 = Mathf.RoundToInt(135 * 0.72f);           // 97
+                Assert.AreEqual(1, events[0].ComboCount);
+                Assert.AreEqual(2, events[1].ComboCount);
+                Assert.AreEqual(3, events[2].ComboCount);
+                Assert.AreEqual(expectedHit1, events[0].DamageDealt);
+                Assert.AreEqual(expectedHit2, events[1].DamageDealt);
+                Assert.AreEqual(expectedHit3, events[2].DamageDealt);
+                Assert.AreEqual(expectedHit1 + expectedHit2 + expectedHit3, events[2].ComboDamage);
+                Assert.AreEqual("GIRO DE RUA", events[1].ComboStringName);
+                Assert.AreEqual("GIRO DE RUA", events[2].ComboStringName);
+                Assert.AreEqual("GIRO DE RUA", completedStringName);
+                Assert.AreEqual(FighterState.KnockDown, rig.P2.State);
+            }
+            finally
+            {
+                FighterController.OnComboStringCompleted -= HandleCompleted;
+            }
+        }
+
+        [Test]
+        public void ComboString_ChainsAsBlockstring_OnBlockedHit_AndMixupOverheadBreaksCrouchGuard()
+        {
+            FighterRig rig = CreateRig();
+            SetupTestComboStrings(rig, out _, out _, out MoveData overheadFinisher);
+
+            rig.P1.SetSimPositionX(-0.55f);
+            rig.P2.SetSimPositionX(0.55f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            // P2 holds crouch guard (Down + HoldBlock) throughout the entire string
+            rig.P2.InputHandler.SetSimulatedInput(new FighterInputState { MoveY = -1f, HoldBlock = true }, true);
+
+            var events = new List<CombatHitEvent>();
+            rig.Sim.OnCombatHit += e => events.Add(e);
+
+            // P1 dials "QUEBRA-GUARDA": LP (Mid) -> LP (Mid) -> HP (ComboPunchFinisher with Overhead stepMoveOverride)
+            rig.P1.InputHandler.BufferDialComboSequence(
+                FighterInputButton.LightPunch,
+                FighterInputButton.LightPunch,
+                FighterInputButton.HeavyPunch);
+
+            rig.Sim.StepSimulationTicks(40);
+
+            Assert.AreEqual(3, events.Count, "Combo string must chain on blocked hits as a true MK-style blockstring.");
+            Assert.AreEqual(HitOutcomeType.Blocked, events[0].Outcome, "1st hit (Mid) must be blocked by crouch guard.");
+            Assert.AreEqual(HitOutcomeType.Blocked, events[1].Outcome, "2nd hit (Mid) must chain on block and be blocked by crouch guard.");
+            Assert.AreEqual("QUEBRA-GUARDA", events[1].ComboStringName);
+
+            // 3rd hit uses Overhead stepMoveOverride, breaking P2's crouch guard and knocking down!
+            Assert.AreSame(overheadFinisher, events[2].Move);
+            Assert.AreEqual(HitHeight.Overhead, events[2].Move.hitHeight);
+            Assert.AreEqual(HitOutcomeType.KnockDown, events[2].Outcome, "3rd hit (Overhead finisher) must break crouch guard!");
+            Assert.AreEqual(125, events[2].DamageDealt);
+            Assert.AreEqual("QUEBRA-GUARDA", events[2].ComboStringName);
+            Assert.AreEqual(FighterState.KnockDown, rig.P2.State);
+        }
+
+        [Test]
+        public void ComboString_LastHit_CanCancelIntoSpecialOrExMove()
+        {
+            FighterRig rig = CreateRig();
+            SetupTestComboStrings(rig, out MoveData comboPunchFinisher, out _, out _);
+
+            rig.P1.SetSimPositionX(-0.55f);
+            rig.P2.SetSimPositionX(0.55f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+            rig.P1.SetSuperGauge(100);
+
+            var events = new List<CombatHitEvent>();
+            rig.Sim.OnCombatHit += e => events.Add(e);
+
+            // Execute 3-hit string "ESMAGAMENTO": LP -> HP -> HP (ComboPunchFinisher, non-knockdown Mid)
+            rig.P1.InputHandler.BufferDialComboSequence(
+                FighterInputButton.LightPunch,
+                FighterInputButton.HeavyPunch,
+                FighterInputButton.HeavyPunch);
+
+            // Advance until the 3rd hit (ComboPunchFinisher) connects and finishes hitstop
+            for (int t = 0; t < 45 && events.Count < 3; t++)
+            {
+                rig.Sim.StepSimulationTicks(1);
+            }
+            Assert.AreEqual(3, events.Count);
+            Assert.AreSame(comboPunchFinisher, events[2].Move);
+            Assert.AreEqual("ESMAGAMENTO", events[2].ComboStringName);
+
+            // Wait out 3rd hit's hitstop, then cancel ComboPunchFinisher recovery into Special (or EX)
+            while (rig.Sim.HitstopTicksRemaining > 0)
+            {
+                rig.Sim.StepSimulationTicks(1);
+            }
+            rig.P1.SetSuperGauge(100);
+            rig.P1.InputHandler.BufferButton(FighterInputButton.Special);
+            rig.Sim.StepSimulationTicks(1 + rig.Special.FirstActiveTick);
+
+            Assert.AreEqual(AttackType.Special, rig.P1.CurrentAttack, "Final hit of Combo String must allow canceling into Special/EX.");
+            Assert.AreEqual(4, events.Count);
+            Assert.IsTrue(events[3].IsSpecial);
+            Assert.AreEqual(4, events[3].ComboCount);
+            Assert.AreEqual(Mathf.RoundToInt(rig.Special.damage * 0.60f), events[3].DamageDealt);
+        }
     }
 }

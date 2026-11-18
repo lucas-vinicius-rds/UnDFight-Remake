@@ -12,6 +12,16 @@ namespace UnDFight
     {
         public const int DefaultBufferWindowTicks = 6;
         public const int DashDoubleTapWindowTicks = 12;
+        public const int DialComboBufferWindowTicks = 18;
+        public const int MaxDialComboQueueSize = 3;
+
+        public struct DialComboInputEntry
+        {
+            public FighterInputButton Button;
+            public bool IsCrouching;
+            public int EnqueueTick;
+            public int ExpireTick;
+        }
 
         [Header("Player Configuration")]
         [SerializeField, Range(0, 1)] private int playerIndex = 0;
@@ -20,6 +30,7 @@ namespace UnDFight
         [SerializeField, Range(0.1f, 0.9f)] private float stickDeadzone = 0.25f;
 
         private readonly Dictionary<FighterInputButton, int> _bufferedButtonExpireTick = new Dictionary<FighterInputButton, int>();
+        private readonly List<DialComboInputEntry> _dialComboQueue = new List<DialComboInputEntry>(MaxDialComboQueueSize);
         private FighterInputState _currentInput;
         private Gamepad _activeGamepad;
         private int _currentSimTick;
@@ -199,6 +210,7 @@ namespace UnDFight
         public void ClearBufferedInputs()
         {
             _bufferedButtonExpireTick.Clear();
+            _dialComboQueue.Clear();
             _prevTapSign = 0;
             _lastTapDir = 0;
             _lastTapTick = -999;
@@ -206,6 +218,18 @@ namespace UnDFight
             _bufferedDashDirection = 0;
             _bufferedDashExpireTick = -1;
             _lastThrowAttemptTick = -999;
+        }
+
+        public int DialComboQueueCount => _dialComboQueue.Count;
+
+        public void ExtendBufferedWindowsForHitstop()
+        {
+            for (int i = 0; i < _dialComboQueue.Count; i++)
+            {
+                DialComboInputEntry entry = _dialComboQueue[i];
+                entry.ExpireTick++;
+                _dialComboQueue[i] = entry;
+            }
         }
 
         private void SampleDevices()
@@ -296,6 +320,10 @@ namespace UnDFight
         public void BufferButton(FighterInputButton button)
         {
             _bufferedButtonExpireTick[button] = _currentSimTick + bufferWindowTicks;
+            if (IsDialComboStrikeButton(button))
+            {
+                EnqueueDialComboInput(button, _currentInput.MoveY < -0.5f);
+            }
             if ((button == FighterInputButton.LightPunch || button == FighterInputButton.LightKick) &&
                 !_currentInput.HoldBlock &&
                 TryGetValidExpireTick(FighterInputButton.LightPunch, _currentSimTick, out int lpExpire) &&
@@ -303,6 +331,124 @@ namespace UnDFight
                 Mathf.Abs(lpExpire - lkExpire) <= 2)
             {
                 _lastThrowAttemptTick = _currentSimTick;
+            }
+        }
+
+        public static bool IsDialComboStrikeButton(FighterInputButton button)
+        {
+            return button == FighterInputButton.LightPunch ||
+                   button == FighterInputButton.HeavyPunch ||
+                   button == FighterInputButton.LightKick ||
+                   button == FighterInputButton.HeavyKick;
+        }
+
+        public void EnqueueDialComboInput(FighterInputButton button, bool isCrouching = false)
+        {
+            if (!IsDialComboStrikeButton(button))
+            {
+                return;
+            }
+
+            PruneExpiredDialInputs(_currentSimTick);
+            if (_dialComboQueue.Count >= MaxDialComboQueueSize)
+            {
+                _dialComboQueue.RemoveAt(0);
+            }
+
+            _dialComboQueue.Add(new DialComboInputEntry
+            {
+                Button = button,
+                IsCrouching = isCrouching,
+                EnqueueTick = _currentSimTick,
+                ExpireTick = _currentSimTick + DialComboBufferWindowTicks
+            });
+        }
+
+        /// <summary>
+        /// Enqueues a rapid MK-style Dial-a-Combo sequence of up to 3 buttons.
+        /// If called from neutral, also buffers the first button so it triggers the opener immediately.
+        /// </summary>
+        public void BufferDialComboSequence(params FighterInputButton[] buttons)
+        {
+            if (buttons == null || buttons.Length == 0)
+            {
+                return;
+            }
+
+            _dialComboQueue.Clear();
+            bool crouchNow = _currentInput.MoveY < -0.5f;
+            _bufferedButtonExpireTick[buttons[0]] = _currentSimTick + bufferWindowTicks;
+            for (int i = 0; i < buttons.Length && i < MaxDialComboQueueSize; i++)
+            {
+                if (IsDialComboStrikeButton(buttons[i]))
+                {
+                    _dialComboQueue.Add(new DialComboInputEntry
+                    {
+                        Button = buttons[i],
+                        IsCrouching = crouchNow,
+                        EnqueueTick = _currentSimTick,
+                        ExpireTick = _currentSimTick + DialComboBufferWindowTicks
+                    });
+                }
+            }
+        }
+
+        public void PruneExpiredDialInputs(int currentTick)
+        {
+            for (int i = _dialComboQueue.Count - 1; i >= 0; i--)
+            {
+                if (currentTick > _dialComboQueue[i].ExpireTick)
+                {
+                    _dialComboQueue.RemoveAt(i);
+                }
+            }
+        }
+
+        public bool TryPeekNextDialComboInput(int currentTick, out DialComboInputEntry entry)
+        {
+            PruneExpiredDialInputs(currentTick);
+            if (_dialComboQueue.Count > 0)
+            {
+                entry = _dialComboQueue[0];
+                return true;
+            }
+
+            entry = default;
+            return false;
+        }
+
+        public bool ConsumeFrontDialComboInput(int currentTick, out DialComboInputEntry consumed)
+        {
+            PruneExpiredDialInputs(currentTick);
+            if (_dialComboQueue.Count > 0)
+            {
+                consumed = _dialComboQueue[0];
+                _dialComboQueue.RemoveAt(0);
+                _bufferedButtonExpireTick.Remove(consumed.Button);
+
+                for (int i = 0; i < _dialComboQueue.Count; i++)
+                {
+                    DialComboInputEntry remaining = _dialComboQueue[i];
+                    remaining.ExpireTick = Mathf.Max(remaining.ExpireTick, currentTick + DialComboBufferWindowTicks);
+                    _dialComboQueue[i] = remaining;
+                }
+                return true;
+            }
+
+            consumed = default;
+            return false;
+        }
+
+        private void ConsumeMatchingDialOpener(FighterInputButton button, int currentTick)
+        {
+            PruneExpiredDialInputs(currentTick);
+            for (int i = 0; i < _dialComboQueue.Count; i++)
+            {
+                if (_dialComboQueue[i].Button == button)
+                {
+                    _dialComboQueue.RemoveAt(i);
+                    break;
+                }
             }
         }
 
@@ -351,6 +497,7 @@ namespace UnDFight
             {
                 _bufferedButtonExpireTick.Remove(FighterInputButton.LightPunch);
                 _bufferedButtonExpireTick.Remove(FighterInputButton.LightKick);
+                _dialComboQueue.Clear();
                 _lastThrowAttemptTick = currentTick;
                 return true;
             }
@@ -479,27 +626,32 @@ namespace UnDFight
 
             if (isCrouchingInput && ConsumeBufferedButton(FighterInputButton.HeavyKick, currentTick))
             {
+                ConsumeMatchingDialOpener(FighterInputButton.HeavyKick, currentTick);
                 attackType = AttackType.CrouchKick;
                 return true;
             }
 
             if (ConsumeBufferedButton(FighterInputButton.HeavyKick, currentTick))
             {
+                ConsumeMatchingDialOpener(FighterInputButton.HeavyKick, currentTick);
                 attackType = AttackType.HeavyKick;
                 return true;
             }
             if (ConsumeBufferedButton(FighterInputButton.HeavyPunch, currentTick))
             {
+                ConsumeMatchingDialOpener(FighterInputButton.HeavyPunch, currentTick);
                 attackType = AttackType.HeavyPunch;
                 return true;
             }
             if (ConsumeBufferedButton(FighterInputButton.LightKick, currentTick))
             {
+                ConsumeMatchingDialOpener(FighterInputButton.LightKick, currentTick);
                 attackType = AttackType.LightKick;
                 return true;
             }
             if (ConsumeBufferedButton(FighterInputButton.LightPunch, currentTick))
             {
+                ConsumeMatchingDialOpener(FighterInputButton.LightPunch, currentTick);
                 attackType = AttackType.LightPunch;
                 return true;
             }
@@ -594,7 +746,9 @@ namespace UnDFight
                         fromAttack == AttackType.LightKick ||
                         fromAttack == AttackType.HeavyPunch ||
                         fromAttack == AttackType.HeavyKick ||
-                        fromAttack == AttackType.CrouchKick);
+                        fromAttack == AttackType.CrouchKick ||
+                        fromAttack == AttackType.ComboPunchFinisher ||
+                        fromAttack == AttackType.ComboKickFinisher);
             }
 
             return fromAttack switch
@@ -616,6 +770,7 @@ namespace UnDFight
             {
                 _bufferedButtonExpireTick.Remove(heavyButton);
                 _bufferedButtonExpireTick.Remove(FighterInputButton.Special);
+                _dialComboQueue.Clear();
                 return true;
             }
 
@@ -624,6 +779,7 @@ namespace UnDFight
             {
                 _bufferedButtonExpireTick.Remove(heavyButton);
                 _bufferedButtonExpireTick.Remove(FighterInputButton.Special);
+                _dialComboQueue.Clear();
                 return true;
             }
 
@@ -671,10 +827,17 @@ namespace UnDFight
                 _bufferedButtonExpireTick.Remove(FighterInputButton.LightPunch);
                 _bufferedButtonExpireTick.Remove(FighterInputButton.HeavyPunch);
                 _bufferedButtonExpireTick.Remove(FighterInputButton.Special);
+                _dialComboQueue.Clear();
                 return true;
             }
 
-            return ConsumeBufferedButton(FighterInputButton.Special, currentTick);
+            if (ConsumeBufferedButton(FighterInputButton.Special, currentTick))
+            {
+                _dialComboQueue.Clear();
+                return true;
+            }
+
+            return false;
         }
     }
 }

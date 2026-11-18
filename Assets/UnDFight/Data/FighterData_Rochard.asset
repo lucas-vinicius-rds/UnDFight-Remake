@@ -43,3 +43,66 @@ MonoBehaviour:
   exHeavyPunch: {fileID: 11400000, guid: 9198d2c92997f9745a424536fcaefd98, type: 2}
   exHeavyKick: {fileID: 11400000, guid: a91d5c5592e328f4786b78a91e822577, type: 2}
   specialMove: {fileID: 11400000, guid: aae86613fd69bf14d8044a3743ff85a6, type: 2}
+  comboPunchFinisher: {fileID: 11400000, guid: f646e7c04a8ab914194f6ee1f853162f, type: 2}
+  comboKickFinisher: {fileID: 11400000, guid: ce584ba9576dfdb49895e2d45e9f5192, type: 2}
+  comboStrings:
+  - stringName: IMPACTO VELOZ
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 11
+      stepMoveOverride: {fileID: 11400000, guid: beff82e7eb4bc8c4091cc128e9c3a2f0, type: 2}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: "FURAC\xC3O \xC1GIL"
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 2
+      requireCrouch: 0
+      attackType: 3
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 3
+      requireCrouch: 0
+      attackType: 12
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: "REL\xC2MPAGO RASTEIRO"
+    steps:
+    - inputButton: 2
+      requireCrouch: 0
+      attackType: 3
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 3
+      requireCrouch: 1
+      attackType: 6
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: "COMBO REL\xC2MPAGO"
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 2
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 11
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1

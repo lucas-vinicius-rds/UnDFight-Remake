@@ -307,14 +307,34 @@ namespace UnDFight
                 else _p2CalloutTimer = calloutDurationSeconds;
             }
 
-            // Show combo counter on the attacker's side from 2 hits onward
-            if (hit.Outcome != HitOutcomeType.Blocked && hit.Outcome != HitOutcomeType.ThrowTech && hit.Attacker != null && hit.ComboCount >= 2)
+            // Show combo counter on the attacker's side from 2 hits onward (or when a Combo String completes)
+            string comboStringLabel = !string.IsNullOrWhiteSpace(hit.ComboStringName)
+                ? hit.ComboStringName.ToUpperInvariant()
+                : (hit.Attacker != null && !string.IsNullOrWhiteSpace(hit.Attacker.ActiveComboStringName)
+                    ? hit.Attacker.ActiveComboStringName.ToUpperInvariant()
+                    : string.Empty);
+
+            if (hit.Outcome != HitOutcomeType.Blocked &&
+                hit.Outcome != HitOutcomeType.ThrowTech &&
+                hit.Attacker != null &&
+                (hit.ComboCount >= 2 || !string.IsNullOrEmpty(comboStringLabel)))
             {
                 bool attackerIsP1 = hit.Attacker == simulation.Fighter1;
                 TextMeshProUGUI comboText = attackerIsP1 ? p1ComboText : p2ComboText;
                 if (comboText != null)
                 {
-                    comboText.text = $"{hit.ComboCount} HITS!";
+                    if (hit.ComboCount >= 2 && !string.IsNullOrEmpty(comboStringLabel))
+                    {
+                        comboText.text = $"{hit.ComboCount} HITS \u2022 {comboStringLabel}!";
+                    }
+                    else if (hit.ComboCount >= 2)
+                    {
+                        comboText.text = $"{hit.ComboCount} HITS!";
+                    }
+                    else
+                    {
+                        comboText.text = $"{comboStringLabel}!";
+                    }
                     comboText.color = hit.IsSpecial
                         ? new Color(1.0f, 0.88f, 0.28f, 1f)
                         : new Color(1.0f, 0.65f, 0.18f, 1f);

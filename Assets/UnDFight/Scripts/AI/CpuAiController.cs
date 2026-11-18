@@ -341,12 +341,12 @@ namespace UnDFight
                 }
             }
 
-            // 0. Chain cancel follow-ups on hit during Medium & Hard difficulties
+            // 0. Combo String & Chain cancel follow-ups on hit during Medium & Hard difficulties
             if (controlledFighter.State == FighterState.Attack &&
                 controlledFighter.HasRegisteredHit &&
                 controlledFighter.IsGrounded &&
                 difficulty != CpuDifficulty.Easy &&
-                absDx <= CloseRange + 0.3f &&
+                absDx <= CloseRange + 0.35f &&
                 _attackCooldownTicks <= 24)
             {
                 float chainChance = difficulty == CpuDifficulty.Hard ? 0.78f : 0.42f;
@@ -368,8 +368,14 @@ namespace UnDFight
                 }
 
                 if ((controlledFighter.CurrentAttack == AttackType.LightPunch || controlledFighter.CurrentAttack == AttackType.LightKick) &&
+                    inputHandler.DialComboQueueCount == 0 &&
                     _rng.NextDouble() < chainChance)
                 {
+                    if (TryQueueCpuComboString(controlledFighter.CurrentAttack, inputHandler, currentTick))
+                    {
+                        return;
+                    }
+
                     AttackType followUp = _rng.NextDouble() < 0.55 ? AttackType.HeavyPunch : AttackType.HeavyKick;
                     TriggerAttack(followUp, inputHandler, currentTick);
                     return;
@@ -682,13 +688,54 @@ namespace UnDFight
             }
         }
 
+        private bool TryQueueCpuComboString(AttackType openerAttack, PlayerInputHandler inputHandler, int currentTick)
+        {
+            ComboStringDefinition[] strings = controlledFighter != null && controlledFighter.Data != null
+                ? controlledFighter.Data.comboStrings
+                : null;
+            if (strings == null || strings.Length == 0)
+            {
+                return false;
+            }
+
+            int startIdx = _rng.Next(strings.Length);
+            for (int offset = 0; offset < strings.Length; offset++)
+            {
+                ComboStringDefinition def = strings[(startIdx + offset) % strings.Length];
+                if (def?.steps == null || def.steps.Length < 3 || def.steps[0].attackType != openerAttack)
+                {
+                    continue;
+                }
+
+                inputHandler.SyncSimulationTick(currentTick);
+                for (int s = 1; s < def.steps.Length; s++)
+                {
+                    inputHandler.EnqueueDialComboInput(def.steps[s].inputButton, def.steps[s].requireCrouch);
+                }
+
+                bool endsCrouched = def.steps[def.steps.Length - 1].requireCrouch;
+                _plannedInput = new FighterInputState
+                {
+                    MoveY = endsCrouched ? -1f : 0f,
+                    LastTickSampled = currentTick
+                };
+                inputHandler.SetSimulatedInput(_plannedInput, true);
+                _attackCooldownTicks = 28;
+                return true;
+            }
+
+            return false;
+        }
+
         private static FighterInputButton AttackToButton(AttackType attack)
         {
             return attack switch
             {
                 AttackType.HeavyPunch => FighterInputButton.HeavyPunch,
+                AttackType.ComboPunchFinisher => FighterInputButton.HeavyPunch,
                 AttackType.LightKick => FighterInputButton.LightKick,
                 AttackType.HeavyKick => FighterInputButton.HeavyKick,
+                AttackType.ComboKickFinisher => FighterInputButton.HeavyKick,
                 AttackType.CrouchKick => FighterInputButton.HeavyKick,
                 AttackType.JumpAttack => FighterInputButton.HeavyKick,
                 AttackType.Special => FighterInputButton.Special,
@@ -703,6 +750,7 @@ namespace UnDFight
                 AttackType.LightKick => HitHeight.Low,
                 AttackType.CrouchKick => HitHeight.Low,
                 AttackType.HeavyKick => HitHeight.High,
+                AttackType.ComboKickFinisher => HitHeight.High,
                 AttackType.JumpAttack => HitHeight.Overhead,
                 AttackType.Throw => HitHeight.Unblockable,
                 _ => HitHeight.Mid
@@ -715,8 +763,10 @@ namespace UnDFight
             {
                 AttackType.LightPunch => 7,
                 AttackType.HeavyPunch => 11,
+                AttackType.ComboPunchFinisher => 11,
                 AttackType.LightKick => 8,
                 AttackType.HeavyKick => 13,
+                AttackType.ComboKickFinisher => 12,
                 AttackType.CrouchKick => 12,
                 AttackType.JumpAttack => 12,
                 AttackType.Throw => 8,

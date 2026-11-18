@@ -20,34 +20,40 @@ PROJECT_ROOT = r"D:\Programas SSD\Unity\Unity Projects\UnDFight Remake"
 
 WEIGHT_CLASS_FRAMEDATA = {
     "light": {
-        "LightPunch": (3, 3, 7),    # 13 frames
-        "HeavyPunch": (5, 4, 12),   # 21 frames
-        "LightKick":  (4, 3, 9),    # 16 frames
-        "HeavyKick":  (7, 4, 16),   # 27 frames
-        "CrouchKick": (6, 4, 15),   # 25 frames
-        "JumpAttack": (4, 8, 6),    # 18 frames
-        "Throw":      (5, 3, 14),   # 22 frames
-        "Special":    (7, 4, 13),   # 24 frames (Jompes default light)
+        "LightPunch":         (3, 3, 7),    # 13 frames
+        "HeavyPunch":         (5, 4, 12),   # 21 frames
+        "LightKick":          (4, 3, 9),    # 16 frames
+        "HeavyKick":          (7, 4, 16),   # 27 frames
+        "CrouchKick":         (6, 4, 15),   # 25 frames
+        "JumpAttack":         (4, 8, 6),    # 18 frames
+        "Throw":              (5, 3, 14),   # 22 frames
+        "Special":            (7, 4, 13),   # 24 frames (Jompes default light)
+        "ComboPunchFinisher": (6, 4, 14),   # 24 frames
+        "ComboKickFinisher":  (7, 4, 15),   # 26 frames
     },
     "medium": {
-        "LightPunch": (4, 3, 9),    # 16 frames
-        "HeavyPunch": (7, 4, 16),   # 27 frames
-        "LightKick":  (5, 3, 11),   # 19 frames
-        "HeavyKick":  (9, 4, 20),   # 33 frames
-        "CrouchKick": (7, 4, 17),   # 28 frames
-        "JumpAttack": (4, 8, 6),    # 18 frames
-        "Throw":      (5, 3, 14),   # 22 frames
-        "Special":    (8, 5, 15),   # 28 frames (Tiago)
+        "LightPunch":         (4, 3, 9),    # 16 frames
+        "HeavyPunch":         (7, 4, 16),   # 27 frames
+        "LightKick":          (5, 3, 11),   # 19 frames
+        "HeavyKick":          (9, 4, 20),   # 33 frames
+        "CrouchKick":         (7, 4, 17),   # 28 frames
+        "JumpAttack":         (4, 8, 6),    # 18 frames
+        "Throw":              (5, 3, 14),   # 22 frames
+        "Special":            (8, 5, 15),   # 28 frames (Tiago)
+        "ComboPunchFinisher": (7, 4, 16),   # 27 frames
+        "ComboKickFinisher":  (8, 4, 17),   # 29 frames
     },
     "heavy": {
-        "LightPunch": (5, 3, 11),   # 19 frames
-        "HeavyPunch": (9, 5, 19),   # 33 frames
-        "LightKick":  (6, 4, 13),   # 23 frames
-        "HeavyKick":  (11, 5, 24),  # 40 frames
-        "CrouchKick": (8, 5, 19),   # 32 frames
-        "JumpAttack": (4, 8, 6),    # 18 frames
-        "Throw":      (5, 3, 14),   # 22 frames
-        "Special":    (10, 5, 17),  # 32 frames (Lucas)
+        "LightPunch":         (5, 3, 11),   # 19 frames
+        "HeavyPunch":         (9, 5, 19),   # 33 frames
+        "LightKick":          (6, 4, 13),   # 23 frames
+        "HeavyKick":          (11, 5, 24),  # 40 frames
+        "CrouchKick":         (8, 5, 19),   # 32 frames
+        "JumpAttack":         (4, 8, 6),    # 18 frames
+        "Throw":              (5, 3, 14),   # 22 frames
+        "Special":            (10, 5, 17),  # 32 frames (Lucas)
+        "ComboPunchFinisher": (9, 5, 18),   # 32 frames
+        "ComboKickFinisher":  (10, 5, 20),  # 35 frames
     },
 }
 
@@ -2278,6 +2284,101 @@ def build_style_attacks(style, idle0, framedata):
         })
         special_builder = ("multi", sp_ant, sp_hit1, sp_trans, sp_hit2, sp_follow, sp_rechamber)
 
+        # ComboPunchFinisher (street_scrappy): cotovelada/cruzado giratório agressivo de rua
+        cpf_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.054),
+            "Hips":          (2.5, -5.0, -32.0),
+            "Spine":         (3.5, -6.0, -22.0),
+            "Chest":         (3.5, -6.0, -24.0),
+            "Neck":          (-3.0, 0.0, 26.0),
+            "RightShoulder": (0.0, -14.0, -22.0),
+            "RightUpperArm": (14.0, -18.0, -32.0),
+            "RightLowerArm": (6.0, 22.0, 68.0),
+            "LeftUpperArm":  (-8.0, 54.0, -52.0),
+            "LeftLowerArm":  (12.0, -26.0, -92.0),
+        })
+        cpf_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.058),
+            "Hips":          (3.5, 4.0, 24.0),
+            "Spine":         (5.5, 4.0, 20.0),
+            "Chest":         (5.5, 4.0, 22.0),
+            "UpperChest":    (3.5, 2.0, 14.0),
+            "Neck":          (-5.0, -4.0, -26.0),
+            "Head":          (-4.0, -3.0, -24.0),
+            "RightShoulder": (0.0, 12.0, 16.0),
+            "RightUpperArm": (-16.0, -8.0, 26.0),
+            "RightLowerArm": (10.0, 40.0, 44.0),
+            "RightHand":     (-16.0, 28.0, 0.0),
+            "LeftUpperArm":  (-8.0, 62.0, -26.0),
+            "LeftLowerArm":  (8.0, -18.0, -68.0),
+            "LeftUpperLeg":  (-32.0, -5.0, 6.0),
+            "LeftLowerLeg":  (22.0, 0.0, 0.0),
+            "RightUpperLeg": (16.0, 6.0, -5.0),
+            "RightLowerLeg": (12.0, 0.0, 0.0),
+        })
+        cpf_follow = merge_pose(cpf_hit, {
+            "HipsOffset":    (0.0, 0.0, -0.062),
+            "Hips":          (4.0, 4.5, 28.0),
+            "Spine":         (6.0, 4.5, 22.0),
+            "RightUpperArm": (-20.0, -6.0, 30.0),
+            "RightLowerArm": (12.0, 42.0, 36.0),
+            "LeftUpperLeg":  (-34.0, -5.0, 6.0),
+            "LeftLowerLeg":  (25.0, 0.0, 0.0),
+        })
+        cpf_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.050),
+            "Hips":          (1.5, 1.0, 20.0),
+            "Spine":         (3.0, 1.5, 8.0),
+            "RightUpperArm": (-6.0, -48.0, 36.0),
+            "RightLowerArm": (10.0, 24.0, 88.0),
+            "LeftUpperLeg":  (-29.0, -6.0, 6.0),
+            "LeftLowerLeg":  (16.0, 0.0, 0.0),
+        })
+
+        # ComboKickFinisher (street_scrappy): chute giratório baixo/médio estiloso de rua
+        ckf_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.030),
+            "Hips":          (-8.0, 4.0, -14.0),
+            "Spine":         (-6.0, -4.0, 6.0),
+            "RightUpperArm": (-8.0, 16.0, 32.0),
+            "LeftUpperLeg":  (-78.0, -6.0, 8.0),
+            "LeftLowerLeg":  (96.0, 0.0, 0.0),
+            "RightUpperLeg": (8.0, -4.0, 6.0),
+            "RightLowerLeg": (14.0, 0.0, 0.0),
+        })
+        ckf_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.024),
+            "Hips":          (-14.0, 6.0, -22.0),
+            "Spine":         (-10.0, -6.0, 8.0),
+            "Chest":         (4.0, -4.0, 8.0),
+            "Neck":          (8.0, 0.0, 6.0),
+            "RightUpperArm": (-12.0, 34.0, 28.0),
+            "RightLowerArm": (0.0, 16.0, 36.0),
+            "LeftUpperArm":  (-10.0, 38.0, -52.0),
+            "LeftUpperLeg":  (-82.0, -8.0, 12.0),
+            "LeftLowerLeg":  (8.0, 0.0, 0.0),
+            "LeftFoot":      (28.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, -6.0, 8.0),
+            "RightLowerLeg": (16.0, 0.0, 0.0),
+            "RightFoot":     (-12.0, 0.0, 0.0),
+        })
+        ckf_follow = merge_pose(ckf_hit, {
+            "Hips":          (-16.0, 7.0, -25.0),
+            "LeftUpperLeg":  (-86.0, -8.0, 12.0),
+            "LeftLowerLeg":  (6.0, 0.0, 0.0),
+            "LeftFoot":      (30.0, 0.0, 0.0),
+        })
+        ckf_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.030),
+            "Hips":          (-6.0, 2.0, 2.0),
+            "Spine":         (-4.0, -2.0, 4.0),
+            "LeftUpperLeg":  (-68.0, -5.0, 8.0),
+            "LeftLowerLeg":  (92.0, 0.0, 0.0),
+            "LeftFoot":      (10.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, 4.0, -4.0),
+            "RightLowerLeg": (14.0, 0.0, 0.0),
+        })
+
     elif style == "technical_striker":
         # Jompes (Shadow Sentinel): crisp disciplined martial-arts strikes with clean hip rotation
         lp_ant = merge_pose(idle0, {
@@ -2486,6 +2587,95 @@ def build_style_attacks(style, idle0, framedata):
         })
         special_builder = ("standard_full", sp_ant, sp_hit, sp_follow, sp_rechamber)
 
+        # ComboPunchFinisher (technical_striker): palma/estocada dupla marcial rápida com retorno preciso à guarda
+        cpf_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.056),
+            "Hips":          (2.5, 0.0, -24.0),
+            "Spine":         (3.5, 0.0, -16.0),
+            "Chest":         (3.5, 0.0, -18.0),
+            "Neck":          (-5.0, 0.0, 24.0),
+            "RightShoulder": (0.0, -14.0, -14.0),
+            "RightUpperArm": (12.0, -46.0, 14.0),
+            "RightLowerArm": (12.0, 32.0, 118.0),
+            "LeftShoulder":  (0.0, 14.0, -14.0),
+            "LeftUpperArm":  (10.0, 44.0, -16.0),
+            "LeftLowerArm":  (12.0, -32.0, -116.0),
+        })
+        cpf_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.050),
+            "Hips":          (3.0, 0.0, 26.0),
+            "Spine":         (4.5, 0.0, 16.0),
+            "Chest":         (4.5, 0.0, 18.0),
+            "UpperChest":    (3.0, 0.0, 10.0),
+            "Neck":          (-6.0, 0.0, -26.0),
+            "Head":          (-4.5, 0.0, -24.0),
+            "RightShoulder": (0.0, -6.0, 18.0),
+            "RightUpperArm": (-12.0, 0.0, 26.0),
+            "RightLowerArm": (0.0, 46.0, 5.0),
+            "RightHand":     (-20.0, 38.0, 0.0),
+            "LeftShoulder":  (0.0, 8.0, -16.0),
+            "LeftUpperArm":  (-10.0, 8.0, -28.0),
+            "LeftLowerArm":  (4.0, -40.0, -18.0),
+            "LeftHand":      (-18.0, -28.0, 0.0),
+            "LeftUpperLeg":  (-30.0, -5.0, 5.0),
+            "LeftLowerLeg":  (24.0, 0.0, 0.0),
+            "RightUpperLeg": (18.0, 6.0, -5.0),
+            "RightLowerLeg": (12.0, 0.0, 0.0),
+        })
+        cpf_follow = merge_pose(cpf_hit, {
+            "Hips":          (3.5, 0.0, 29.0),
+            "RightShoulder": (0.0, -4.0, 20.0),
+            "LeftShoulder":  (0.0, 6.0, -18.0),
+            "RightLowerArm": (0.0, 48.0, 4.0),
+            "LeftLowerArm":  (2.0, -42.0, -12.0),
+        })
+        cpf_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.042),
+            "Hips":          (1.2, 0.0, 24.0),
+            "RightUpperArm": (-8.0, -38.0, 58.0),
+            "RightLowerArm": (14.0, 40.0, 114.0),
+            "LeftUpperArm":  (-10.0, 38.0, -54.0),
+            "LeftLowerArm":  (12.0, -32.0, -98.0),
+        })
+
+        # ComboKickFinisher (technical_striker): chute giratório alto técnico (back kick / spinning hook)
+        ckf_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.030),
+            "Hips":          (-10.0, 12.0, -24.0),
+            "Spine":         (-6.0, 0.0, 8.0),
+            "LeftUpperLeg":  (-94.0, -10.0, 12.0),
+            "LeftLowerLeg":  (108.0, 0.0, 0.0),
+            "RightUpperLeg": (8.0, -4.0, 5.0),
+            "RightLowerLeg": (14.0, 0.0, 0.0),
+        })
+        ckf_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.028),
+            "Hips":          (-14.0, 16.0, -30.0),
+            "Spine":         (-9.0, 0.0, 10.0),
+            "Chest":         (4.0, 0.0, 8.0),
+            "Neck":          (6.0, 0.0, 6.0),
+            "LeftUpperLeg":  (-106.0, -14.0, 16.0),
+            "LeftLowerLeg":  (7.0, 0.0, 0.0),
+            "LeftFoot":      (26.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, -6.0, 6.0),
+            "RightLowerLeg": (16.0, 0.0, 0.0),
+        })
+        ckf_follow = merge_pose(ckf_hit, {
+            "Hips":          (-16.0, 17.0, -34.0),
+            "LeftUpperLeg":  (-110.0, -15.0, 18.0),
+            "LeftLowerLeg":  (5.5, 0.0, 0.0),
+            "LeftFoot":      (28.0, 0.0, 0.0),
+        })
+        ckf_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.030),
+            "Hips":          (-6.0, 6.0, -4.0),
+            "LeftUpperLeg":  (-80.0, -8.0, 10.0),
+            "LeftLowerLeg":  (102.0, 0.0, 0.0),
+            "LeftFoot":      (10.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, 4.0, -4.0),
+            "RightLowerLeg": (14.0, 0.0, 0.0),
+        })
+
     elif style == "agile_striker":
         # Rochard (Vasco Jacket): fast athletic flick jab, lunge cross, quick kicks & Tornado Relâmpago
         lp_ant = merge_pose(idle0, {
@@ -2654,6 +2844,73 @@ def build_style_attacks(style, idle0, framedata):
             "RightLowerLeg": (28.0, 0.0, 0.0),
         })
         special_builder = ("standard_full", sp_ant, sp_hit, sp_follow, sp_rechamber)
+
+        # ComboPunchFinisher (agile_striker): uppercut veloz com passo curto para frente
+        cpf_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.056),
+            "Hips":          (3.0, 0.0, -20.0),
+            "Spine":         (4.0, 0.0, -16.0),
+            "Chest":         (4.0, 0.0, -18.0),
+            "RightUpperArm": (10.0, -44.0, 18.0),
+            "RightLowerArm": (10.0, 26.0, 110.0),
+        })
+        cpf_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, -0.03, -0.038),
+            "Hips":          (-3.0, 2.0, 24.0),
+            "Spine":         (-4.0, 2.0, 16.0),
+            "Chest":         (-4.0, 2.0, 18.0),
+            "Neck":          (-5.0, 0.0, -24.0),
+            "RightShoulder": (0.0, 12.0, 18.0),
+            "RightUpperArm": (-20.0, 32.0, 22.0),
+            "RightLowerArm": (6.0, 36.0, 28.0),
+            "RightHand":     (-14.0, 26.0, 0.0),
+            "LeftUpperLeg":  (-32.0, -4.0, 4.0),
+            "LeftLowerLeg":  (26.0, 0.0, 0.0),
+            "RightUpperLeg": (20.0, 5.0, -4.0),
+            "RightLowerLeg": (12.0, 0.0, 0.0),
+        })
+        cpf_follow = merge_pose(cpf_hit, {
+            "Hips":          (-4.0, 2.5, 28.0),
+            "RightUpperArm": (-22.0, 38.0, 20.0),
+            "RightLowerArm": (4.0, 38.0, 22.0),
+        })
+        cpf_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.038),
+            "Hips":          (1.0, 0.0, 18.0),
+            "RightUpperArm": (-8.0, -44.0, 48.0),
+            "RightLowerArm": (10.0, 32.0, 98.0),
+        })
+
+        # ComboKickFinisher (agile_striker): chute duplo/ascendente acrobático rápido
+        ckf_ant = merge_pose(idle0, {
+            "Hips":          (-12.0, 8.0, -16.0),
+            "RightUpperArm": (-14.0, -48.0, 44.0),
+            "LeftUpperLeg":  (-96.0, -8.0, 8.0),
+            "LeftLowerLeg":  (110.0, 0.0, 0.0),
+        })
+        ckf_hit = merge_pose(idle0, {
+            "Hips":          (-20.0, 12.0, -22.0),
+            "Spine":         (-12.0, 0.0, 8.0),
+            "Chest":         (4.0, 0.0, 6.0),
+            "RightUpperArm": (-18.0, -52.0, 46.0),
+            "RightLowerArm": (6.0, 22.0, 84.0),
+            "LeftUpperLeg":  (-110.0, -8.0, 10.0),
+            "LeftLowerLeg":  (7.0, 0.0, 0.0),
+            "LeftFoot":      (28.0, 0.0, 0.0),
+        })
+        ckf_follow = merge_pose(ckf_hit, {
+            "Hips":          (-22.0, 13.0, -24.0),
+            "LeftUpperLeg":  (-114.0, -8.0, 10.0),
+            "LeftLowerLeg":  (5.5, 0.0, 0.0),
+            "LeftFoot":      (30.0, 0.0, 0.0),
+        })
+        ckf_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.028),
+            "Hips":          (-8.0, 4.0, 0.0),
+            "LeftUpperLeg":  (-80.0, -6.0, 6.0),
+            "LeftLowerLeg":  (100.0, 0.0, 0.0),
+            "LeftFoot":      (10.0, 0.0, 0.0),
+        })
 
     else:
         # heavy_brawler (Lucas): strong hip/shoulder torque punches, heavy stomp, heel thrust & Martelo do Asfalto
@@ -2883,11 +3140,103 @@ def build_style_attacks(style, idle0, framedata):
         })
         special_builder = ("standard_full", sp_ant, sp_hit, sp_follow, sp_rechamber)
 
+        # ComboPunchFinisher (heavy_brawler): gancho/uppercut duplo ascendente pesado com grande rotação de tronco e recuo firme
+        cpf_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.072),
+            "Hips":          (4.0, 0.0, -24.0),
+            "Spine":         (5.0, 0.0, -20.0),
+            "Chest":         (4.5, 0.0, -22.0),
+            "Neck":          (-5.0, 0.0, 28.0),
+            "Head":          (-5.0, 0.0, 24.0),
+            "RightShoulder": (0.0, -14.0, -16.0),
+            "RightUpperArm": (8.0, -42.0, 14.0),
+            "RightLowerArm": (12.0, 28.0, 114.0),
+            "RightHand":     (-16.0, 22.0, -12.0),
+        })
+        cpf_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.060),
+            "Hips":          (-3.0, 2.0, 26.0),
+            "Spine":         (-3.5, 2.0, 18.0),
+            "Chest":         (-3.5, 2.0, 22.0),
+            "UpperChest":    (-3.0, 2.0, 16.0),
+            "Neck":          (-6.0, 0.0, -28.0),
+            "Head":          (-6.0, 0.0, -28.0),
+            "RightShoulder": (0.0, 12.0, 20.0),
+            "RightUpperArm": (-18.0, 28.0, 24.0),
+            "RightLowerArm": (8.0, 40.0, 30.0),
+            "RightHand":     (-18.0, 30.0, 0.0),
+            "LeftShoulder":  (0.0, 16.0, -12.0),
+            "LeftUpperArm":  (-12.0, 50.0, -56.0),
+            "LeftLowerArm":  (14.0, -38.0, -112.0),
+            "LeftUpperLeg":  (-34.0, -5.0, 6.0),
+            "LeftLowerLeg":  (30.0, 0.0, 0.0),
+            "RightUpperLeg": (24.0, 7.0, -6.0),
+            "RightLowerLeg": (14.0, 0.0, 0.0),
+        })
+        cpf_follow = merge_pose(cpf_hit, {
+            "HipsOffset":    (0.0, 0.0, -0.066),
+            "Hips":          (-4.0, 2.5, 30.0),
+            "UpperChest":    (-3.5, 2.5, 18.0),
+            "RightUpperArm": (-20.0, 34.0, 22.0),
+            "RightLowerArm": (6.0, 42.0, 24.0),
+            "LeftUpperLeg":  (-36.0, -5.0, 6.0),
+            "LeftLowerLeg":  (34.0, 0.0, 0.0),
+        })
+        cpf_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.056),
+            "Hips":          (2.0, 0.0, 24.0),
+            "RightUpperArm": (-8.0, -34.0, 58.0),
+            "RightLowerArm": (12.0, 40.0, 110.0),
+            "LeftUpperLeg":  (-30.0, -5.0, 6.0),
+            "LeftLowerLeg":  (18.0, 0.0, 0.0),
+        })
+
+        # ComboKickFinisher (heavy_brawler): joelhada/pisão frontal pesado com empurrão potente
+        ckf_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.048),
+            "Hips":          (-12.0, 6.0, -16.0),
+            "Spine":         (-6.0, 0.0, 8.0),
+            "Chest":         (4.0, 0.0, 8.0),
+            "LeftUpperLeg":  (-86.0, -8.0, 10.0),
+            "LeftLowerLeg":  (104.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, -6.0, 6.0),
+            "RightLowerLeg": (18.0, 0.0, 0.0),
+        })
+        ckf_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.048),
+            "Hips":          (-16.0, 8.0, -22.0),
+            "Spine":         (-10.0, 0.0, 8.0),
+            "Chest":         (6.0, 0.0, 10.0),
+            "Neck":          (10.0, 0.0, 6.0),
+            "LeftUpperLeg":  (-86.0, -8.0, 10.0),
+            "LeftLowerLeg":  (7.0, 0.0, 0.0),
+            "LeftFoot":      (-16.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, -6.0, 8.0),
+            "RightLowerLeg": (18.0, 0.0, 0.0),
+            "RightFoot":     (-12.0, 0.0, 0.0),
+        })
+        ckf_follow = merge_pose(ckf_hit, {
+            "Hips":          (-18.0, 9.0, -24.0),
+            "LeftUpperLeg":  (-90.0, -8.0, 10.0),
+            "LeftLowerLeg":  (5.5, 0.0, 0.0),
+        })
+        ckf_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.048),
+            "Hips":          (-8.0, 4.0, -4.0),
+            "LeftUpperLeg":  (-70.0, -8.0, 8.0),
+            "LeftLowerLeg":  (94.0, 0.0, 0.0),
+            "LeftFoot":      (8.0, 0.0, 0.0),
+            "RightUpperLeg": (12.0, 4.0, -4.0),
+            "RightLowerLeg": (16.0, 0.0, 0.0),
+        })
+
     move_poses = {
-        "LightPunch": (lp_ant, lp_hit, lp_follow, lp_rechamber),
-        "HeavyPunch": (hp_ant, hp_hit, hp_follow, hp_rechamber),
-        "LightKick":  (lk_ant, lk_hit, lk_follow, lk_rechamber),
-        "HeavyKick":  (hk_ant, hk_hit, hk_follow, hk_rechamber),
+        "LightPunch":         (lp_ant, lp_hit, lp_follow, lp_rechamber),
+        "HeavyPunch":         (hp_ant, hp_hit, hp_follow, hp_rechamber),
+        "LightKick":          (lk_ant, lk_hit, lk_follow, lk_rechamber),
+        "HeavyKick":          (hk_ant, hk_hit, hk_follow, hk_rechamber),
+        "ComboPunchFinisher": (cpf_ant, cpf_hit, cpf_follow, cpf_rechamber),
+        "ComboKickFinisher":  (ckf_ant, ckf_hit, ckf_follow, ckf_rechamber),
     }
 
     for move_name, (ant_pose, hit_pose, follow_pose, rechamber_pose) in move_poses.items():
@@ -3687,7 +4036,7 @@ def build_common_actions(idle0):
 def _get_clip_ground_modes(clip_name, style, keyframes):
     frames = sorted(keyframes.keys())
     first_f, last_f = frames[0], frames[-1]
-    if clip_name in ("Idle", "BlockStand", "Crouch", "Victory", "HitReact", "LightPunch", "HeavyPunch", "Throw"):
+    if clip_name in ("Idle", "BlockStand", "Crouch", "Victory", "HitReact", "LightPunch", "HeavyPunch", "ComboPunchFinisher", "Throw"):
         return {f: "both" for f in frames}
     if clip_name == "Special":
         if style == "agile_striker":
@@ -3702,7 +4051,7 @@ def _get_clip_ground_modes(clip_name, style, keyframes):
                     out[f] = "right"
             return out
         return {f: "both" for f in frames}
-    if clip_name in ("LightKick", "HeavyKick"):
+    if clip_name in ("LightKick", "HeavyKick", "ComboKickFinisher"):
         return {f: ("both" if f in (first_f, frames[min(1, len(frames) - 1)], last_f) else "right") for f in frames}
     if clip_name == "CrouchKick":
         return {
@@ -3804,6 +4153,7 @@ def verify_and_report_grounding(arm_obj, mesh_obj, foot_vdata, name, framedata):
         "DashForward", "DashBackward",
         "BlockStand", "Crouch", "Victory", "HitReact",
         "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
+        "ComboPunchFinisher", "ComboKickFinisher",
         "CrouchKick", "Throw", "Special", "Turn180",
         "Jump", "KnockDown", "GetUp", "Defeat",
     ]
@@ -3916,6 +4266,7 @@ def generate_all_animations(arm_obj, config=None):
         "DashForward", "DashBackward",
         "Jump", "Crouch", "BlockStand",
         "LightPunch", "HeavyPunch", "LightKick", "HeavyKick",
+        "ComboPunchFinisher", "ComboKickFinisher",
         "CrouchKick", "JumpAttack", "Throw", "Special",
         "HitReact", "KnockDown", "GetUp", "Victory", "Defeat", "Turn180",
     ]
@@ -4857,6 +5208,8 @@ def write_frame_data_doc(config):
             "HeavyPunch": "Cruzado/gancho potente com grande preparação de quadril e extensão total (`RightHand`)",
             "LightKick": "Pisão/chute baixo pesado na altura da canela/joelho (`LeftFoot`)",
             "HeavyKick": "Chutão frontal/lateral empurrando com o calcanhar e recuo sólido (`LeftFoot`)",
+            "ComboPunchFinisher": "Finalizador de mão de combo string: gancho/uppercut duplo ascendente pesado com grande rotação de tronco e recuo firme (`RightHand`)",
+            "ComboKickFinisher": "Finalizador de chute de combo string: joelhada/pisão frontal pesado com empurrão potente (`LeftFoot`)",
             "Special": "Especial **Martelo do Asfalto**: preparação profunda com as duas mãos e martelada dupla esmagadora (`RightHand`/`LeftHand`)",
             "Idle": "Base plantada e baixa, ombros firmes, guarda alta e fechada protegendo queixo/têmpora, respiração pesada",
             "Walk": "Passada firme e pesada mantendo guarda dupla fechada",
@@ -4868,6 +5221,8 @@ def write_frame_data_doc(config):
             "HeavyPunch": "Mata-cobra aberto e largo inclinando o tronco junto com o golpe (`RightHand`)",
             "LightKick": "Bico/chute baixo improvisado de rua (`LeftFoot`)",
             "HeavyKick": "Chute alto desengonçado erguendo o braço oposto para equilíbrio (`LeftFoot`)",
+            "ComboPunchFinisher": "Finalizador de mão de combo string: cotovelada/cruzado giratório agressivo de rua (`RightHand`)",
+            "ComboKickFinisher": "Finalizador de chute de combo string: chute giratório baixo/médio estiloso de rua (`LeftFoot`)",
             "Special": "Especial **Sequência de Rua**: cruzado apressado de esquerda emendando em mata-cobra descendente brutal (`LeftHand`+`RightHand`)",
             "Idle": "Base aberta e assimétrica, guarda mais baixa e solta, leve ginga irregular de rua",
             "Walk": "Passada solta e menos cadenciada, braços balançando fora da guarda padrão",
@@ -4879,6 +5234,8 @@ def write_frame_data_doc(config):
             "HeavyPunch": "Golpe penetrante/cruzado firme com giro limpo de quadril (`RightHand`)",
             "LightKick": "Chute frontal/snap rápido na altura baixa/média (`LeftFoot`)",
             "HeavyKick": "Chute alto circular técnico com rotação de quadril e guarda fechada (`LeftFoot`)",
+            "ComboPunchFinisher": "Finalizador de mão de combo string: palma/estocada dupla marcial rápida com retorno preciso à guarda (`RightHand`)",
+            "ComboKickFinisher": "Finalizador de chute de combo string: chute giratório alto técnico (*back kick* / *spinning hook*) com controle limpo de eixo (`LeftFoot`)",
             "Special": "Especial **Golpe Sombrio**: avanço baixo em postura fechada seguido de estocada/palma perfurante central (`RightHand`)",
             "Idle": "Guarda marcial disciplinada e fechada (mão da frente alta, mão de trás junto ao peito/queixo)",
             "Walk": "Deslocamento técnico compacto mantendo a guarda marcial travada",
@@ -4890,6 +5247,8 @@ def write_frame_data_doc(config):
             "HeavyPunch": "Cruzado rápido com passo firme para frente (`RightHand`)",
             "LightKick": "Chute baixo/médio veloz e elástico (`LeftFoot`)",
             "HeavyKick": "Chute alto dinâmico/explosivo com contrapeso do braço (`LeftFoot`)",
+            "ComboPunchFinisher": "Finalizador de mão de combo string: uppercut veloz com passo curto para frente (`RightHand`)",
+            "ComboKickFinisher": "Finalizador de chute de combo string: chute duplo/ascendente acrobático rápido (`LeftFoot`)",
             "Special": "Especial **Tornado Relâmpago**: giro ágil com chute alto explosivo em arco (`LeftFoot`)",
             "Idle": "Postura atlética leve com ginga/bounce ágil e joelhos elásticos",
             "Walk": "Passada leve e saltitante mantendo guarda ágil",
@@ -4933,6 +5292,8 @@ def write_frame_data_doc(config):
         fmt_row("HeavyPunch"),
         fmt_row("LightKick"),
         fmt_row("HeavyKick"),
+        fmt_row("ComboPunchFinisher"),
+        fmt_row("ComboKickFinisher"),
         fmt_row("CrouchKick"),
         fmt_row("JumpAttack"),
         fmt_row("Throw"),
