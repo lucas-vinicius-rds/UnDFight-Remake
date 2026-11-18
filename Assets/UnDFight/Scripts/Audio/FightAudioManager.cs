@@ -190,23 +190,26 @@ namespace UnDFight
             EnsureSources();
             GenerateClipsIfNeeded();
 
-            if (!enabled || !Application.isPlaying || weatherAmbientSource == null || variant == StageWeatherVariant.Day)
+            // Only RainyNight plays continuous weather ambience audio; clean Day and Night stay silent.
+            if (!enabled || weatherAmbientSource == null || variant != StageWeatherVariant.RainyNight)
             {
                 StopWeatherAmbience();
                 return;
             }
 
-            AudioClip targetClip = variant == StageWeatherVariant.RainyNight ? _rainAmbientClip : _nightWindAmbientClip;
-            _weatherAmbientGain = variant == StageWeatherVariant.RainyNight ? 0.42f : 0.24f;
+            _weatherAmbientGain = 0.42f;
             weatherAmbientSource.volume = Mathf.Clamp01(_sfxVolume * _weatherAmbientGain);
 
-            if (weatherAmbientSource.clip != targetClip)
+            if (weatherAmbientSource.clip != _rainAmbientClip)
             {
-                weatherAmbientSource.clip = targetClip;
+                weatherAmbientSource.clip = _rainAmbientClip;
                 weatherAmbientSource.loop = true;
-                weatherAmbientSource.Play();
+                if (Application.isPlaying && _rainAmbientClip != null)
+                {
+                    weatherAmbientSource.Play();
+                }
             }
-            else if (!weatherAmbientSource.isPlaying && targetClip != null)
+            else if (Application.isPlaying && !weatherAmbientSource.isPlaying && _rainAmbientClip != null)
             {
                 weatherAmbientSource.loop = true;
                 weatherAmbientSource.Play();

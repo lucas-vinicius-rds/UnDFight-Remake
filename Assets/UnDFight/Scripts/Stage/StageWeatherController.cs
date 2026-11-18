@@ -59,9 +59,9 @@ namespace UnDFight
                     skyGroundColor = new Color(0.36f, 0.26f, 0.20f, 1f),
                     skyExposure = 1.15f,
                     skyAtmosphereThickness = 1.45f,
-                    windBaseSpeed = 1.5f,
-                    windGustAmplitude = 1.2f,
-                    windGustFrequency = 0.28f,
+                    windBaseSpeed = 0.55f,
+                    windGustAmplitude = 0.45f,
+                    windGustFrequency = 0.22f,
                     secondaryLightsMultiplier = 1.0f
                 };
             }
@@ -84,9 +84,9 @@ namespace UnDFight
                     skyGroundColor = new Color(0.04f, 0.05f, 0.09f, 1f),
                     skyExposure = 0.42f,
                     skyAtmosphereThickness = 0.65f,
-                    windBaseSpeed = 3.2f,
-                    windGustAmplitude = 2.4f,
-                    windGustFrequency = 0.42f,
+                    windBaseSpeed = 1.05f,
+                    windGustAmplitude = 0.75f,
+                    windGustFrequency = 0.30f,
                     secondaryLightsMultiplier = 0.38f
                 };
             }

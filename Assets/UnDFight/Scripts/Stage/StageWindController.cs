@@ -16,9 +16,9 @@ namespace UnDFight
         [Header("Aerodynamic Wind Field")]
         [SerializeField] private bool windEnabled = true;
         [SerializeField] private Vector3 windDirection = new Vector3(1f, 0f, 0.12f);
-        [SerializeField, Min(0f)] private float baseWindSpeed = 1.5f;
-        [SerializeField, Min(0f)] private float gustAmplitude = 1.2f;
-        [SerializeField, Min(0.01f)] private float gustFrequency = 0.28f;
+        [SerializeField, Min(0f)] private float baseWindSpeed = 0.55f;
+        [SerializeField, Min(0f)] private float gustAmplitude = 0.45f;
+        [SerializeField, Min(0.01f)] private float gustFrequency = 0.22f;
         [SerializeField, Min(0.1f)] private float airDensity = StandardAirDensity;
 
         private readonly List<StageWindAffectable> _overrideAffectables = new List<StageWindAffectable>();
@@ -62,9 +62,9 @@ namespace UnDFight
             switch (variant)
             {
                 case StageWeatherVariant.Night:
-                    baseWindSpeed = 3.2f;
-                    gustAmplitude = 2.4f;
-                    gustFrequency = 0.42f;
+                    baseWindSpeed = 1.05f;
+                    gustAmplitude = 0.75f;
+                    gustFrequency = 0.30f;
                     break;
                 case StageWeatherVariant.RainyNight:
                     baseWindSpeed = 6.2f;
@@ -72,9 +72,9 @@ namespace UnDFight
                     gustFrequency = 0.65f;
                     break;
                 default:
-                    baseWindSpeed = 1.5f;
-                    gustAmplitude = 1.2f;
-                    gustFrequency = 0.28f;
+                    baseWindSpeed = 0.55f;
+                    gustAmplitude = 0.45f;
+                    gustFrequency = 0.22f;
                     break;
             }
             _currentWindVelocity = ComputeWindVelocity(_elapsedTime);

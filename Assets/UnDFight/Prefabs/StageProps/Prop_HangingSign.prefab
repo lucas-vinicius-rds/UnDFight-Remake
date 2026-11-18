@@ -589,8 +589,8 @@ MonoBehaviour:
   targetBody: {fileID: 3679989124456005928}
   dragCoefficient: 1.25
   crossSectionArea: 0.36
-  windSensitivity: 1.45
-  wakeGustThreshold: 1
+  windSensitivity: 1.2
+  wakeGustThreshold: 0.75
 --- !u!1 &8722357836077198172
 GameObject:
   m_ObjectHideFlags: 0

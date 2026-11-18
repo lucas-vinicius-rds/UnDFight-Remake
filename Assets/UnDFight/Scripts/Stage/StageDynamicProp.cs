@@ -100,7 +100,7 @@ namespace UnDFight
             if (windAffectable == null)
             {
                 windAffectable = gameObject.AddComponent<StageWindAffectable>();
-                windAffectable.Configure(cd: 1.05f, areaM2: 0.12f, sensitivity: 1.25f, wakeThreshold: 2.0f, bodyOverride: body);
+                windAffectable.Configure(cd: 1.05f, areaM2: 0.11f, sensitivity: 0.95f, wakeThreshold: 4.2f, bodyOverride: body);
             }
             else
             {

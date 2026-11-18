@@ -334,8 +334,8 @@ MonoBehaviour:
   targetBody: {fileID: 8788026592812139458}
   dragCoefficient: 1.05
   crossSectionArea: 0.09
-  windSensitivity: 1.15
-  wakeGustThreshold: 2.8
+  windSensitivity: 0.9
+  wakeGustThreshold: 4.8
 --- !u!114 &9170071413922441792
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -641,8 +641,8 @@ MonoBehaviour:
   targetBody: {fileID: 2630040471832943735}
   dragCoefficient: 1.05
   crossSectionArea: 0.09
-  windSensitivity: 1.15
-  wakeGustThreshold: 2.8
+  windSensitivity: 0.9
+  wakeGustThreshold: 4.8
 --- !u!114 &5863724685510020057
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -820,8 +820,8 @@ MonoBehaviour:
   targetBody: {fileID: 8976489450641223462}
   dragCoefficient: 1.05
   crossSectionArea: 0.09
-  windSensitivity: 1.15
-  wakeGustThreshold: 2.8
+  windSensitivity: 0.9
+  wakeGustThreshold: 4.8
 --- !u!114 &6578029618652174742
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1218,8 +1218,8 @@ MonoBehaviour:
   targetBody: {fileID: 271525207986034016}
   dragCoefficient: 1.05
   crossSectionArea: 0.09
-  windSensitivity: 1.15
-  wakeGustThreshold: 2.8
+  windSensitivity: 0.9
+  wakeGustThreshold: 4.8
 --- !u!114 &7177849582715194997
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1397,8 +1397,8 @@ MonoBehaviour:
   targetBody: {fileID: 3446957641630180036}
   dragCoefficient: 1.05
   crossSectionArea: 0.09
-  windSensitivity: 1.15
-  wakeGustThreshold: 2.8
+  windSensitivity: 0.9
+  wakeGustThreshold: 4.8
 --- !u!114 &4645337195207909043
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1666,8 +1666,8 @@ MonoBehaviour:
   targetBody: {fileID: 3604739422234512333}
   dragCoefficient: 1.05
   crossSectionArea: 0.09
-  windSensitivity: 1.15
-  wakeGustThreshold: 2.8
+  windSensitivity: 0.9
+  wakeGustThreshold: 4.8
 --- !u!114 &8455368605854732043
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2025,8 +2025,8 @@ MonoBehaviour:
   targetBody: {fileID: 8167214460535569083}
   dragCoefficient: 1.05
   crossSectionArea: 0.09
-  windSensitivity: 1.15
-  wakeGustThreshold: 2.8
+  windSensitivity: 0.9
+  wakeGustThreshold: 4.8
 --- !u!114 &4317254455494869144
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2204,8 +2204,8 @@ MonoBehaviour:
   targetBody: {fileID: 2375102293067060738}
   dragCoefficient: 1.05
   crossSectionArea: 0.09
-  windSensitivity: 1.15
-  wakeGustThreshold: 2.8
+  windSensitivity: 0.9
+  wakeGustThreshold: 4.8
 --- !u!114 &1271851793327123457
 MonoBehaviour:
   m_ObjectHideFlags: 0

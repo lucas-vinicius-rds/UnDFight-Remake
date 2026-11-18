@@ -675,6 +675,10 @@ namespace UnDFight.Tests
             var (sim, _, p1, p2, stageMgr, _, _) = CreateStageCombatRig(withMatchManager: true);
             p1.SetSimPositionX(-1.6f);
             p2.SetSimPositionX(2.4f);
+            p1.transform.position = new Vector3(-1.6f, 0f, 0f);
+            p2.transform.position = new Vector3(2.4f, 0f, 0f);
+            p1.DebrisPusher?.SyncFromFighter(useMovePosition: false);
+            p2.DebrisPusher?.SyncFromFighter(useMovePosition: false);
             sim.ForceUpdateFacing();
 
             // Reference fighter simulation with NO dynamic props and NO PhysX contact
@@ -683,6 +687,8 @@ namespace UnDFight.Tests
             var refP1 = CreateFighter("RefP1", p1.Data, -1.6f, withKinematicRigidbody: false);
             var refP2 = CreateFighter("RefP2", p2.Data, 2.4f, withKinematicRigidbody: false);
             refSim.SetParticipants(refP1, refP2);
+            if (refP1.DebrisPusher != null) refP1.DebrisPusher.gameObject.SetActive(false);
+            if (refP2.DebrisPusher != null) refP2.DebrisPusher.gameObject.SetActive(false);
 
             // Loose dynamic can placed directly in P1's forward walk path at Z=0
             var canGo = Track(GameObject.CreatePrimitive(PrimitiveType.Cylinder));
@@ -882,6 +888,102 @@ namespace UnDFight.Tests
                 Assert.AreEqual(StageWeatherVariant.RainyNight, GameSessionState.SelectedWeather);
                 StringAssert.Contains("NOITE CHUVOSA", ctrl.WeatherLabelText.text);
             }
+        }
+
+        [Test]
+        public void WeatherAudio_OnlyPlaysInRainyNight_SilentInDayAndCleanNight()
+        {
+            var audioGo = Track(new GameObject("Test_WeatherAudioMgr"));
+            var audioMgr = audioGo.AddComponent<FightAudioManager>();
+            audioMgr.EnsureAudioReady();
+
+            audioMgr.SetWeatherAmbience(StageWeatherVariant.Day, enabled: true);
+            Assert.IsNull(audioMgr.WeatherAmbientSource.clip, "Day must NOT activate weather ambience audio.");
+
+            audioMgr.SetWeatherAmbience(StageWeatherVariant.Night, enabled: true);
+            Assert.IsNull(audioMgr.WeatherAmbientSource.clip, "Clean Night must NOT activate rain/wind ambience audio.");
+
+            audioMgr.SetWeatherAmbience(StageWeatherVariant.RainyNight, enabled: true);
+            Assert.IsNotNull(audioMgr.WeatherAmbientSource.clip, "RainyNight must activate the rain ambience loop clip.");
+            Assert.AreEqual("AMB_Weather_Rain_Loop", audioMgr.WeatherAmbientSource.clip.name);
+
+            audioMgr.SetWeatherAmbience(StageWeatherVariant.Night, enabled: true);
+            Assert.IsNull(audioMgr.WeatherAmbientSource.clip, "Switching back from RainyNight to clean Night must stop weather ambience.");
+        }
+
+        [Test]
+        public void DayAndNightWind_StaysBelowGroundPropThresholds_WhileRainyNightMovesObjects()
+        {
+            GameObject canPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnDFight/Prefabs/StageProps/Prop_DynamicCan.prefab");
+            GameObject cratePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnDFight/Prefabs/StageProps/Prop_BreakableCrate.prefab");
+            GameObject signPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnDFight/Prefabs/StageProps/Prop_HangingSign.prefab");
+            Assert.IsNotNull(canPrefab);
+            Assert.IsNotNull(cratePrefab);
+            Assert.IsNotNull(signPrefab);
+
+            StageWindAffectable canWind = canPrefab.GetComponent<StageWindAffectable>();
+            StageWindAffectable debrisWind = cratePrefab.GetComponentInChildren<StageDebrisFragment>(true).GetComponent<StageWindAffectable>();
+            StageWindAffectable signWind = signPrefab.GetComponentInChildren<StageWindAffectable>(true);
+            Assert.IsNotNull(canWind);
+            Assert.IsNotNull(debrisWind);
+            Assert.IsNotNull(signWind);
+
+            Assert.AreEqual(4.2f, canWind.WakeGustThreshold, 0.01f);
+            Assert.AreEqual(0.95f, canWind.WindSensitivity, 0.01f);
+            Assert.AreEqual(4.8f, debrisWind.WakeGustThreshold, 0.01f);
+            Assert.AreEqual(0.90f, debrisWind.WindSensitivity, 0.01f);
+            Assert.AreEqual(0.75f, signWind.WakeGustThreshold, 0.01f);
+            Assert.AreEqual(1.20f, signWind.WindSensitivity, 0.01f);
+
+            var windGo = Track(new GameObject("Test_CalibratedWind"));
+            var wind = windGo.AddComponent<StageWindController>();
+
+            // Day max wind peak (~1.0 m/s) and Night max wind peak (~1.8 m/s) stay well below ground prop thresholds
+            wind.ApplyWeatherPreset(StageWeatherVariant.Day);
+            float dayPeak = wind.BaseWindSpeed + wind.GustAmplitude;
+            Assert.LessOrEqual(dayPeak, 1.05f);
+            Assert.Less(dayPeak, canWind.WakeGustThreshold, "Day breeze must not wake/drag resting cans.");
+            Assert.Less(dayPeak, debrisWind.WakeGustThreshold, "Day breeze must not wake/drag resting debris.");
+
+            wind.ApplyWeatherPreset(StageWeatherVariant.Night);
+            float nightPeak = wind.BaseWindSpeed + wind.GustAmplitude;
+            Assert.LessOrEqual(nightPeak, 1.85f);
+            Assert.Less(nightPeak, canWind.WakeGustThreshold, "Clean Night breeze must not wake/drag resting cans.");
+            Assert.Less(nightPeak, debrisWind.WakeGustThreshold, "Clean Night breeze must not wake/drag resting debris.");
+
+            // Simulate resting can on floor during Night -> stays asleep & unmoved
+            var floorGo = Track(new GameObject("Test_CalibratedFloor"));
+            floorGo.layer = StagePhysicsLayers.StagePhysicsLayer;
+            floorGo.transform.position = new Vector3(0f, -0.5f, 0f);
+            floorGo.AddComponent<BoxCollider>().size = new Vector3(30f, 1f, 10f);
+
+            GameObject canInst = Track(Object.Instantiate(canPrefab, new Vector3(0f, 0.12f, 0f), Quaternion.identity));
+            var dynCan = canInst.GetComponent<StageDynamicProp>();
+            dynCan.EnsureComponents();
+            Physics.SyncTransforms();
+            for (int i = 0; i < 30; i++) Physics.Simulate(FightSimulation.TickDeltaTime);
+            dynCan.Body.linearVelocity = Vector3.zero;
+            dynCan.Body.angularVelocity = Vector3.zero;
+            dynCan.Body.Sleep();
+            Vector3 restingPos = canInst.transform.position;
+
+            for (int i = 0; i < 45; i++)
+            {
+                wind.StepWind(FightSimulation.TickDeltaTime, useSceneDiscoveryFallback: true);
+                Physics.Simulate(FightSimulation.TickDeltaTime);
+            }
+            Assert.Less(Vector3.Distance(restingPos, canInst.transform.position), 0.02f, "Resting dynamic can must NOT be dragged by clean Night breeze.");
+
+            // Switch to RainyNight (6.2..10.7 m/s) -> exceeds threshold, wakes and moves the can!
+            wind.ApplyWeatherPreset(StageWeatherVariant.RainyNight);
+            Assert.Greater(wind.BaseWindSpeed, canWind.WakeGustThreshold);
+            Assert.Greater(wind.BaseWindSpeed, debrisWind.WakeGustThreshold);
+            for (int i = 0; i < 60; i++)
+            {
+                wind.StepWind(FightSimulation.TickDeltaTime, useSceneDiscoveryFallback: true);
+                Physics.Simulate(FightSimulation.TickDeltaTime);
+            }
+            Assert.Greater(canInst.transform.position.x - restingPos.x, 0.15f, "RainyNight storm gusts must exceed wakeThreshold and move ground props.");
         }
     }
 }

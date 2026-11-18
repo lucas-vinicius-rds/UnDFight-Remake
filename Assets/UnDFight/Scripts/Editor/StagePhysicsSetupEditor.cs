@@ -334,7 +334,7 @@ namespace UnDFight.Editor
             {
                 wind = managerGo.AddComponent<StageWindController>();
             }
-            wind.Configure(new Vector3(1f, 0f, 0.14f), baseSpeed: 1.5f, gustAmp: 1.2f, gustFreq: 0.28f);
+            wind.Configure(new Vector3(1f, 0f, 0.14f), baseSpeed: 0.55f, gustAmp: 0.45f, gustFreq: 0.22f);
 
             StageWeatherController weather = managerGo.GetComponent<StageWeatherController>();
             if (weather == null)
@@ -406,9 +406,9 @@ namespace UnDFight.Editor
                 skyGroundColor = new Color(0.38f, 0.26f, 0.18f, 1f),
                 skyExposure = 1.15f,
                 skyAtmosphereThickness = 1.45f,
-                windBaseSpeed = 1.5f,
-                windGustAmplitude = 1.2f,
-                windGustFrequency = 0.28f,
+                windBaseSpeed = 0.55f,
+                windGustAmplitude = 0.45f,
+                windGustFrequency = 0.22f,
                 secondaryLightsMultiplier = 1.0f
             };
 
@@ -668,7 +668,7 @@ namespace UnDFight.Editor
             rb.interpolation = RigidbodyInterpolation.Interpolate;
 
             var wind = go.AddComponent<StageWindAffectable>();
-            wind.Configure(cd: 1.05f, areaM2: 0.09f, sensitivity: 1.15f, wakeThreshold: 2.8f, bodyOverride: rb);
+            wind.Configure(cd: 1.05f, areaM2: 0.09f, sensitivity: 0.90f, wakeThreshold: 4.8f, bodyOverride: rb);
 
             var frag = go.AddComponent<StageDebrisFragment>();
             frag.PersistUntilReset = true;
@@ -701,7 +701,7 @@ namespace UnDFight.Editor
                 rb.interpolation = RigidbodyInterpolation.Interpolate;
 
                 var wind = root.AddComponent<StageWindAffectable>();
-                wind.Configure(cd: 1.05f, areaM2: 0.11f, sensitivity: 1.35f, wakeThreshold: 1.9f, bodyOverride: rb);
+                wind.Configure(cd: 1.05f, areaM2: 0.11f, sensitivity: 0.95f, wakeThreshold: 4.2f, bodyOverride: rb);
 
                 var dyn = root.AddComponent<StageDynamicProp>();
                 var so = new SerializedObject(dyn);
@@ -769,7 +769,7 @@ namespace UnDFight.Editor
                 hinge.limits = new JointLimits { min = -55f, max = 55f, bounciness = 0.1f };
 
                 var wind = bodyGo.AddComponent<StageWindAffectable>();
-                wind.Configure(cd: 1.25f, areaM2: 0.36f, sensitivity: 1.45f, wakeThreshold: 1.0f, bodyOverride: swingRb);
+                wind.Configure(cd: 1.25f, areaM2: 0.36f, sensitivity: 1.20f, wakeThreshold: 0.75f, bodyOverride: swingRb);
 
                 var hanging = root.AddComponent<StageHangingProp>();
                 var so = new SerializedObject(hanging);

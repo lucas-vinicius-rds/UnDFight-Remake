@@ -78,8 +78,11 @@ Onde:
 - $\rho = 1,225\text{ kg/m}^3$ é a densidade padrão do ar ao nível do mar (`airDensity`).
 - $C_d$ é o coeficiente de arrasto do objeto (`dragCoefficient`, ex.: `1.05` para latas/cacos, `1.25` para placas planas).
 - $A$ é a área de seção transversal em $\text{m}^2$ (`crossSectionArea`, ex.: `0.09–0.36 m²`).
-- $\vec{v}_{\text{vento}}(t)$ combina velocidade base e rajadas contínuas geradas por **Perlin Noise + senoide**, variando conforme o clima escolhido (`Day`: brisa leve; `Night`: vento moderado; `RainyNight`: rajadas fortes de tempestade).
-- **Limiar de Rajada (`wakeGustThreshold`)**: corpos em *Auto-Sleep* só acordam quando $|\vec{v}_{\text{vento}}| \ge \text{wakeGustThreshold}$, evitando gasto de CPU e tremores em brisas fracas enquanto latas leves e placas balançam de forma expressiva em rajadas e tempestades.
+- $\vec{v}_{\text{vento}}(t)$ combina velocidade base e rajadas contínuas geradas por **Perlin Noise + senoide**, variando conforme o clima escolhido:
+  - **`Day` (Dia / Pôr do Sol)**: brisa muito leve (`base = 0,55 m/s`, `gust = 0,45 m/s`, pico `~1,0 m/s`).
+  - **`Night` (Noite limpa)**: brisa noturna suave (`base = 1,05 m/s`, `gust = 0,75 m/s`, pico `~1,8 m/s`).
+  - **`RainyNight` (Noite Chuvosa)**: rajadas fortes de tempestade (`base = 6,2 m/s`, `gust = 4,5 m/s`, pico `~10,7 m/s`).
+- **Limiar de Rajada (`wakeGustThreshold`)**: corpos em *Auto-Sleep* só acordam quando $|\vec{v}_{\text{vento}}| \ge \text{wakeGustThreshold}$. Objetos no chão (`Prop_DynamicCan` = `4,2 m/s`, `StageDebrisFragment` = `4,8 m/s`) permanecem estáveis no chão em `Day` e `Night` (movidos apenas por lutadores e ondas de choque), enquanto balançam/rolam fortemente em `RainyNight`; já pendulares (`Prop_HangingSign` = `0,75 m/s`) respondem suavemente até à brisa leve.
 
 ---
 
@@ -93,4 +96,4 @@ Onde:
     - Um `ParticleSystem` de chuva 3D cobre toda a arena com a inclinação das gotas acoplada em tempo real ao vetor `StageWindController.CurrentWindVelocity`.
     - O módulo **Collision (World 3D)** testa colisão real das gotas contra `StagePhysics` (8) e `StageDebris` (9), disparando um **Sub Emitter** de respingo (*Splash*) exatamente no ponto de impacto.
     - O piso molhado é aplicado em runtime via `MaterialPropertyBlock` (`_Smoothness` elevado + leve escurecimento do albedo), preservando intactos os materiais `.mat` do projeto no disco.
-    - Áudio procedural contínuo de chuva/vento (`ProceduralAudioFactory` + `FightAudioManager`) acompanha o clima respeitando o volume de SFX/Master em `SettingsManager`.
+    - Áudio procedural contínuo de chuva (`ProceduralAudioFactory` + `FightAudioManager`) reproduzido exclusivamente em `RainyNight` (mantendo `Day` e `Night` limpa silenciosos quanto ao clima), respeitando o volume de SFX/Master em `SettingsManager`.
