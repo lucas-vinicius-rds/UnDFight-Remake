@@ -13,6 +13,8 @@ namespace UnDFight
         public FightingArchetype archetype = FightingArchetype.HeavyBrawler;
         public GameObject prefab;
         public Sprite portrait;
+        public bool isSecretBoss = false;
+        public bool unlockedByDefault = true;
 
         [Header("Physical Dimensions (Reference: 1.81 m / 92 kg)")]
         [Min(0.5f)] public float heightMeters = 1.81f;

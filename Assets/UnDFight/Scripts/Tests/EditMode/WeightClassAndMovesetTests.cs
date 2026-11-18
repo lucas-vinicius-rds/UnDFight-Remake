@@ -48,6 +48,7 @@ namespace UnDFight.Tests
             Assert.AreEqual("BRIGUENTO DE RUA", FighterScaling.GetArchetypeLabel(FightingArchetype.StreetScrappy));
             Assert.AreEqual("ÁGIL", FighterScaling.GetArchetypeLabel(FightingArchetype.AgileStriker));
             Assert.AreEqual("TÉCNICO", FighterScaling.GetArchetypeLabel(FightingArchetype.TechnicalStriker));
+            Assert.AreEqual("CHEFE EXECUTIVO", FighterScaling.GetArchetypeLabel(FightingArchetype.BossExecutive));
         }
 
         [Test]
@@ -55,7 +56,7 @@ namespace UnDFight.Tests
         {
             var roster = AssetDatabase.LoadAssetAtPath<FighterRoster>("Assets/UnDFight/Data/FighterRoster.asset");
             Assert.IsNotNull(roster);
-            Assert.AreEqual(7, roster.Count);
+            Assert.AreEqual(8, roster.Count);
             Assert.AreEqual("Lucas", roster.GetFighter(0).fighterName);
             Assert.AreEqual("Tiago", roster.GetFighter(1).fighterName);
             Assert.AreEqual("Jompes", roster.GetFighter(2).fighterName);
@@ -63,6 +64,63 @@ namespace UnDFight.Tests
             Assert.AreEqual("Isaac", roster.GetFighter(4).fighterName);
             Assert.AreEqual("Enomoto", roster.GetFighter(5).fighterName);
             Assert.AreEqual("Gabubu", roster.GetFighter(6).fighterName);
+            Assert.AreEqual("Ibaneis", roster.GetFighter(7).fighterName);
+        }
+
+        [Test]
+        public void FighterAssets_IbaneisBossExecutive_HasHeavyMoveset52Bones26ClipsAndBossDecree()
+        {
+            var ibaneis = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Ibaneis.asset");
+            Assert.IsNotNull(ibaneis, "Missing FighterData_Ibaneis");
+
+            Assert.AreEqual("Ibaneis", ibaneis.fighterName);
+            Assert.AreEqual(1.70f, ibaneis.heightMeters, 0.001f);
+            Assert.AreEqual(120f, ibaneis.weightKg, 0.01f);
+            Assert.AreEqual(1100, ibaneis.maxHealth);
+            Assert.AreEqual(WeightClass.Heavy, ibaneis.WeightCategory);
+            Assert.AreEqual(FightingArchetype.BossExecutive, ibaneis.archetype);
+            Assert.IsTrue(ibaneis.isSecretBoss);
+            Assert.IsTrue(ibaneis.unlockedByDefault);
+            Assert.IsTrue(ibaneis.fbxHeightPrebaked);
+            Assert.AreEqual(1.0f, ibaneis.VisualScale, 1e-5f);
+            Assert.AreEqual(1.70f / 1.81f, ibaneis.HurtboxScale, 1e-5f);
+
+            Assert.AreEqual(24, ibaneis.lightPunch.TotalTicks);
+            Assert.AreEqual(39, ibaneis.heavyPunch.TotalTicks);
+            Assert.AreEqual(27, ibaneis.lightKick.TotalTicks);
+            Assert.AreEqual(45, ibaneis.heavyKick.TotalTicks);
+            Assert.AreEqual(37, ibaneis.comboPunchFinisher.TotalTicks);
+            Assert.AreEqual(40, ibaneis.comboKickFinisher.TotalTicks);
+            Assert.AreEqual(37, ibaneis.crouchKick.TotalTicks);
+            Assert.AreEqual(21, ibaneis.jumpAttack.TotalTicks);
+            Assert.AreEqual(25, ibaneis.throwMove.TotalTicks);
+
+            Assert.AreEqual("Decreto de Ferro", ibaneis.specialMove.moveName);
+            Assert.AreEqual(SpecialMechanicType.BossDecree, ibaneis.specialMove.specialMechanic);
+            Assert.AreEqual(37, ibaneis.specialMove.TotalTicks);
+            Assert.AreEqual(255, ibaneis.specialMove.damage);
+            Assert.AreEqual(35, ibaneis.specialMove.chipDamage);
+            Assert.AreEqual(2, ibaneis.specialMove.armorStartTick);
+            Assert.AreEqual(16, ibaneis.specialMove.armorEndTick);
+            Assert.IsTrue(ibaneis.specialMove.spawnsProjectile);
+            Assert.AreEqual(9.0f, ibaneis.specialMove.projectileSpeed, 0.01f);
+            Assert.IsTrue(ibaneis.specialMove.causesKnockdown);
+            Assert.AreEqual(14, ibaneis.specialMove.hitstopTicks);
+            Assert.AreEqual(14, ibaneis.specialMove.superFreezeTicks);
+
+            Assert.IsNotNull(ibaneis.comboStrings);
+            Assert.AreEqual(4, ibaneis.comboStrings.Length);
+            Assert.AreEqual("ORDEM EXECUTIVA", ibaneis.comboStrings[0].stringName);
+            Assert.AreEqual("VETO ABSOLUTO", ibaneis.comboStrings[1].stringName);
+            Assert.AreEqual("CORTE DE VERBA", ibaneis.comboStrings[2].stringName);
+            Assert.AreEqual("DEMISSÃO SUMÁRIA", ibaneis.comboStrings[3].stringName);
+            Assert.AreEqual(FighterInputButton.HeavyKick, ibaneis.comboStrings[3].steps[2].inputButton);
+            Assert.AreEqual(AttackType.ComboKickFinisher, ibaneis.comboStrings[3].steps[2].attackType);
+
+            string ibaneisFbx = "Assets/UnDFight/Art/Models/Ibaneis/Ibaneis.fbx";
+            AssertMovesetMatchesFbx(ibaneis, ibaneisFbx, "AOC_Ibaneis");
+            Assert.AreEqual(52, ((ModelImporter)AssetImporter.GetAtPath(ibaneisFbx)).humanDescription.human.Length);
+            AssertPrefabHurtboxPhysics(ibaneis.prefab);
         }
 
         [Test]
@@ -679,7 +737,7 @@ namespace UnDFight.Tests
 
             Transform grid = canvasGo.transform.Find("RosterGridPanel/Grid");
             Assert.IsNotNull(grid);
-            Assert.AreEqual(7, grid.childCount);
+            Assert.AreEqual(8, grid.childCount);
             for (int i = 0; i < grid.childCount; i++)
             {
                 var nameTmp = grid.GetChild(i).Find("Name")?.GetComponent<TMPro.TextMeshProUGUI>();
@@ -689,6 +747,9 @@ namespace UnDFight.Tests
                 Assert.AreEqual(24f, nameTmp.fontSizeMax, 0.01f);
                 Assert.AreEqual(TMPro.TextWrappingModes.NoWrap, nameTmp.textWrappingMode);
             }
+            var ibaneisBadge = grid.GetChild(7).Find("Badge")?.GetComponent<TMPro.TextMeshProUGUI>();
+            Assert.IsNotNull(ibaneisBadge);
+            StringAssert.Contains("CHEFE", ibaneisBadge.text);
 
             // 2. Gabubu's Riff Destruidor (MultiHitRush): 2 distinct active hits + knockdown
             {
@@ -791,7 +852,7 @@ namespace UnDFight.Tests
         {
             var roster = AssetDatabase.LoadAssetAtPath<FighterRoster>("Assets/UnDFight/Data/FighterRoster.asset");
             Assert.IsNotNull(roster);
-            Assert.AreEqual(7, roster.Count);
+            Assert.AreEqual(8, roster.Count);
 
             for (int i = 0; i < roster.Count; i++)
             {

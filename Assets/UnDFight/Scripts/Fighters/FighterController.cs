@@ -532,7 +532,7 @@ namespace UnDFight
                 !_hasRegisteredContactOnMove &&
                 !_hasRegisteredHit &&
                 _currentMoveData != null &&
-                !_currentMoveData.spawnsProjectile &&
+                (!_currentMoveData.spawnsProjectile || _currentMoveData.specialMechanic == SpecialMechanicType.BossDecree) &&
                 _currentMoveData.IsActiveTick(_stateTicks))
             {
                 float scale = fighterData != null ? fighterData.HurtboxScale : 1f;

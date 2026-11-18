@@ -34,7 +34,8 @@ namespace UnDFight
         ArmoredSmash = 1,
         MultiHitRush = 2,
         ProjectileShot = 3,
-        AntiAirSpin = 4
+        AntiAirSpin = 4,
+        BossDecree = 5
     }
 
     public struct CombatHitEvent

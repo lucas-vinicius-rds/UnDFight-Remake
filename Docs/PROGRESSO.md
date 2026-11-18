@@ -7,7 +7,7 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 ## Decisoes
 - Unity (C#, URP, Input System novo), 2.5D lateral, simulacao em 60 Hz
 - Versus local + CPU simples; teclado e gamepad
-- Lutadores: Lucas (man_in_black) 1,81 m / 92 kg | Tiago 1,79 m / 87 kg | Jompes 1,65 m / 70 kg | Rochard 1,75 m / 67 kg | Isaac 1,73 m / 73 kg | Enomoto 1,77 m / 80 kg | Gabubu 1,62 m / 67 kg
+- Lutadores: Lucas (man_in_black) 1,81 m / 92 kg | Tiago 1,79 m / 87 kg | Jompes 1,65 m / 70 kg | Rochard 1,75 m / 67 kg | Isaac 1,73 m / 73 kg | Enomoto 1,77 m / 80 kg | Gabubu 1,62 m / 67 kg | Ibaneis (the_watchful_executive, Chefe Final) 1,70 m / 120 kg
 - Golpes: soco fraco/forte, chute fraco/forte, golpe especial exclusivo (100% barra), chain combos no acerto, agachar, pular, bloquear
 - Modelos originais: D:\Tralhas\Models (copiar, nao mover)
 - Mapa: favela carioca ao por do sol (referencia enviada)
@@ -42,5 +42,6 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 - [x] Fase 14.1.1 - Sistema de Combo Strings estilo Mortal Kombat (Dial-a-Combo queue, blockstrings, mix-ups Overhead/Low, finalizadores `ComboPunchFinisher` / `ComboKickFinisher`, 26 clipes a 60 fps nos 7 lutadores, nome da string na HUD e suporte na IA)
 - [x] Fase 14.1.2 - Desaceleracao calibrada e peso do combate em 60 Hz (nova tabela de frame data +25%–35% em startup/recovery, reexportacao dos 26 clipes a 60 fps nos 7 lutadores com `MoveData.TotalTicks == clipFrames`, hitstop/hitstun/blockstun ampliados, velocidades de locomocao/pulo/gravidade/projeteis recalibradas e janela Dial-a-Combo de 22 ticks)
 - [x] Fase 14.1.3 - Pulo padrao sincronizado com a fisica 60 Hz (clipe `Jump` de 48 frames `1..49` em arco aereo puro `0.00..1.00`, parametro `Float JumpProgress` com `timeParameterActive = true` em `AC_Fighter.controller` e arco de pulo calibrado `jumpForce = 10,6` / `baseGravity = 28,0` nos 7 lutadores)
+- [x] Fase 14.2 - Chefe Final Secreto: Ibaneis (`the_watchful_executive`, `1,70 m / 120 kg`, `Heavy`, `BossExecutive`, `maxHealth = 1100`, `isSecretBoss = true`, Especial **`Decreto de Ferro`** com `SpecialMechanicType.BossDecree` combinando Super Armor + impacto melee + onda de choque 60 Hz a `9,0 m/s`, 4 Combo Strings exclusivas e grade `4x2` completa com 8 lutadores)
 
 - Decisao: animacoes em 60 fps (1 frame anim = 1 tick de simulacao)

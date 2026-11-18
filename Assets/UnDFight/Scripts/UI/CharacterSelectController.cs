@@ -482,7 +482,9 @@ namespace UnDFight
             nav.mode = UnityEngine.UI.Navigation.Mode.None;
             btn.navigation = nav;
 
-            MenuUiFactory.AddBorder(go.transform, MenuUiFactory.BronzeBorder, whiteSprite, 1.5f);
+            bool isBoss = data != null && data.isSecretBoss;
+            Color cardBorderColor = isBoss ? new Color(0.85f, 0.36f, 0.14f, 0.95f) : MenuUiFactory.BronzeBorder;
+            MenuUiFactory.AddBorder(go.transform, cardBorderColor, whiteSprite, isBoss ? 2.0f : 1.5f);
 
             RectTransform p1Rim = MenuUiFactory.CreatePanel("P1Rim", go.transform, MenuUiFactory.AccentGold, whiteSprite);
             p1Rim.anchorMin = new Vector2(0f, 1f);
@@ -496,7 +498,8 @@ namespace UnDFight
             p2Rim.pivot = new Vector2(0.5f, 0f);
             p2Rim.sizeDelta = new Vector2(0f, 5f);
 
-            TextMeshProUGUI nameTmp = MenuUiFactory.CreateText("Name", go.transform, data.fighterName.ToUpperInvariant(), 24f, FontStyles.Bold, TextAlignmentOptions.Center, Color.white, characterSpacing: 5f);
+            Color nameColor = isBoss ? new Color(1.0f, 0.90f, 0.60f, 1.0f) : Color.white;
+            TextMeshProUGUI nameTmp = MenuUiFactory.CreateText("Name", go.transform, data.fighterName.ToUpperInvariant(), 24f, FontStyles.Bold, TextAlignmentOptions.Center, nameColor, characterSpacing: 5f);
             nameTmp.enableAutoSizing = true;
             nameTmp.fontSizeMin = 13f;
             nameTmp.fontSizeMax = 24f;
@@ -900,22 +903,52 @@ namespace UnDFight
                 RosterCardView c = _cards[i];
                 bool isP1 = i == _p1Index;
                 bool isP2 = i == _p2Index;
+                bool isBoss = c.Data != null && c.Data.isSecretBoss;
 
                 if (c.P1Outline != null) c.P1Outline.enabled = isP1;
                 if (c.P2Outline != null) c.P2Outline.enabled = isP2;
                 if (c.Background != null)
                 {
-                    c.Background.color = (isP1 || isP2)
-                        ? new Color(0.18f, 0.145f, 0.095f, 0.96f)
-                        : MenuUiFactory.PanelDarkBg;
+                    if (isP1 || isP2)
+                    {
+                        c.Background.color = isBoss
+                            ? new Color(0.24f, 0.12f, 0.08f, 0.96f)
+                            : new Color(0.18f, 0.145f, 0.095f, 0.96f);
+                    }
+                    else
+                    {
+                        c.Background.color = isBoss
+                            ? new Color(0.14f, 0.075f, 0.065f, 0.96f)
+                            : MenuUiFactory.PanelDarkBg;
+                    }
                 }
 
                 if (c.BadgeText != null)
                 {
-                    if (isP1 && isP2) c.BadgeText.text = "P1 + P2";
-                    else if (isP1) c.BadgeText.text = _p1Confirmed ? "P1 PRONTO" : "P1";
-                    else if (isP2) c.BadgeText.text = _p2Confirmed ? "P2 PRONTO" : "P2";
-                    else c.BadgeText.text = string.Empty;
+                    if (isP1 && isP2)
+                    {
+                        c.BadgeText.text = "P1 + P2";
+                        c.BadgeText.color = MenuUiFactory.AccentGold;
+                    }
+                    else if (isP1)
+                    {
+                        c.BadgeText.text = _p1Confirmed ? "P1 PRONTO" : "P1";
+                        c.BadgeText.color = MenuUiFactory.AccentGold;
+                    }
+                    else if (isP2)
+                    {
+                        c.BadgeText.text = _p2Confirmed ? "P2 PRONTO" : "P2";
+                        c.BadgeText.color = MenuUiFactory.AccentGold;
+                    }
+                    else if (isBoss)
+                    {
+                        c.BadgeText.text = "★ CHEFE ★";
+                        c.BadgeText.color = new Color(0.96f, 0.52f, 0.22f, 0.95f);
+                    }
+                    else
+                    {
+                        c.BadgeText.text = string.Empty;
+                    }
                 }
             }
         }

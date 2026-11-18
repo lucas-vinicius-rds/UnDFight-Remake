@@ -181,16 +181,18 @@ namespace UnDFight
         {
             if (caster == null) return;
             Vector2 center = caster.SimPosition + new Vector2(0f, 1.15f);
+            bool isBossExecutive = caster.Data != null &&
+                                   (caster.Data.isSecretBoss || caster.Data.archetype == FightingArchetype.BossExecutive);
             SpawnCustomSparkBurst(
-                "VFX_SuperFlash",
+                isBossExecutive ? "VFX_BossDecreeFlash" : "VFX_SuperFlash",
                 center,
-                new Color(1.0f, 0.90f, 0.28f, 1.0f),
-                new Color(0.95f, 0.65f, 1.0f, 1.0f),
+                isBossExecutive ? new Color(1.0f, 0.78f, 0.16f, 1.0f) : new Color(1.0f, 0.90f, 0.28f, 1.0f),
+                isBossExecutive ? new Color(0.92f, 0.16f, 0.22f, 1.0f) : new Color(0.95f, 0.65f, 1.0f, 1.0f),
                 duration: Mathf.Max(0.28f, freezeTicks * FightSimulation.TickDeltaTime * 1.4f),
-                initialScale: 0.68f,
-                maxCoreScale: 1.55f,
-                rayCount: 20,
-                raySpeed: 5.6f);
+                initialScale: isBossExecutive ? 0.75f : 0.68f,
+                maxCoreScale: isBossExecutive ? 1.70f : 1.55f,
+                rayCount: isBossExecutive ? 24 : 20,
+                raySpeed: isBossExecutive ? 6.0f : 5.6f);
         }
 
         private void HandleProjectileClashed(Vector2 clashPoint)

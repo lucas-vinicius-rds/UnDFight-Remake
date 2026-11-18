@@ -261,7 +261,7 @@ namespace UnDFight
                 FacingSign = owner.FacingSign,
                 RemainingTicks = Mathf.Max(1, move.projectileLifetimeTicks),
                 Active = true,
-                VisualObject = CreateProjectileVisual(spawnPos, move.projectileHitboxSize * scale)
+                VisualObject = CreateProjectileVisual(spawnPos, move.projectileHitboxSize * scale, move.specialMechanic)
             };
 
             _activeProjectiles.Add(proj);
@@ -657,6 +657,18 @@ namespace UnDFight
                     continue;
                 }
 
+                // Prevent BossDecree shockwave from double-hitting on the exact same attack execution if melee strike already connected
+                if (p.Move != null &&
+                    p.Move.specialMechanic == SpecialMechanicType.BossDecree &&
+                    p.Owner != null &&
+                    p.Owner.State == FighterState.Attack &&
+                    p.Owner.CurrentMoveData == p.Move &&
+                    p.Owner.HasRegisteredContactOnMove)
+                {
+                    p.Active = false;
+                    continue;
+                }
+
                 Rect hurtbox = p.Target.GetHurtboxRect();
                 Rect projRect = p.GetHitboxRect();
                 if (!projRect.Overlaps(hurtbox))
@@ -721,18 +733,21 @@ namespace UnDFight
             }
         }
 
-        private GameObject CreateProjectileVisual(Vector2 spawnPos, Vector2 size)
+        private GameObject CreateProjectileVisual(Vector2 spawnPos, Vector2 size, SpecialMechanicType mechanic = SpecialMechanicType.ProjectileShot)
         {
             if (!Application.isPlaying)
             {
                 return null;
             }
 
+            bool isBossDecree = mechanic == SpecialMechanicType.BossDecree;
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            go.name = "CombatProjectile_Visual";
+            go.name = isBossDecree ? "BossDecreeShockwave_Visual" : "CombatProjectile_Visual";
             go.transform.position = new Vector3(spawnPos.x, spawnPos.y, 0f);
             float diameter = Mathf.Max(0.28f, Mathf.Min(size.x, size.y));
-            go.transform.localScale = new Vector3(diameter * 1.25f, diameter, diameter);
+            go.transform.localScale = isBossDecree
+                ? new Vector3(diameter * 1.45f, diameter * 1.15f, diameter * 1.15f)
+                : new Vector3(diameter * 1.25f, diameter, diameter);
             Collider col = go.GetComponent<Collider>();
             if (col != null) Destroy(col);
 
@@ -741,7 +756,9 @@ namespace UnDFight
             if (unlit != null)
             {
                 var mat = new Material(unlit);
-                Color c = new Color(0.58f, 0.25f, 1.0f, 1.0f);
+                Color c = isBossDecree
+                    ? new Color(1.0f, 0.72f, 0.16f, 1.0f)
+                    : new Color(0.58f, 0.25f, 1.0f, 1.0f);
                 if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
                 if (mat.HasProperty("_Color")) mat.SetColor("_Color", c);
                 var mr = go.GetComponent<MeshRenderer>();

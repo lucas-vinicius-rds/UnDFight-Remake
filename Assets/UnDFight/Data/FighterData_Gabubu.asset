@@ -16,6 +16,8 @@ MonoBehaviour:
   archetype: 1
   prefab: {fileID: 2701559511827773776, guid: 78a2b2cf54154db428f8166cc8834fdb, type: 3}
   portrait: {fileID: 0}
+  isSecretBoss: 0
+  unlockedByDefault: 1
   heightMeters: 1.62
   weightKg: 67
   fbxHeightPrebaked: 1

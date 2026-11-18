@@ -14,7 +14,8 @@ namespace UnDFight
         HeavyBrawler = 0,
         StreetScrappy = 1,
         AgileStriker = 2,
-        TechnicalStriker = 3
+        TechnicalStriker = 3,
+        BossExecutive = 4
     }
 
     /// <summary>
@@ -68,6 +69,7 @@ namespace UnDFight
                 FightingArchetype.StreetScrappy => "BRIGUENTO DE RUA",
                 FightingArchetype.AgileStriker => "ÁGIL",
                 FightingArchetype.TechnicalStriker => "TÉCNICO",
+                FightingArchetype.BossExecutive => "CHEFE EXECUTIVO",
                 _ => "LUTADOR"
             };
         }

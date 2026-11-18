@@ -1482,5 +1482,114 @@ namespace UnDFight.Tests
             Assert.GreaterOrEqual(airTicks, 43);
             Assert.LessOrEqual(airTicks, 51);
         }
+
+        [Test]
+        public void IbaneisSpecial_BossDecree_AbsorbsStrikeWithArmor_HitsMeleeAndFiresShockwaveProjectile()
+        {
+            var ibaneisData = UnityEditor.AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Ibaneis.asset");
+            var lucasData = UnityEditor.AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Lucas.asset");
+            Assert.IsNotNull(ibaneisData, "Missing FighterData_Ibaneis");
+            Assert.IsNotNull(lucasData, "Missing FighterData_Lucas");
+
+            // 1. Point-blank test: Super Armor absorbs opponent's LightPunch during startup, lands melee hit (255 dmg + knockdown) AND fires shockwave without double-hitting on same frame
+            {
+                var simGo = Track(new GameObject("Sim_BossDecree_Close"));
+                var sim = simGo.AddComponent<FightSimulation>();
+
+                var p1Go = Track(new GameObject("Ibaneis_Close"));
+                p1Go.transform.position = new Vector3(-0.55f, 0f, 0f);
+                p1Go.AddComponent<PlayerInputHandler>();
+                var p1 = p1Go.AddComponent<FighterController>();
+                p1.SetFighterData(ibaneisData);
+
+                var p2Go = Track(new GameObject("Defender_Close"));
+                p2Go.transform.position = new Vector3(0.55f, 0f, 0f);
+                p2Go.AddComponent<PlayerInputHandler>();
+                var p2 = p2Go.AddComponent<FighterController>();
+                p2.SetFighterData(lucasData);
+
+                sim.SetParticipants(p1, p2);
+                p1.InputHandler.SetSimulatedInput(default, true);
+                p2.InputHandler.SetSimulatedInput(default, true);
+                p1.SetSuperGauge(100);
+
+                var events = new List<CombatHitEvent>();
+                sim.OnCombatHit += e => events.Add(e);
+                int projectilesFired = 0;
+                FighterController.OnAnyProjectileFired += (owner, _) =>
+                {
+                    if (owner == p1) projectilesFired++;
+                };
+
+                // P1 starts Decreto de Ferro (14 superFreezeTicks, startup=12, armor ticks 2..16)
+                // Tick 1: starts Attack (StateTicks=1) and triggers 14 ticks of superFreeze
+                // Ticks 2..15: 14 superFreeze ticks
+                // Tick 16: StateTicks advances to 2 (armor active!)
+                p1.InputHandler.BufferButton(FighterInputButton.Special);
+                sim.StepSimulationTicks(1 + 14 + 2);
+                Assert.AreEqual(FighterState.Attack, p1.State);
+                Assert.AreEqual(AttackType.Special, p1.CurrentAttack);
+                Assert.IsTrue(p1.HasActiveSuperArmor);
+
+                // P2 throws LightPunch (startup=7) so it hits Ibaneis during startup while Super Armor is active
+                p2.InputHandler.BufferButton(FighterInputButton.LightPunch);
+                sim.StepSimulationTicks(35);
+
+                Assert.AreEqual(1, projectilesFired, "BossDecree must fire its shockwave projectile on FirstActiveTick.");
+                bool armorAbsorbedFound = false;
+                int hitsOnP2 = 0;
+                int damageToP2 = 0;
+                foreach (CombatHitEvent ev in events)
+                {
+                    if (ev.Defender == p1 && ev.WasArmorAbsorbed)
+                    {
+                        armorAbsorbedFound = true;
+                    }
+                    if (ev.Attacker == p1 && ev.Defender == p2)
+                    {
+                        hitsOnP2++;
+                        damageToP2 += ev.DamageDealt;
+                    }
+                }
+
+                Assert.IsTrue(armorAbsorbedFound, "Ibaneis's BossDecree must absorb incoming strike with Super Armor.");
+                Assert.AreEqual(1, hitsOnP2, "At close range, BossDecree melee hit must connect without instant double-damage from the shockwave.");
+                Assert.AreEqual(255, damageToP2);
+                Assert.AreEqual(FighterState.KnockDown, p2.State);
+            }
+
+            // 2. Long-range test: outside melee hitbox range, the shockwave projectile travels at 9.0 m/s and knocks the opponent down
+            {
+                var simGo = Track(new GameObject("Sim_BossDecree_Far"));
+                var sim = simGo.AddComponent<FightSimulation>();
+
+                var p1Go = Track(new GameObject("Ibaneis_Far"));
+                p1Go.transform.position = new Vector3(-1.80f, 0f, 0f);
+                p1Go.AddComponent<PlayerInputHandler>();
+                var p1 = p1Go.AddComponent<FighterController>();
+                p1.SetFighterData(ibaneisData);
+
+                var p2Go = Track(new GameObject("Defender_Far"));
+                p2Go.transform.position = new Vector3(1.80f, 0f, 0f);
+                p2Go.AddComponent<PlayerInputHandler>();
+                var p2 = p2Go.AddComponent<FighterController>();
+                p2.SetFighterData(lucasData);
+
+                sim.SetParticipants(p1, p2);
+                p1.InputHandler.SetSimulatedInput(default, true);
+                p2.InputHandler.SetSimulatedInput(default, true);
+                p1.SetSuperGauge(100);
+
+                var farHits = new List<CombatHitEvent>();
+                sim.OnCombatHit += e => farHits.Add(e);
+
+                p1.InputHandler.BufferButton(FighterInputButton.Special);
+                sim.StepSimulationTicks(1 + 14 + 45);
+
+                Assert.AreEqual(1, farHits.Count, "At long range, BossDecree shockwave projectile must hit and knock down the opponent.");
+                Assert.AreEqual(255, farHits[0].DamageDealt);
+                Assert.AreEqual(FighterState.KnockDown, p2.State);
+            }
+        }
     }
 }

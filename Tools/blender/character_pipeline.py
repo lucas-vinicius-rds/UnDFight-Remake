@@ -561,6 +561,56 @@ CHARACTER_CONFIGS = {
             "RightToes":     ((-0.1568,-0.0545, 0.0387), (-0.1785,-0.1831, 0.0387)),
         },
     },
+    "Ibaneis": {
+        "name": "Ibaneis",
+        "archetype_label": "Boss Executive",
+        "weight_kg": 120.0,
+        "weight_class": "heavy",
+        "fighting_style": "boss_executive",
+        "mesh_name": "Ibaneis_Body",
+        "armature_name": "Ibaneis_Armature",
+        "material_name": "Ibaneis_Mat",
+        "source_fbx": os.path.join(
+            PROJECT_ROOT,
+            r"Assets\UnDFight\Art\Source\Ibaneis\Meshy_AI_The_Watchful_Executiv_biped_Animation_Running_withSkin.fbx",
+        ),
+        "textures_dir": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Ibaneis"),
+        "orig_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Ibaneis_original.blend"),
+        "work_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Ibaneis.blend"),
+        "export_fbx": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Models\Ibaneis\Ibaneis.fbx"),
+        "target_height": 1.70,
+        "target_tris": 30000,
+        "body_tris_target": 12000,
+        "hair_z_threshold": 1.42,
+        "center_x": 0.0040,
+        "fps": 60,
+        "special_doc_note": "Especial **Decreto de Ferro**: postura imponente com Super Armor seguida de martelada dupla esmagadora e disparo de onda de choque (`RightHand`/`LeftHand` + projétil)",
+        "anim_overrides": {},
+        "joints": {
+            "Hips":          ((0.0076, -0.0417, 0.8050), (0.0070, -0.0176, 0.9642)),
+            "Spine":         ((0.0070, -0.0176, 0.9642), (0.0063,  0.0064, 1.1235)),
+            "Chest":         ((0.0063,  0.0064, 1.1235), (0.0057,  0.0304, 1.2828)),
+            "UpperChest":    ((0.0057,  0.0304, 1.2828), (0.0044,  0.0506, 1.4172)),
+            "Neck":          ((0.0044,  0.0506, 1.4172), (0.0038,  0.0612, 1.4875)),
+            "Head":          ((0.0038,  0.0612, 1.4875), (0.0038,  0.0250, 1.6850)),
+            "LeftShoulder":  ((0.0478,  0.0539, 1.3498), (0.2163,  0.0774, 1.3498)),
+            "LeftUpperArm":  ((0.2163,  0.0774, 1.3498), (0.4287,  0.1151, 1.2701)),
+            "LeftLowerArm":  ((0.4287,  0.1151, 1.2701), (0.6678,  0.1028, 1.2588)),
+            "LeftHand":      ((0.6678,  0.1028, 1.2588), (0.7650,  0.0975, 1.2598)),
+            "RightShoulder": ((-0.0379, 0.0537, 1.3422), (-0.2125, 0.0769, 1.3422)),
+            "RightUpperArm": ((-0.2125, 0.0769, 1.3422), (-0.4173, 0.1135, 1.2663)),
+            "RightLowerArm": ((-0.4173, 0.1135, 1.2663), (-0.6602, 0.1043, 1.2625)),
+            "RightHand":     ((-0.6602, 0.1043, 1.2625), (-0.7575, 0.0980, 1.2588)),
+            "LeftUpperLeg":  ((0.1005, -0.0349, 0.7371), (0.1404, -0.0081, 0.4658)),
+            "LeftLowerLeg":  ((0.1404, -0.0081, 0.4658), (0.1631,  0.0707, 0.1319)),
+            "LeftFoot":      ((0.1631,  0.0707, 0.1319), (0.1882, -0.0296, 0.0366)),
+            "LeftToes":      ((0.1882, -0.0296, 0.0366), (0.2223, -0.1660, 0.0366)),
+            "RightUpperLeg": ((-0.0933, -0.0350, 0.7371), (-0.1366, -0.0082, 0.4658)),
+            "RightLowerLeg": ((-0.1366, -0.0082, 0.4658), (-0.1556,  0.0703, 0.1319)),
+            "RightFoot":     ((-0.1556,  0.0703, 0.1319), (-0.1841, -0.0292, 0.0416)),
+            "RightToes":     ((-0.1841, -0.0292, 0.0416), (-0.2219, -0.1612, 0.0416)),
+        },
+    },
 }
 
 
@@ -1247,6 +1297,36 @@ def get_idle_stance(breath=0.0, style="heavy_brawler", phase=0.0):
             "RightFoot":     (-23.0 - 1.5 * abs(breath), 0.0, 0.0),
         }
 
+    if style == "boss_executive":
+        # Ibaneis (Boss Executive, 1.70m / 120kg): vigilant, heavy authoritative command stance
+        # Upright torso, commanding lead left fist guard, rear right hand poised firmly near waist/chest, deep planted base
+        return {
+            "HipsOffset":    (0.0, 0.0, -0.048 - 0.005 * breath),
+            "Hips":          (0.0, 0.4 * phase, 20.0 + 0.8 * phase),
+            "Spine":         (0.8 + 1.2 * breath, 0.0, 3.0 - 0.6 * phase),
+            "Chest":         (1.5 + 1.5 * breath, 0.0, 4.0 + 0.6 * phase),
+            "UpperChest":    (1.2 + 0.8 * breath, 0.0, 2.0),
+            "Neck":          (-2.5 - 1.0 * breath, 0.0, -14.0 - 0.8 * phase),
+            "Head":          (-2.0 - 0.5 * phase, 0.0, -13.0),
+            # Commanding lead left arm held high in authority guard
+            "LeftShoulder":  (0.0, 12.0 + 2.0 * breath, -12.0),
+            "LeftUpperArm":  (-8.0 + 1.0 * phase, 38.0 - 2.5 * breath, -60.0 + 1.8 * breath),
+            "LeftLowerArm":  (12.0, -34.0, -104.0 + 2.5 * breath),
+            "LeftHand":      (-10.0 + 1.2 * breath, 0.0, 12.0),
+            # Rear right arm poised firmly near chest/solar plexus ready for heavy decree strike
+            "RightShoulder": (0.0, -14.0 - 2.0 * breath, 12.0),
+            "RightUpperArm": (-4.0 - 1.0 * phase, -48.0 + 2.5 * breath, 58.0 - 1.8 * breath),
+            "RightLowerArm": (10.0, 38.0, 108.0 - 2.5 * breath),
+            "RightHand":     (-10.0 - 1.2 * breath, 0.0, -12.0),
+            # Heavy planted boss legs centered under pelvis (auto-leveled to Z=0)
+            "LeftUpperLeg":  (-26.0 - 0.8 * breath, -6.0, 6.0),
+            "LeftLowerLeg":  (10.0 + 1.5 * breath, 0.0, 0.0),
+            "LeftFoot":      (16.0, 0.0, 0.0),
+            "RightUpperLeg": (16.0 - 0.6 * breath, 6.0, -6.0),
+            "RightLowerLeg": (9.0 + 1.2 * breath, 0.0, 0.0),
+            "RightFoot":     (-25.0, 0.0, 0.0),
+        }
+
     # Default: heavy_brawler (Lucas): firm planted heavy stance, deep chest breathing & tight temple/chin guard
     return {
         "HipsOffset":    (0.0, 0.0, -0.045 - 0.006 * breath),
@@ -1337,6 +1417,17 @@ def build_style_locomotion(style, idle0):
         wb_arms_a, wb_arms_b = {}, {}
         stride_f, knee_pass = 32.0, 54.0
         bounce = 0.024
+    elif style == "boss_executive":
+        # Ibaneis (Boss Executive): heavy authoritative stride, upright posture & firm executive guard
+        hz_low, hz_pass = -0.058, -0.044
+        base_twist = 16.0
+        arm_l_fwd = {"LeftUpperArm": (-8.0, 36.0, -62.0), "RightUpperArm": (-6.0, -46.0, 60.0)}
+        arm_l_pass = {"LeftUpperArm": (-8.0, 38.0, -60.0), "RightUpperArm": (-4.0, -48.0, 58.0)}
+        arm_r_fwd = {"LeftUpperArm": (-10.0, 40.0, -64.0), "RightUpperArm": (-4.0, -44.0, 62.0)}
+        arm_r_pass = {"LeftUpperArm": (-8.0, 38.0, -60.0), "RightUpperArm": (-4.0, -48.0, 58.0)}
+        wb_arms_a, wb_arms_b = {}, {}
+        stride_f, knee_pass = 28.0, 46.0
+        bounce = 0.010
     else:
         # heavy_brawler (Lucas): solid planted stride keeping high guard locked & weighty hip drive
         hz_low, hz_pass = -0.056, -0.042
@@ -1954,6 +2045,67 @@ def build_style_block_and_victory(style, idle0):
         vic_breathe = merge_pose(vic_settle, {
             "Chest":         (-2.5, 0.0, 2.0),
             "RightUpperArm": (-26.0, 54.0, 24.0),
+        })
+    elif style == "boss_executive":
+        # Ibaneis (Boss Executive): heavy crossed-forearm armored block & authoritative chin-up command pose
+        block_snap = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.060),
+            "Spine":         (2.5, 0.0, 2.0),
+            "Chest":         (3.5, 0.0, 2.0),
+            "Neck":          (-4.5, 0.0, -10.0),
+            "LeftShoulder":  (0.0, 20.0, -20.0),
+            "LeftUpperArm":  (-16.0, 34.0, -76.0),
+            "LeftLowerArm":  (22.0, -52.0, -122.0),
+            "LeftHand":      (-18.0, 12.0, 16.0),
+            "RightShoulder": (0.0, -20.0, 20.0),
+            "RightUpperArm": (-16.0, -34.0, 76.0),
+            "RightLowerArm": (22.0, 52.0, 122.0),
+            "RightHand":     (-18.0, -12.0, -16.0),
+        })
+        block_absorb = merge_pose(block_snap, {
+            "HipsOffset":    (0.0, 0.0, -0.072),
+            "Spine":         (0.5, 0.0, 1.0),
+            "Chest":         (1.2, 0.0, 1.0),
+            "LeftUpperArm":  (-20.0, 30.0, -80.0),
+            "RightUpperArm": (-20.0, -30.0, 80.0),
+        })
+        vic_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.056),
+            "Spine":         (3.0, 0.0, 6.0),
+            "RightUpperArm": (-4.0, -40.0, 50.0),
+            "RightLowerArm": (14.0, 36.0, 106.0),
+        })
+        vic_peak = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.010),
+            "Hips":          (0.0, 0.0, 12.0),
+            "Spine":         (-3.0, 0.0, 3.0),
+            "Chest":         (-4.0, 0.0, 4.0),
+            "UpperChest":    (-2.0, 0.0, 2.0),
+            "Neck":          (-5.5, 0.0, -10.0),
+            "Head":          (-4.5, 0.0, -4.0),
+            "RightShoulder": (0.0, 16.0, 10.0),
+            "RightUpperArm": (-20.0, 42.0, 16.0),
+            "RightLowerArm": (0.0, 12.0, 34.0),
+            "RightHand":     (0.0, 0.0, 0.0),
+            "LeftShoulder":  (0.0, -10.0, -10.0),
+            "LeftUpperArm":  (-6.0, 52.0, -32.0),
+            "LeftLowerArm":  (12.0, -28.0, -86.0),
+            "LeftUpperLeg":  (-16.0, -5.0, 5.0),
+            "LeftLowerLeg":  (12.0, 0.0, 0.0),
+            "LeftFoot":      (4.0, 0.0, 0.0),
+            "RightUpperLeg": (12.0, 5.0, -5.0),
+            "RightLowerLeg": (4.0, 0.0, 0.0),
+            "RightFoot":     (-16.0, 0.0, 0.0),
+        })
+        vic_settle = merge_pose(vic_peak, {
+            "HipsOffset":    (0.0, 0.0, -0.014),
+            "Hips":          (0.0, 0.0, 14.0),
+            "RightUpperArm": (-16.0, 38.0, 20.0),
+            "RightLowerArm": (0.0, 12.0, 42.0),
+        })
+        vic_breathe = merge_pose(vic_settle, {
+            "Chest":         (-2.2, 0.0, 4.0),
+            "RightUpperArm": (-18.0, 40.0, 18.0),
         })
     else:
         block_snap = merge_pose(idle0, {
@@ -2910,6 +3062,328 @@ def build_style_attacks(style, idle0, framedata):
             "LeftUpperLeg":  (-80.0, -6.0, 6.0),
             "LeftLowerLeg":  (100.0, 0.0, 0.0),
             "LeftFoot":      (10.0, 0.0, 0.0),
+        })
+
+    elif style == "boss_executive":
+        # Ibaneis (Boss Executive — 1.70 m / 120 kg):
+        # LightPunch: authoritative executive command jab/backhand strike keeping torso upright (LeftHand)
+        lp_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.050),
+            "Hips":          (1.0, 0.0, 34.0),
+            "Spine":         (2.0, 0.0, 10.0),
+            "Chest":         (2.0, 0.0, 10.0),
+            "LeftShoulder":  (0.0, 10.0, -4.0),
+            "LeftUpperArm":  (-4.0, 44.0, -36.0),
+            "LeftLowerArm":  (10.0, -36.0, -112.0),
+            "LeftHand":      (-10.0, -12.0, 10.0),
+        })
+        lp_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.050),
+            "Hips":          (1.5, 0.0, 0.0),
+            "Spine":         (3.0, 0.0, -14.0),
+            "Chest":         (3.5, 0.0, -18.0),
+            "UpperChest":    (2.5, 0.0, -14.0),
+            "Neck":          (-4.0, 0.0, 18.0),
+            "Head":          (-3.5, 0.0, 16.0),
+            "LeftShoulder":  (0.0, 10.0, -22.0),
+            "LeftUpperArm":  (-6.0, -2.0, -68.0),
+            "LeftLowerArm":  (0.0, -26.0, -4.0),
+            "LeftHand":      (-18.0, -34.0, 0.0),
+            "RightUpperArm": (-6.0, -50.0, 64.0),
+            "RightLowerArm": (12.0, 40.0, 114.0),
+        })
+        lp_follow = merge_pose(lp_hit, {
+            "Chest":         (4.0, 0.0, -21.0),
+            "UpperChest":    (3.0, 0.0, -16.0),
+            "LeftShoulder":  (0.0, 12.0, -24.0),
+            "LeftHand":      (-18.0, -38.0, 0.0),
+        })
+        lp_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.048),
+            "Hips":          (0.5, 0.0, 14.0),
+            "LeftUpperArm":  (-8.0, 30.0, -58.0),
+            "LeftLowerArm":  (12.0, -34.0, -100.0),
+        })
+
+        # HeavyPunch (Martelada do Gabinete): crushing executive right hammerfist/cross with full 120kg mass (RightHand)
+        hp_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.068),
+            "Hips":          (2.5, 0.0, -24.0),
+            "Spine":         (3.0, 0.0, -22.0),
+            "Chest":         (3.0, 0.0, -24.0),
+            "Neck":          (-4.0, 0.0, 28.0),
+            "Head":          (-4.0, 0.0, 24.0),
+            "RightShoulder": (0.0, -16.0, -18.0),
+            "RightUpperArm": (-12.0, -34.0, 16.0),
+            "RightLowerArm": (12.0, 30.0, 118.0),
+            "RightHand":     (-18.0, 24.0, -14.0),
+        })
+        hp_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.070),
+            "Hips":          (4.5, 0.0, 24.0),
+            "Spine":         (5.5, 0.0, 18.0),
+            "Chest":         (5.5, 0.0, 22.0),
+            "UpperChest":    (4.0, 0.0, 16.0),
+            "Neck":          (-6.5, 0.0, -32.0),
+            "Head":          (-6.0, 0.0, -30.0),
+            "RightShoulder": (0.0, -6.0, 20.0),
+            "RightUpperArm": (-14.0, -2.0, 30.0),
+            "RightLowerArm": (0.0, 46.0, 6.0),
+            "RightHand":     (-24.0, 44.0, 0.0),
+            "LeftShoulder":  (0.0, 16.0, -12.0),
+            "LeftUpperArm":  (-10.0, 48.0, -54.0),
+            "LeftLowerArm":  (14.0, -36.0, -110.0),
+            "LeftUpperLeg":  (-34.0, -6.0, 6.0),
+            "LeftLowerLeg":  (30.0, 0.0, 0.0),
+            "RightUpperLeg": (24.0, 7.0, -6.0),
+            "RightLowerLeg": (12.0, 0.0, 0.0),
+        })
+        hp_follow = merge_pose(hp_hit, {
+            "HipsOffset":    (0.0, 0.0, -0.076),
+            "Hips":          (5.0, 0.0, 28.0),
+            "UpperChest":    (4.5, 0.0, 18.0),
+            "RightShoulder": (0.0, -4.0, 22.0),
+            "RightHand":     (-26.0, 48.0, 0.0),
+            "LeftUpperLeg":  (-36.0, -6.0, 6.0),
+            "LeftLowerLeg":  (34.0, 0.0, 0.0),
+        })
+        hp_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.058),
+            "Hips":          (1.5, 0.0, 22.0),
+            "RightUpperArm": (-6.0, -36.0, 56.0),
+            "RightLowerArm": (12.0, 38.0, 108.0),
+            "LeftUpperLeg":  (-28.0, -6.0, 6.0),
+            "LeftLowerLeg":  (16.0, 0.0, 0.0),
+        })
+
+        # LightKick: quick heavy authoritative shin check / front snap (LeftFoot)
+        lk_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.046),
+            "Hips":          (-6.0, 0.0, 16.0),
+            "LeftUpperLeg":  (-68.0, -5.0, 5.0),
+            "LeftLowerLeg":  (82.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, 5.0, -5.0),
+            "RightLowerLeg": (18.0, 0.0, 0.0),
+        })
+        lk_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.052),
+            "Hips":          (-8.0, 0.0, 14.0),
+            "Spine":         (-3.5, 0.0, 6.0),
+            "LeftUpperLeg":  (-48.0, -4.0, 5.0),
+            "LeftLowerLeg":  (9.0, 0.0, 0.0),
+            "LeftFoot":      (-12.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, 5.0, -5.0),
+            "RightLowerLeg": (18.0, 0.0, 0.0),
+        })
+        lk_follow = merge_pose(lk_hit, {
+            "Hips":          (-9.0, 0.0, 14.0),
+            "LeftUpperLeg":  (-50.0, -4.0, 5.0),
+            "LeftLowerLeg":  (6.5, 0.0, 0.0),
+        })
+        lk_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.046),
+            "Hips":          (-4.0, 0.0, 18.0),
+            "LeftUpperLeg":  (-62.0, -5.0, 5.0),
+            "LeftLowerLeg":  (78.0, 0.0, 0.0),
+            "LeftFoot":      (6.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, 5.0, -5.0),
+            "RightLowerLeg": (18.0, 0.0, 0.0),
+        })
+
+        # HeavyKick (Veto Absoluto): crushing executive heel thrust kick pushing opponent back (LeftFoot)
+        hk_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.052),
+            "Hips":          (-14.0, 8.0, -16.0),
+            "Spine":         (-8.0, 0.0, 8.0),
+            "Chest":         (4.0, 0.0, 8.0),
+            "Neck":          (10.0, 0.0, 4.0),
+            "LeftUpperLeg":  (-92.0, -10.0, 10.0),
+            "LeftLowerLeg":  (110.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, -6.0, 6.0),
+            "RightLowerLeg": (18.0, 0.0, 0.0),
+        })
+        hk_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.048),
+            "Hips":          (-18.0, 10.0, -22.0),
+            "Spine":         (-12.0, 0.0, 8.0),
+            "Chest":         (6.0, 0.0, 12.0),
+            "Neck":          (12.0, 0.0, 6.0),
+            "Head":          (6.0, 0.0, 2.0),
+            "LeftUpperLeg":  (-94.0, -10.0, 12.0),
+            "LeftLowerLeg":  (4.5, 0.0, 0.0),
+            "LeftFoot":      (-20.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, -6.0, 8.0),
+            "RightLowerLeg": (18.0, 0.0, 0.0),
+            "RightFoot":     (-12.0, 0.0, 0.0),
+        })
+        hk_follow = merge_pose(hk_hit, {
+            "Hips":          (-20.0, 11.0, -24.0),
+            "LeftUpperLeg":  (-96.0, -10.0, 12.0),
+            "LeftLowerLeg":  (4.2, 0.0, 0.0),
+        })
+        hk_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.048),
+            "Hips":          (-10.0, 4.0, -6.0),
+            "LeftUpperLeg":  (-74.0, -8.0, 10.0),
+            "LeftLowerLeg":  (98.0, 0.0, 0.0),
+            "LeftFoot":      (8.0, 0.0, 0.0),
+            "RightUpperLeg": (12.0, 4.0, -4.0),
+            "RightLowerLeg": (16.0, 0.0, 0.0),
+        })
+
+        # Special (Decreto de Ferro — Ibaneis): imposing double-arm raise -> crushing downward/forward decree slam + shockwave!
+        sp_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.095),
+            "Hips":          (-4.0, 0.0, 10.0),
+            "Spine":         (-10.0, 0.0, 4.0),
+            "Chest":         (-12.0, 0.0, 4.0),
+            "UpperChest":    (-8.0, 0.0, 2.0),
+            "Neck":          (8.0, 0.0, -8.0),
+            "Head":          (6.0, 0.0, -6.0),
+            "LeftShoulder":  (0.0, 22.0, -22.0),
+            "LeftUpperArm":  (-32.0, 26.0, -76.0),
+            "LeftLowerArm":  (18.0, -38.0, -98.0),
+            "LeftHand":      (-12.0, 16.0, 14.0),
+            "RightShoulder": (0.0, -22.0, 22.0),
+            "RightUpperArm": (-32.0, -26.0, 76.0),
+            "RightLowerArm": (18.0, 38.0, 98.0),
+            "RightHand":     (-12.0, -16.0, -14.0),
+            "LeftUpperLeg":  (-34.0, -6.0, 6.0),
+            "LeftLowerLeg":  (46.0, 0.0, 0.0),
+            "RightUpperLeg": (14.0, 6.0, -6.0),
+            "RightLowerLeg": (28.0, 0.0, 0.0),
+        })
+        sp_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.076),
+            "Hips":          (5.5, 0.0, 12.0),
+            "Spine":         (7.5, 0.0, 6.0),
+            "Chest":         (7.5, 0.0, 6.0),
+            "UpperChest":    (5.0, 0.0, 4.0),
+            "Neck":          (-10.0, 0.0, -12.0),
+            "Head":          (-8.0, 0.0, -10.0),
+            "LeftShoulder":  (0.0, 10.0, -24.0),
+            "LeftUpperArm":  (-24.0, 4.0, -42.0),
+            "LeftLowerArm":  (8.0, -38.0, -40.0),
+            "LeftHand":      (-20.0, -28.0, 0.0),
+            "RightShoulder": (0.0, -10.0, 24.0),
+            "RightUpperArm": (-24.0, -4.0, 42.0),
+            "RightLowerArm": (8.0, 38.0, 40.0),
+            "RightHand":     (-20.0, 28.0, 0.0),
+            "LeftUpperLeg":  (-36.0, -6.0, 7.0),
+            "LeftLowerLeg":  (34.0, 0.0, 0.0),
+            "RightUpperLeg": (24.0, 7.0, -6.0),
+            "RightLowerLeg": (14.0, 0.0, 0.0),
+        })
+        sp_follow = merge_pose(sp_hit, {
+            "HipsOffset":    (0.0, 0.0, -0.088),
+            "Spine":         (9.5, 0.0, 6.0),
+            "Chest":         (9.5, 0.0, 6.0),
+            "LeftUpperArm":  (-26.0, 2.0, -38.0),
+            "RightUpperArm": (-26.0, -2.0, 38.0),
+            "LeftLowerArm":  (6.0, -40.0, -32.0),
+            "RightLowerArm": (6.0, 40.0, 32.0),
+            "LeftUpperLeg":  (-38.0, -6.0, 7.0),
+            "LeftLowerLeg":  (38.0, 0.0, 0.0),
+        })
+        sp_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.060),
+            "Hips":          (2.0, 0.0, 18.0),
+            "Spine":         (3.0, 0.0, 4.0),
+            "LeftUpperArm":  (-14.0, 26.0, -56.0),
+            "LeftLowerArm":  (12.0, -36.0, -88.0),
+            "RightUpperArm": (-14.0, -26.0, 56.0),
+            "RightLowerArm": (12.0, 36.0, 88.0),
+        })
+        special_builder = ("standard_full", sp_ant, sp_hit, sp_follow, sp_rechamber)
+
+        # ComboPunchFinisher (boss_executive): marretada descendente/ascendente executiva (Ordem Executiva Overhead)
+        cpf_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.072),
+            "Hips":          (3.5, 0.0, -26.0),
+            "Spine":         (4.5, 0.0, -22.0),
+            "Chest":         (4.5, 0.0, -24.0),
+            "Neck":          (-5.0, 0.0, 28.0),
+            "Head":          (-5.0, 0.0, 24.0),
+            "RightShoulder": (0.0, -16.0, -18.0),
+            "RightUpperArm": (10.0, -40.0, 14.0),
+            "RightLowerArm": (12.0, 28.0, 116.0),
+            "RightHand":     (-16.0, 22.0, -12.0),
+        })
+        cpf_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.062),
+            "Hips":          (-3.0, 2.0, 26.0),
+            "Spine":         (-3.5, 2.0, 18.0),
+            "Chest":         (-3.5, 2.0, 22.0),
+            "UpperChest":    (-3.0, 2.0, 16.0),
+            "Neck":          (-6.0, 0.0, -28.0),
+            "Head":          (-6.0, 0.0, -28.0),
+            "RightShoulder": (0.0, 12.0, 20.0),
+            "RightUpperArm": (-20.0, 28.0, 24.0),
+            "RightLowerArm": (8.0, 40.0, 28.0),
+            "RightHand":     (-18.0, 30.0, 0.0),
+            "LeftShoulder":  (0.0, 16.0, -12.0),
+            "LeftUpperArm":  (-12.0, 50.0, -56.0),
+            "LeftLowerArm":  (14.0, -38.0, -112.0),
+            "LeftUpperLeg":  (-34.0, -6.0, 6.0),
+            "LeftLowerLeg":  (30.0, 0.0, 0.0),
+            "RightUpperLeg": (24.0, 7.0, -6.0),
+            "RightLowerLeg": (14.0, 0.0, 0.0),
+        })
+        cpf_follow = merge_pose(cpf_hit, {
+            "HipsOffset":    (0.0, 0.0, -0.068),
+            "Hips":          (-4.0, 2.5, 30.0),
+            "UpperChest":    (-3.5, 2.5, 18.0),
+            "RightUpperArm": (-22.0, 34.0, 22.0),
+            "RightLowerArm": (6.0, 42.0, 22.0),
+            "LeftUpperLeg":  (-36.0, -6.0, 6.0),
+            "LeftLowerLeg":  (34.0, 0.0, 0.0),
+        })
+        cpf_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.058),
+            "Hips":          (2.0, 0.0, 22.0),
+            "RightUpperArm": (-8.0, -34.0, 56.0),
+            "RightLowerArm": (12.0, 40.0, 108.0),
+            "LeftUpperLeg":  (-28.0, -6.0, 6.0),
+            "LeftLowerLeg":  (18.0, 0.0, 0.0),
+        })
+
+        # ComboKickFinisher (boss_executive): pisão/empurrão frontal imperial devastador (Veto Absoluto / Demissão Sumária)
+        ckf_ant = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.050),
+            "Hips":          (-12.0, 6.0, -16.0),
+            "Spine":         (-6.0, 0.0, 8.0),
+            "Chest":         (4.0, 0.0, 8.0),
+            "LeftUpperLeg":  (-88.0, -8.0, 10.0),
+            "LeftLowerLeg":  (106.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, -6.0, 6.0),
+            "RightLowerLeg": (18.0, 0.0, 0.0),
+        })
+        ckf_hit = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.050),
+            "Hips":          (-16.0, 8.0, -22.0),
+            "Spine":         (-10.0, 0.0, 8.0),
+            "Chest":         (6.0, 0.0, 10.0),
+            "Neck":          (10.0, 0.0, 6.0),
+            "LeftUpperLeg":  (-88.0, -8.0, 10.0),
+            "LeftLowerLeg":  (7.0, 0.0, 0.0),
+            "LeftFoot":      (-18.0, 0.0, 0.0),
+            "RightUpperLeg": (10.0, -6.0, 8.0),
+            "RightLowerLeg": (18.0, 0.0, 0.0),
+            "RightFoot":     (-12.0, 0.0, 0.0),
+        })
+        ckf_follow = merge_pose(ckf_hit, {
+            "Hips":          (-18.0, 9.0, -24.0),
+            "LeftUpperLeg":  (-92.0, -8.0, 10.0),
+            "LeftLowerLeg":  (5.5, 0.0, 0.0),
+        })
+        ckf_rechamber = merge_pose(idle0, {
+            "HipsOffset":    (0.0, 0.0, -0.050),
+            "Hips":          (-8.0, 4.0, -4.0),
+            "LeftUpperLeg":  (-70.0, -8.0, 8.0),
+            "LeftLowerLeg":  (94.0, 0.0, 0.0),
+            "LeftFoot":      (8.0, 0.0, 0.0),
+            "RightUpperLeg": (12.0, 4.0, -4.0),
+            "RightLowerLeg": (16.0, 0.0, 0.0),
         })
 
     else:
@@ -5263,6 +5737,19 @@ def write_frame_data_doc(config):
             "Walk": "Passada leve e saltitante mantendo guarda ágil",
             "BlockStand": "Guarda alta compacta mantida até o último frame",
             "Victory": "Comemoração vibrante e energética com punho erguido até o último frame",
+        },
+        "boss_executive": {
+            "LightPunch": "Golpe direto autoritário de comando mantendo o tronco ereto (`LeftHand`)",
+            "HeavyPunch": "**Martelada do Gabinete**: marretada/direto executivo devastador usando os 120 kg de massa (`RightHand`, Super Armor)",
+            "LightKick": "Chute baixo/frontal rápido e pesado na canela (`LeftFoot`)",
+            "HeavyKick": "**Veto Absoluto**: pisão/chutão frontal imperial empurrando o oponente com o calcanhar (`LeftFoot`, derruba)",
+            "ComboPunchFinisher": "Finalizador de mão (**Ordem Executiva**): marretada executiva pesada (`RightHand`, `HitHeight.Overhead`)",
+            "ComboKickFinisher": "Finalizador de chute (**Veto Absoluto** / **Demissão Sumária**): empurrão frontal imperial devastador (`LeftFoot`, `causesKnockdown = true`)",
+            "Special": "Especial Chefe **Decreto de Ferro**: postura blindada com Super Armor + impacto corpo a corpo devastador + onda de choque dourada/carmesim (`BossDecree`)",
+            "Idle": "Postura de comando executivo vigilante, tronco imponente, punho dianteiro em guarda de autoridade e base pesada plantada",
+            "Walk": "Passada pesada e autoritária mantendo postura ereta e guarda executiva",
+            "BlockStand": "Guarda executiva blindada com antebraços cruzados mantida até o último frame",
+            "Victory": "Postura imperial de comando erguendo o queixo e o punho fechado com autoridade até o último frame",
         },
     }[style]
 

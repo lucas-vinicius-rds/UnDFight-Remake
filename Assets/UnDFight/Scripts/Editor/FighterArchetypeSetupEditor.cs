@@ -65,6 +65,7 @@ namespace UnDFight.Editor
         private const string IsaacFbxPath = "Assets/UnDFight/Art/Models/Isaac/Isaac.fbx";
         private const string EnomotoFbxPath = "Assets/UnDFight/Art/Models/Enomoto/Enomoto.fbx";
         private const string GabubuFbxPath = "Assets/UnDFight/Art/Models/Gabubu/Gabubu.fbx";
+        private const string IbaneisFbxPath = "Assets/UnDFight/Art/Models/Ibaneis/Ibaneis.fbx";
         private const string LucasOverridePath = "Assets/UnDFight/Art/Animations/AOC_Lucas.overrideController";
         private const string TiagoOverridePath = "Assets/UnDFight/Art/Animations/AOC_Tiago.overrideController";
         private const string JompesOverridePath = "Assets/UnDFight/Art/Animations/AOC_Jompes.overrideController";
@@ -72,16 +73,19 @@ namespace UnDFight.Editor
         private const string IsaacOverridePath = "Assets/UnDFight/Art/Animations/AOC_Isaac.overrideController";
         private const string EnomotoOverridePath = "Assets/UnDFight/Art/Animations/AOC_Enomoto.overrideController";
         private const string GabubuOverridePath = "Assets/UnDFight/Art/Animations/AOC_Gabubu.overrideController";
+        private const string IbaneisOverridePath = "Assets/UnDFight/Art/Animations/AOC_Ibaneis.overrideController";
         private const string JompesMatPath = "Assets/UnDFight/Art/Materials/Jompes_Mat.mat";
         private const string RochardMatPath = "Assets/UnDFight/Art/Materials/Rochard_Mat.mat";
         private const string IsaacMatPath = "Assets/UnDFight/Art/Materials/Isaac_Mat.mat";
         private const string EnomotoMatPath = "Assets/UnDFight/Art/Materials/Enomoto_Mat.mat";
         private const string GabubuMatPath = "Assets/UnDFight/Art/Materials/Gabubu_Mat.mat";
+        private const string IbaneisMatPath = "Assets/UnDFight/Art/Materials/Ibaneis_Mat.mat";
         private const string JompesTextureFolder = "Assets/UnDFight/Art/Source/Jompes";
         private const string RochardTextureFolder = "Assets/UnDFight/Art/Source/Rochard";
         private const string IsaacTextureFolder = "Assets/UnDFight/Art/Source/Isaac";
         private const string EnomotoTextureFolder = "Assets/UnDFight/Art/Source/Enomoto";
         private const string GabubuTextureFolder = "Assets/UnDFight/Art/Source/Gabubu";
+        private const string IbaneisTextureFolder = "Assets/UnDFight/Art/Source/Ibaneis";
         private const string LucasPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Lucas.prefab";
         private const string TiagoPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Tiago.prefab";
         private const string JompesPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Jompes.prefab";
@@ -89,6 +93,7 @@ namespace UnDFight.Editor
         private const string IsaacPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Isaac.prefab";
         private const string EnomotoPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Enomoto.prefab";
         private const string GabubuPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Gabubu.prefab";
+        private const string IbaneisPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Ibaneis.prefab";
         private const string LucasDataPath = "Assets/UnDFight/Data/FighterData_Lucas.asset";
         private const string TiagoDataPath = "Assets/UnDFight/Data/FighterData_Tiago.asset";
         private const string JompesDataPath = "Assets/UnDFight/Data/FighterData_Jompes.asset";
@@ -96,6 +101,7 @@ namespace UnDFight.Editor
         private const string IsaacDataPath = "Assets/UnDFight/Data/FighterData_Isaac.asset";
         private const string EnomotoDataPath = "Assets/UnDFight/Data/FighterData_Enomoto.asset";
         private const string GabubuDataPath = "Assets/UnDFight/Data/FighterData_Gabubu.asset";
+        private const string IbaneisDataPath = "Assets/UnDFight/Data/FighterData_Ibaneis.asset";
 
         private static readonly HashSet<string> LoopClipNames = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -345,6 +351,25 @@ namespace UnDFight.Editor
                 prefabPath: GabubuPrefabPath,
                 fighterDataPath: GabubuDataPath);
 
+            SetupCompleteFighter(
+                fighterName: "Ibaneis",
+                archetype: FightingArchetype.BossExecutive,
+                heightMeters: 1.70f,
+                weightKg: 120.0f,
+                walkForwardSpeed: 3.55f,
+                walkBackwardSpeed: 2.70f,
+                jumpForce: 10.50f,
+                fbxPath: IbaneisFbxPath,
+                expectedTakePrefix: "Ibaneis_Armature|",
+                overridePath: IbaneisOverridePath,
+                materialPath: IbaneisMatPath,
+                textureFolder: IbaneisTextureFolder,
+                prefabPath: IbaneisPrefabPath,
+                fighterDataPath: IbaneisDataPath,
+                maxHealth: 1100,
+                isSecretBoss: true,
+                unlockedByDefault: true);
+
             UpdateFighterRoster(
                 LucasDataPath,
                 TiagoDataPath,
@@ -352,7 +377,8 @@ namespace UnDFight.Editor
                 RochardDataPath,
                 IsaacDataPath,
                 EnomotoDataPath,
-                GabubuDataPath);
+                GabubuDataPath,
+                IbaneisDataPath);
             SerializeFightHudInScenes();
 
             AssetDatabase.SaveAssets();
@@ -365,7 +391,8 @@ namespace UnDFight.Editor
             int isaacBones = CountMappedHumanBones(IsaacFbxPath);
             int enomotoBones = CountMappedHumanBones(EnomotoFbxPath);
             int gabubuBones = CountMappedHumanBones(GabubuFbxPath);
-            return $"Phase 14.1.1 setup complete: Lucas({lucasBones}), Tiago({tiagoBones}), Jompes({jompesBones}), Rochard({rochardBones}), Isaac({isaacBones}), Enomoto({enomotoBones}), Gabubu({gabubuBones}) [26 clips, heightFromFeet=false].";
+            int ibaneisBones = CountMappedHumanBones(IbaneisFbxPath);
+            return $"Phase 14.2 setup complete: Lucas({lucasBones}), Tiago({tiagoBones}), Jompes({jompesBones}), Rochard({rochardBones}), Isaac({isaacBones}), Enomoto({enomotoBones}), Gabubu({gabubuBones}), Ibaneis({ibaneisBones}) [26 clips, heightFromFeet=false].";
         }
 
         public static int CountMappedHumanBones(string fbxPath)
@@ -1304,6 +1331,7 @@ namespace UnDFight.Editor
                 FightingArchetype.HeavyBrawler => "Quebra-Guarda Pesado",
                 FightingArchetype.StreetScrappy => "Martelada de Rua",
                 FightingArchetype.TechnicalStriker => "Golpe Celeste",
+                FightingArchetype.BossExecutive => "Ordem Executiva",
                 _ => "Impacto Relâmpago"
             };
 
@@ -1339,9 +1367,11 @@ namespace UnDFight.Editor
                 FightingArchetype.HeavyBrawler => ("QUEBRA-GUARDA", "DEMOLIÇÃO PESADA", "RASTEIRA BRUTAL", "ESMAGAMENTO"),
                 FightingArchetype.StreetScrappy => ("QUEBRA-CRÂNIO", "GIRO DE RUA", "CORTE BAIXO", "PRESSÃO DA QUEBRADA"),
                 FightingArchetype.TechnicalStriker => ("GOLPE CELESTE", "ROTAÇÃO MARCIAL", "VARREDURA SOMBRIA", "ESTILO PRECISO"),
+                FightingArchetype.BossExecutive => ("ORDEM EXECUTIVA", "VETO ABSOLUTO", "CORTE DE VERBA", "DEMISSÃO SUMÁRIA"),
                 _ => ("IMPACTO VELOZ", "FURACÃO ÁGIL", "RELÂMPAGO RASTEIRO", "COMBO RELÂMPAGO")
             };
 
+            bool bossPressureKick = archetype == FightingArchetype.BossExecutive;
             return new[]
             {
                 // 1. LP -> LP -> HP (ComboPunchFinisher with Overhead stepMoveOverride — breaks crouch guard!)
@@ -1380,7 +1410,7 @@ namespace UnDFight.Editor
                         new ComboStringStep { inputButton = FighterInputButton.HeavyKick,  requireCrouch = true,  attackType = AttackType.CrouchKick },
                     }
                 },
-                // 4. LP -> HP -> HK (Heavy pressure string ending in ComboPunchFinisher / ComboKickFinisher)
+                // 4. LP -> HP -> HP (or LP -> HP -> HK for BossExecutive "DEMISSÃO SUMÁRIA")
                 new ComboStringDefinition
                 {
                     stringName = pressureName,
@@ -1389,7 +1419,12 @@ namespace UnDFight.Editor
                     {
                         new ComboStringStep { inputButton = FighterInputButton.LightPunch, requireCrouch = false, attackType = AttackType.LightPunch },
                         new ComboStringStep { inputButton = FighterInputButton.HeavyPunch, requireCrouch = false, attackType = AttackType.HeavyPunch },
-                        new ComboStringStep { inputButton = FighterInputButton.HeavyPunch, requireCrouch = false, attackType = AttackType.ComboPunchFinisher },
+                        new ComboStringStep
+                        {
+                            inputButton = bossPressureKick ? FighterInputButton.HeavyKick : FighterInputButton.HeavyPunch,
+                            requireCrouch = false,
+                            attackType = bossPressureKick ? AttackType.ComboKickFinisher : AttackType.ComboPunchFinisher
+                        },
                     }
                 },
             };
@@ -1435,7 +1470,10 @@ namespace UnDFight.Editor
             string materialPath,
             string textureFolder,
             string prefabPath,
-            string fighterDataPath)
+            string fighterDataPath,
+            int maxHealth = 1000,
+            bool isSecretBoss = false,
+            bool unlockedByDefault = true)
         {
             Material mat = CreateOrUpdateUrpMaterial(materialPath, textureFolder);
             ReimportAndConfigureFbxClips(fbxPath, expectedTakePrefix);
@@ -1450,7 +1488,10 @@ namespace UnDFight.Editor
                 weightKg,
                 walkForwardSpeed,
                 walkBackwardSpeed,
-                jumpForce);
+                jumpForce,
+                maxHealth,
+                isSecretBoss,
+                unlockedByDefault);
 
             MoveSpec[] specs = BuildArchetypeMoveSpecs(data.WeightCategory, archetype, fighterName);
             CreateOrUpdateFighterMoveset(fighterName, archetype, fighterDataPath, specs);
@@ -1473,7 +1514,9 @@ namespace UnDFight.Editor
                 else if (s.Type == AttackType.HeavyKick) baseHk = s;
             }
 
-            bool armorExHp = archetype == FightingArchetype.HeavyBrawler || archetype == FightingArchetype.StreetScrappy;
+            bool armorExHp = archetype == FightingArchetype.HeavyBrawler ||
+                             archetype == FightingArchetype.StreetScrappy ||
+                             archetype == FightingArchetype.BossExecutive;
             bool antiAirExHk = archetype == FightingArchetype.AgileStriker || archetype == FightingArchetype.TechnicalStriker;
 
             var exHpSpec = new MoveSpec
@@ -1551,6 +1594,53 @@ namespace UnDFight.Editor
                         SuperCost = FighterData.SpecialSuperCost,
                         ArmorStartTick = 2,
                         ArmorEndTick = 16,
+                        SuperFreezeTicks = 14,
+                    };
+                    break;
+
+                case FightingArchetype.BossExecutive:
+                    for (int i = 0; i < specs.Length; i++)
+                    {
+                        if (specs[i].Type == AttackType.HeavyPunch)
+                        {
+                            specs[i].MoveName = "Martelada do Gabinete";
+                            specs[i].HitboxOffset = new Vector2(0.84f, 1.16f);
+                            specs[i].HitboxSize = new Vector2(1.06f, 0.54f);
+                        }
+                        else if (specs[i].Type == AttackType.HeavyKick)
+                        {
+                            specs[i].MoveName = "Veto Absoluto";
+                            specs[i].HitboxOffset = new Vector2(0.92f, 1.22f);
+                            specs[i].HitboxSize = new Vector2(1.18f, 0.60f);
+                        }
+                    }
+                    specialSpec = new MoveSpec
+                    {
+                        MoveName = "Decreto de Ferro",
+                        Type = AttackType.Special,
+                        Startup = 12,
+                        Active = 5,
+                        Recovery = 20,
+                        Damage = 255,
+                        ChipDamage = 35,
+                        Hitstun = 28,
+                        Blockstun = 18,
+                        Hitstop = 14,
+                        Knockback = 5.5f,
+                        Height = HitHeight.Mid,
+                        CausesKnockdown = true,
+                        HitboxOffset = new Vector2(0.94f, 1.14f),
+                        HitboxSize = new Vector2(1.24f, 0.76f),
+                        LungeSpeed = 1.8f,
+                        SpecialMechanic = SpecialMechanicType.BossDecree,
+                        SuperCost = FighterData.SpecialSuperCost,
+                        ArmorStartTick = 2,
+                        ArmorEndTick = 16,
+                        SpawnsProjectile = true,
+                        ProjectileSpeed = 9.0f,
+                        ProjectileLifetimeTicks = 55,
+                        ProjectileSpawnOffset = new Vector2(0.75f, 1.12f),
+                        ProjectileHitboxSize = new Vector2(0.68f, 0.56f),
                         SuperFreezeTicks = 14,
                     };
                     break;
@@ -1865,7 +1955,10 @@ namespace UnDFight.Editor
             float weightKg,
             float walkForwardSpeed,
             float walkBackwardSpeed,
-            float jumpForce)
+            float jumpForce,
+            int maxHealth = 1000,
+            bool isSecretBoss = false,
+            bool unlockedByDefault = true)
         {
             EnsureFolderExists(Path.GetDirectoryName(fighterDataPath)?.Replace('\\', '/'));
 
@@ -1878,10 +1971,12 @@ namespace UnDFight.Editor
 
             data.fighterName = fighterName;
             data.archetype = archetype;
+            data.isSecretBoss = isSecretBoss;
+            data.unlockedByDefault = unlockedByDefault;
             data.heightMeters = heightMeters;
             data.weightKg = weightKg;
             data.fbxHeightPrebaked = true;
-            data.maxHealth = 1000;
+            data.maxHealth = maxHealth;
             data.walkForwardSpeed = walkForwardSpeed;
             data.walkBackwardSpeed = walkBackwardSpeed;
             data.crouchWalkForwardSpeed = 2.0f;

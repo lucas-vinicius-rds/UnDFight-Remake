@@ -1,0 +1,110 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28ae1d8b8b5fc5d4f9e46675799d4ca7, type: 3}
+  m_Name: FighterData_Ibaneis
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.FighterData
+  fighterName: Ibaneis
+  archetype: 4
+  prefab: {fileID: 7818955416480813946, guid: 93d58c6699447f1469bdc4ca29af61f4, type: 3}
+  portrait: {fileID: 0}
+  isSecretBoss: 1
+  unlockedByDefault: 1
+  heightMeters: 1.7
+  weightKg: 120
+  fbxHeightPrebaked: 1
+  maxHealth: 1100
+  walkForwardSpeed: 3.55
+  walkBackwardSpeed: 2.7
+  crouchWalkForwardSpeed: 2
+  crouchWalkBackwardSpeed: 1.55
+  dashForwardSpeed: 7.2
+  dashForwardTicks: 14
+  dashBackwardSpeed: 6.2
+  dashBackwardTicks: 16
+  backdashInvulnerableTicks: 5
+  jumpForce: 10.5
+  baseGravity: 28
+  crouchHeightRatio: 0.62
+  pushboxRadius: 0.36
+  lightPunch: {fileID: 11400000, guid: 030b056f8a18f0a49bec97b71a685848, type: 2}
+  heavyPunch: {fileID: 11400000, guid: 0da8dd2dfa86fd3479fff7f3d3063c48, type: 2}
+  lightKick: {fileID: 11400000, guid: fe98afc07f151c24e9ee83adcf618875, type: 2}
+  heavyKick: {fileID: 11400000, guid: 9c4de810d9def5e449c146068565c90d, type: 2}
+  crouchKick: {fileID: 11400000, guid: 65995f067c2deaf4d8d94f40760a047a, type: 2}
+  jumpAttack: {fileID: 11400000, guid: adde9137b802a964abe5b7f94c076863, type: 2}
+  throwMove: {fileID: 11400000, guid: d02209ecd33750746bdfb2d8f9109a0a, type: 2}
+  exHeavyPunch: {fileID: 11400000, guid: 4534d05d144b4744f8b8a41dcf4691de, type: 2}
+  exHeavyKick: {fileID: 11400000, guid: 5369eca2607d8754bb61de27a676208e, type: 2}
+  specialMove: {fileID: 11400000, guid: 4e1219a6c5f4bec4398f1fbb43c91502, type: 2}
+  comboPunchFinisher: {fileID: 11400000, guid: 81461f3171bf7b547a75572c61956c21, type: 2}
+  comboKickFinisher: {fileID: 11400000, guid: 6100a5316cda2ad49be8846e197518a4, type: 2}
+  comboStrings:
+  - stringName: ORDEM EXECUTIVA
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 11
+      stepMoveOverride: {fileID: 11400000, guid: 1ef5772c29343794bb0b6ee052f5cac3, type: 2}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: VETO ABSOLUTO
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 2
+      requireCrouch: 0
+      attackType: 3
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 3
+      requireCrouch: 0
+      attackType: 12
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: CORTE DE VERBA
+    steps:
+    - inputButton: 2
+      requireCrouch: 0
+      attackType: 3
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 3
+      requireCrouch: 1
+      attackType: 6
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1
+  - stringName: "DEMISS\xC3O SUM\xC1RIA"
+    steps:
+    - inputButton: 0
+      requireCrouch: 0
+      attackType: 1
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 1
+      requireCrouch: 0
+      attackType: 2
+      stepMoveOverride: {fileID: 0}
+    - inputButton: 3
+      requireCrouch: 0
+      attackType: 12
+      stepMoveOverride: {fileID: 0}
+    allowSpecialOrExCancelOnEnd: 1
