@@ -14,8 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageData
   stageId: favela_carioca
   displayName: FAVELA CARIOCA
-  subtitle: "Bar do Jorge \u2022 P\xF4r do Sol"
+  subtitle: "Bar do Jorge \u2022 Rio de Janeiro"
   sceneName: Arena_Favela
   previewColor: {r: 0.72, g: 0.34, b: 0.14, a: 1}
   accentColor: {r: 1, g: 0.72, b: 0, a: 1}
   previewImage: {fileID: 21300000, guid: 2f9ad7ad6a2839441ac26427c027be51, type: 3}
+  supportsWeatherVariants: 1
+  dayVariantLabel: "P\xD4R DO SOL"
+  defaultWeather: 0

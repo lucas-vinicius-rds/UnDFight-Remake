@@ -18,3 +18,7 @@ MonoBehaviour:
   sceneName: Training
   previewColor: {r: 0.2, g: 0.25, b: 0.34, a: 1}
   accentColor: {r: 0.55, g: 0.72, b: 0.88, a: 1}
+  previewImage: {fileID: 0}
+  supportsWeatherVariants: 0
+  dayVariantLabel: DIA
+  defaultWeather: 0

@@ -91,6 +91,49 @@ namespace UnDFight.Tests
             Assert.IsFalse(chair.Body.useGravity);
         }
 
+        [UnityTest]
+        public IEnumerator RealPhysX_FighterDebrisPusher_KicksDynamicProp_WhileKeepingFighterOnZ0()
+        {
+            var data = Track(ScriptableObject.CreateInstance<FighterData>());
+            data.fighterName = "PusherTester";
+            data.heightMeters = 1.80f;
+            data.weightKg = 80f;
+            data.maxHealth = 1000;
+
+            var simGo = Track(new GameObject("PM_PusherSim"));
+            var sim = simGo.AddComponent<FightSimulation>();
+            var stageMgr = simGo.AddComponent<StageInteractableManager>();
+
+            var p1 = CreateFighter("PM_PusherP1", data, -1.6f);
+            var p2 = CreateFighter("PM_PusherP2", data, 2.5f);
+            sim.SetParticipants(p1, p2);
+            stageMgr.Configure(sim, null);
+
+            var canGo = Track(GameObject.CreatePrimitive(PrimitiveType.Cylinder));
+            canGo.name = "PM_DynamicCan";
+            canGo.transform.position = new Vector3(-0.75f, 0.14f, 0f);
+            canGo.transform.localScale = new Vector3(0.14f, 0.12f, 0.14f);
+            var can = canGo.AddComponent<StageDynamicProp>();
+            can.EnsureComponents();
+            stageMgr.RefreshDiscoveredProps();
+
+            yield return null;
+
+            float initialCanX = canGo.transform.position.x;
+            p1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 0f }, true);
+            p2.InputHandler.SetSimulatedInput(default, true);
+
+            float elapsed = 0f;
+            while (elapsed < 0.75f)
+            {
+                elapsed += Time.deltaTime;
+                Assert.AreEqual(0f, p1.transform.position.z, 1e-4f, "Fighter must stay locked on Z=0 during PhysX debris collisions.");
+                yield return null;
+            }
+
+            Assert.Greater(canGo.transform.position.x - initialCanX, 0.25f, "Real Play Mode PhysX FighterDebrisPusher should kick/push the dynamic can forward.");
+        }
+
         private FighterController CreateFighter(string name, FighterData data, float startX)
         {
             var go = Track(new GameObject(name));

@@ -139,14 +139,18 @@ namespace UnDFight.Tests
         [Test]
         public void PhysXLayersAndMatrix_AreIsolatedFromFighters()
         {
-            Assert.IsTrue(StagePhysicsLayers.HasDedicatedLayers, "Dedicated PhysX layers StagePhysics, StageDebris, FighterHurtbox must exist.");
+            Assert.IsTrue(StagePhysicsLayers.HasDedicatedLayers, "Dedicated PhysX layers StagePhysics, StageDebris, FighterHurtbox, StageProjectile, FighterDebrisPusher must exist.");
 
             int stagePhysics = StagePhysicsLayers.StagePhysicsLayer;
             int stageDebris = StagePhysicsLayers.StageDebrisLayer;
             int fighterLayer = StagePhysicsLayers.FighterHurtboxLayer;
             int stageProjectile = StagePhysicsLayers.StageProjectileLayer;
+            int debrisPusher = StagePhysicsLayers.FighterDebrisPusherLayer;
+
+            Assert.AreEqual(12, debrisPusher, "FighterDebrisPusher must occupy preferred layer slot 12.");
 
             Assert.IsFalse(Physics.GetIgnoreLayerCollision(stageDebris, stagePhysics), "StageDebris must collide with StagePhysics.");
+            Assert.IsFalse(Physics.GetIgnoreLayerCollision(stageDebris, debrisPusher), "StageDebris must collide with FighterDebrisPusher.");
             Assert.IsTrue(Physics.GetIgnoreLayerCollision(stageDebris, fighterLayer), "StageDebris must NEVER collide with FighterHurtbox.");
             Assert.IsTrue(Physics.GetIgnoreLayerCollision(stageDebris, 0), "StageDebris must ignore Default layer.");
             Assert.IsTrue(Physics.GetIgnoreLayerCollision(fighterLayer, stagePhysics), "FighterHurtbox must ignore StagePhysics.");
@@ -154,6 +158,16 @@ namespace UnDFight.Tests
             Assert.IsFalse(Physics.GetIgnoreLayerCollision(stageProjectile, fighterLayer), "StageProjectile must trigger-detect FighterHurtbox.");
             Assert.IsTrue(Physics.GetIgnoreLayerCollision(stageProjectile, 0), "StageProjectile must ignore Default layer.");
             Assert.IsTrue(Physics.GetIgnoreLayerCollision(stageProjectile, stageDebris), "StageProjectile must ignore StageDebris.");
+
+            // FighterDebrisPusher (12) must collide EXCLUSIVELY with StageDebris (9)
+            for (int other = 0; other < 32; other++)
+            {
+                bool expectedIgnore = other != stageDebris;
+                Assert.AreEqual(
+                    expectedIgnore,
+                    Physics.GetIgnoreLayerCollision(debrisPusher, other),
+                    $"FighterDebrisPusher collision mismatch against layer {other}.");
+            }
         }
 
         [Test]
@@ -390,29 +404,66 @@ namespace UnDFight.Tests
                 "Assets/UnDFight/Prefabs/Fighter_Lucas.prefab",
                 "Assets/UnDFight/Prefabs/Fighter_Tiago.prefab",
                 "Assets/UnDFight/Prefabs/Fighter_Jompes.prefab",
-                "Assets/UnDFight/Prefabs/Fighter_Rochard.prefab"
+                "Assets/UnDFight/Prefabs/Fighter_Rochard.prefab",
+                "Assets/UnDFight/Prefabs/Fighter_Isaac.prefab",
+                "Assets/UnDFight/Prefabs/Fighter_Enomoto.prefab",
+                "Assets/UnDFight/Prefabs/Fighter_Gabubu.prefab",
+                "Assets/UnDFight/Prefabs/Fighter_Ibaneis.prefab"
             };
             int fighterLayer = StagePhysicsLayers.FighterHurtboxLayer;
+            int pusherLayer = StagePhysicsLayers.FighterDebrisPusherLayer;
             foreach (string fPath in fighterPaths)
             {
                 GameObject fPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(fPath);
-                Assert.IsNotNull(fPrefab);
+                Assert.IsNotNull(fPrefab, $"Missing fighter prefab: {fPath}");
                 Assert.AreEqual(fighterLayer, fPrefab.layer, $"{fPath} root must be isolated on FighterHurtbox layer.");
                 var rb = fPrefab.GetComponent<Rigidbody>();
                 Assert.IsNotNull(rb, $"{fPath} must carry a kinematic Rigidbody for hurtbox trigger detection.");
                 Assert.IsTrue(rb.isKinematic, $"{fPath} Rigidbody must be kinematic.");
                 Assert.IsFalse(rb.useGravity, $"{fPath} Rigidbody must not use PhysX gravity.");
+
+                Transform pusherChild = fPrefab.transform.Find(FighterDebrisPusher.DefaultChildName);
+                Assert.IsNotNull(pusherChild, $"{fPath} must have FighterDebrisPusher child.");
+                Assert.AreEqual(pusherLayer, pusherChild.gameObject.layer, $"{fPath} FighterDebrisPusher must be on layer 12.");
+                var pusherComp = pusherChild.GetComponent<FighterDebrisPusher>();
+                var pusherRb = pusherChild.GetComponent<Rigidbody>();
+                var pusherCol = pusherChild.GetComponent<CapsuleCollider>();
+                Assert.IsNotNull(pusherComp);
+                Assert.IsNotNull(pusherRb);
+                Assert.IsTrue(pusherRb.isKinematic);
+                Assert.IsFalse(pusherRb.useGravity);
+                Assert.IsNotNull(pusherCol);
+                Assert.IsFalse(pusherCol.isTrigger, "FighterDebrisPusher CapsuleCollider must be solid (isTrigger = false).");
             }
+
+            GameObject canPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnDFight/Prefabs/StageProps/Prop_DynamicCan.prefab");
+            Assert.IsNotNull(canPrefab, "Missing Prop_DynamicCan.prefab");
+            Assert.AreEqual(StagePhysicsLayers.StageDebrisLayer, canPrefab.layer);
+            Assert.IsNotNull(canPrefab.GetComponent<StageDynamicProp>());
+            Assert.IsNotNull(canPrefab.GetComponent<StageWindAffectable>());
+
+            GameObject signPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnDFight/Prefabs/StageProps/Prop_HangingSign.prefab");
+            Assert.IsNotNull(signPrefab, "Missing Prop_HangingSign.prefab");
+            var hangComp = signPrefab.GetComponent<StageHangingProp>();
+            Assert.IsNotNull(hangComp);
+            Assert.IsNotNull(signPrefab.GetComponentInChildren<HingeJoint>(true));
+            Assert.IsNotNull(signPrefab.GetComponentInChildren<StageWindAffectable>(true));
 
             AudioClip impactClip = ProceduralAudioFactory.CreatePropImpactClip();
             AudioClip woodBreakClip = ProceduralAudioFactory.CreatePropBreakWoodPlasticClip();
             AudioClip glassBreakClip = ProceduralAudioFactory.CreatePropBreakGlassClip();
+            AudioClip rainLoopClip = ProceduralAudioFactory.CreateRainLoopClip();
+            AudioClip windLoopClip = ProceduralAudioFactory.CreateNightWindLoopClip();
             Assert.Greater(impactClip.length, 0.05f);
             Assert.Greater(woodBreakClip.length, 0.10f);
             Assert.Greater(glassBreakClip.length, 0.10f);
+            Assert.Greater(rainLoopClip.length, 1.0f);
+            Assert.Greater(windLoopClip.length, 1.0f);
             Track(impactClip);
             Track(woodBreakClip);
             Track(glassBreakClip);
+            Track(rainLoopClip);
+            Track(windLoopClip);
         }
 
         [Test]
@@ -571,6 +622,266 @@ namespace UnDFight.Tests
             Assert.IsFalse(chair.Body.useGravity, "StartRound() must restore Rigidbody.useGravity = false.");
             Assert.AreEqual(Vector3.zero, chair.Body.linearVelocity);
             Assert.Less(Vector3.Distance(initialPos, chair.transform.position), 1e-4f, "StartRound() must restore original prop position.");
+        }
+
+        [Test]
+        public void StageDebrisFragment_PersistsAsDynamicRigidbodyUntilRoundReset()
+        {
+            StageBreakableProp prop = CreateTestProp("Test_PersistentCrate", new Vector3(0.4f, 0f, 1.0f), integrity: 2, radiusX: 1.5f);
+            var (sim, match, p1, p2, stageMgr, _, _) = CreateStageCombatRig(withMatchManager: true);
+            p1.SetSimPositionX(-0.45f);
+            p2.SetSimPositionX(0.55f);
+            sim.ForceUpdateFacing();
+
+            p1.InputHandler.SetSimulatedInput(default);
+            p1.InputHandler.BufferButton(FighterInputButton.HeavyPunch);
+            sim.StepSimulationTicks(12);
+            Assert.IsTrue(prop.IsBroken);
+
+            // Simulate 6 full seconds of PhysX (360 fixed ticks) well past legacy freeze/hide thresholds
+            for (int i = 0; i < 360; i++)
+            {
+                Physics.Simulate(FightSimulation.TickDeltaTime);
+            }
+
+            for (int i = 0; i < prop.Fragments.Count; i++)
+            {
+                StageDebrisFragment frag = prop.Fragments[i];
+                Assert.IsTrue(frag.PersistUntilReset, "Debris fragments must persist until round reset by default.");
+                Assert.IsTrue(frag.gameObject.activeSelf, $"Persistent fragment {i} must remain active after 6s.");
+                Assert.IsFalse(frag.IsFrozen, $"Persistent fragment {i} must not freeze to kinematic.");
+                Assert.IsFalse(frag.Body.isKinematic, $"Persistent fragment {i} must stay a real dynamic Rigidbody.");
+            }
+
+            // Shockwave wakes persistent fragments and applies impulse
+            StageDebrisFragment sample = prop.Fragments[0];
+            sample.Body.Sleep();
+            int affected = stageMgr.ApplyStageShockwave(sample.transform.position - new Vector3(0.5f, 0f, 0f), radius: 3.5f, force: 4.5f);
+            Assert.Greater(affected, 0, "ApplyStageShockwave must affect nearby persistent debris fragments.");
+            Physics.Simulate(FightSimulation.TickDeltaTime);
+            Assert.Greater(sample.Body.linearVelocity.magnitude, 0.2f, "Shockwave must wake and accelerate sleeping persistent debris.");
+
+            // Round reset cleans everything
+            match.StartRound();
+            for (int i = 0; i < prop.Fragments.Count; i++)
+            {
+                Assert.IsFalse(prop.Fragments[i].gameObject.activeSelf);
+            }
+        }
+
+        [Test]
+        public void FighterDebrisPusher_OneWayCoupling_PushesDynamicPropWithoutAltering60HzDeterminism()
+        {
+            var (sim, _, p1, p2, stageMgr, _, _) = CreateStageCombatRig(withMatchManager: true);
+            p1.SetSimPositionX(-1.6f);
+            p2.SetSimPositionX(2.4f);
+            sim.ForceUpdateFacing();
+
+            // Reference fighter simulation with NO dynamic props and NO PhysX contact
+            var refSimGo = Track(new GameObject("Test_OneWayRefSim"));
+            var refSim = refSimGo.AddComponent<FightSimulation>();
+            var refP1 = CreateFighter("RefP1", p1.Data, -1.6f, withKinematicRigidbody: false);
+            var refP2 = CreateFighter("RefP2", p2.Data, 2.4f, withKinematicRigidbody: false);
+            refSim.SetParticipants(refP1, refP2);
+
+            // Loose dynamic can placed directly in P1's forward walk path at Z=0
+            var canGo = Track(GameObject.CreatePrimitive(PrimitiveType.Cylinder));
+            canGo.name = "Test_CanInPath";
+            canGo.transform.position = new Vector3(-0.85f, 0.14f, 0f);
+            canGo.transform.localScale = new Vector3(0.14f, 0.12f, 0.14f);
+            var dynCan = canGo.AddComponent<StageDynamicProp>();
+            dynCan.EnsureComponents();
+            stageMgr.RefreshDiscoveredProps();
+
+            FighterDebrisPusher pusher = p1.EnsureDebrisPusher();
+            Assert.IsNotNull(pusher);
+            Assert.AreEqual(StagePhysicsLayers.FighterDebrisPusherLayer, pusher.gameObject.layer);
+            Assert.IsTrue(pusher.Body.isKinematic);
+            Assert.IsFalse(pusher.PusherCollider.isTrigger);
+
+            Vector3 initialCanPos = canGo.transform.position;
+            bool pushed = false;
+
+            for (int tick = 0; tick < 40; tick++)
+            {
+                var moveRight = new FighterInputState { MoveX = 1f, MoveY = 0f };
+                p1.InputHandler.SetSimulatedInput(moveRight, true);
+                refP1.InputHandler.SetSimulatedInput(moveRight, true);
+                p2.InputHandler.SetSimulatedInput(default, true);
+                refP2.InputHandler.SetSimulatedInput(default, true);
+
+                sim.StepSimulationTicks(1);
+                refSim.StepSimulationTicks(1);
+
+                p1.transform.position = new Vector3(p1.SimPosition.x, p1.SimPosition.y, 0f);
+                p2.transform.position = new Vector3(p2.SimPosition.x, p2.SimPosition.y, 0f);
+                pusher.SyncFromFighter(useMovePosition: true);
+                Physics.SyncTransforms();
+                Physics.Simulate(FightSimulation.TickDeltaTime);
+
+                if (!pushed && pusher.PusherCollider.bounds.Intersects(dynCan.PropCollider.bounds))
+                {
+                    pushed = pusher.ApplyPushToBody(dynCan.Body, dynCan.transform.position);
+                }
+
+                // Bit-for-bit identical 60 Hz deterministic trajectory compared to reference fighter
+                Assert.AreEqual(refP1.SimPosition.x, p1.SimPosition.x, 0f, $"Tick {tick}: Fighter SimPosition.x must be bit-identical.");
+                Assert.AreEqual(refP1.SimPosition.y, p1.SimPosition.y, 0f, $"Tick {tick}: Fighter SimPosition.y must be bit-identical.");
+                Assert.AreEqual(refP1.SimVelocity.x, p1.SimVelocity.x, 0f, $"Tick {tick}: Fighter SimVelocity.x must be bit-identical.");
+                Assert.AreEqual(refP1.SimVelocity.y, p1.SimVelocity.y, 0f, $"Tick {tick}: Fighter SimVelocity.y must be bit-identical.");
+                Assert.AreEqual(0f, p1.transform.position.z, 0f);
+            }
+
+            Assert.IsTrue(pushed, "FighterDebrisPusher must contact and kick the dynamic can in its path.");
+            Assert.Greater(canGo.transform.position.x - initialCanPos.x, 0.35f, "Dynamic prop must be pushed forward by the fighter.");
+        }
+
+        [Test]
+        public void StageWindController_AppliesQuadraticDragForce_AndSwingsHingeJointProp()
+        {
+            // 1. Exact quadratic drag law: doubling v_rel quadruples F_drag
+            Vector3 f1 = StageWindController.ComputeDragForce(new Vector3(4f, 0f, 0f), Vector3.zero, 1.225f, 1.05f, 0.20f, 1.0f);
+            Vector3 f2 = StageWindController.ComputeDragForce(new Vector3(8f, 0f, 0f), Vector3.zero, 1.225f, 1.05f, 0.20f, 1.0f);
+            float expectedF1 = 0.5f * 1.225f * 1.05f * 0.20f * 4f * 4f;
+            Assert.AreEqual(expectedF1, f1.x, 1e-4f);
+            Assert.AreEqual(4f, f2.x / f1.x, 1e-4f, "Aerodynamic drag must scale quadratically with v_rel^2.");
+
+            // 2. Wind controller accelerates a dynamic prop & swings a HingeJoint StageHangingProp
+            var windGo = Track(new GameObject("Test_WindController"));
+            var wind = windGo.AddComponent<StageWindController>();
+            wind.Configure(Vector3.right, baseSpeed: 8.5f, gustAmp: 2.0f, gustFreq: 0.5f);
+
+            var floorGo = Track(new GameObject("Test_WindFloor"));
+            floorGo.layer = StagePhysicsLayers.StagePhysicsLayer;
+            floorGo.transform.position = new Vector3(0f, -0.5f, 0f);
+            var floorBox = floorGo.AddComponent<BoxCollider>();
+            floorBox.size = new Vector3(30f, 1f, 10f);
+
+            var canGo = Track(GameObject.CreatePrimitive(PrimitiveType.Cylinder));
+            canGo.transform.position = new Vector3(0f, 0.2f, 0f);
+            canGo.transform.localScale = new Vector3(0.14f, 0.12f, 0.14f);
+            var can = canGo.AddComponent<StageDynamicProp>();
+            can.EnsureComponents();
+            can.WindAffectable.Configure(cd: 1.15f, areaM2: 0.22f, sensitivity: 1.5f, wakeThreshold: 1.5f, bodyOverride: can.Body);
+
+            var signGo = Track(new GameObject("Test_HangingSign"));
+            signGo.transform.position = new Vector3(0f, 3.0f, 2.0f);
+            var hanging = signGo.AddComponent<StageHangingProp>();
+            hanging.EnsureComponents();
+            hanging.CacheInitialTransform();
+            Quaternion initialSwingRot = hanging.SwingBody.transform.rotation;
+
+            Physics.SyncTransforms();
+            for (int i = 0; i < 60; i++)
+            {
+                wind.StepWind(FightSimulation.TickDeltaTime, useSceneDiscoveryFallback: true);
+                Physics.Simulate(FightSimulation.TickDeltaTime);
+            }
+
+            Assert.Greater(can.transform.position.x, 0.25f, "Strong aerodynamic wind must push the dynamic prop in the wind direction.");
+            float swingAngleDelta = Quaternion.Angle(initialSwingRot, hanging.SwingBody.transform.rotation);
+            Assert.Greater(swingAngleDelta, 2.5f, "Aerodynamic wind must swing StageHangingProp via its HingeJoint.");
+
+            // Reset restores exact hinge rest pose
+            hanging.ResetProp();
+            Assert.Less(Quaternion.Angle(initialSwingRot, hanging.SwingBody.transform.rotation), 0.1f);
+        }
+
+        [Test]
+        public void StageWeatherController_AndSessionWeather_SwitchDayNightRainyNight_AndRespectFixedWeatherStages()
+        {
+            var favelaData = AssetDatabase.LoadAssetAtPath<StageData>("Assets/UnDFight/Data/StageData_FavelaCarioca.asset");
+            var treinoData = AssetDatabase.LoadAssetAtPath<StageData>("Assets/UnDFight/Data/StageData_SalaDeTreino.asset");
+            Assert.IsNotNull(favelaData);
+            Assert.IsNotNull(treinoData);
+            Assert.IsTrue(favelaData.supportsWeatherVariants, "Favela Carioca must support weather variants.");
+            Assert.IsFalse(treinoData.supportsWeatherVariants, "Sala de Treino must keep weather fixed.");
+
+            // Session cycling
+            Assert.AreEqual(StageWeatherVariant.Day, GameSessionState.SelectedWeather);
+            Assert.AreEqual("PÔR DO SOL", GameSessionState.GetWeatherLabel(StageWeatherVariant.Day, favelaData));
+            GameSessionState.CycleWeather(1);
+            Assert.AreEqual(StageWeatherVariant.Night, GameSessionState.SelectedWeather);
+            Assert.AreEqual("NOITE", GameSessionState.GetWeatherLabel(StageWeatherVariant.Night, favelaData));
+            GameSessionState.CycleWeather(1);
+            Assert.AreEqual(StageWeatherVariant.RainyNight, GameSessionState.SelectedWeather);
+            Assert.AreEqual("NOITE CHUVOSA", GameSessionState.GetWeatherLabel(StageWeatherVariant.RainyNight, favelaData));
+
+            // Controller switching on weather-enabled stage
+            var root = Track(new GameObject("Test_WeatherRig"));
+            var lightGo = Track(new GameObject("Test_DirLight"));
+            var dirLight = lightGo.AddComponent<Light>();
+            dirLight.type = LightType.Directional;
+
+            var nightLamp = Track(new GameObject("Test_NightLamp"));
+            var floor = Track(GameObject.CreatePrimitive(PrimitiveType.Cube));
+            var floorRenderer = floor.GetComponent<MeshRenderer>();
+
+            var wind = root.AddComponent<StageWindController>();
+            var weather = root.AddComponent<StageWeatherController>();
+            weather.ConfigureReferences(favelaData, dirLight, wind, new[] { nightLamp }, new Renderer[] { floorRenderer });
+
+            weather.ApplyWeather(StageWeatherVariant.Day);
+            float dayIntensity = dirLight.intensity;
+            float dayWind = wind.BaseWindSpeed;
+            Assert.AreEqual(StageWeatherVariant.Day, weather.CurrentWeather);
+            Assert.IsFalse(nightLamp.activeSelf, "Night-only objects must stay off during Day.");
+            Assert.IsFalse(weather.IsWetSurfaceActive);
+
+            weather.ApplyWeather(StageWeatherVariant.Night);
+            Assert.AreEqual(StageWeatherVariant.Night, weather.CurrentWeather);
+            Assert.Less(dirLight.intensity, dayIntensity, "Night directional light must be dimmer than Day.");
+            Assert.Greater(wind.BaseWindSpeed, dayWind, "Night wind must be stronger than Day breeze.");
+            Assert.IsTrue(nightLamp.activeSelf, "Night-only objects must activate in Night.");
+            Assert.IsFalse(weather.IsWetSurfaceActive);
+
+            weather.ApplyWeather(StageWeatherVariant.RainyNight);
+            Assert.AreEqual(StageWeatherVariant.RainyNight, weather.CurrentWeather);
+            Assert.IsTrue(nightLamp.activeSelf, "Night-only objects must remain active in RainyNight.");
+            Assert.Greater(wind.BaseWindSpeed, 5.0f, "RainyNight must apply strong storm gusts.");
+            Assert.IsTrue(weather.IsWetSurfaceActive, "RainyNight must enable wet surface MaterialPropertyBlock.");
+            Assert.IsNotNull(weather.RainParticleSystem, "RainyNight must create/activate 3D rain ParticleSystem.");
+            Assert.IsTrue(weather.RainParticleSystem.gameObject.activeSelf);
+            Assert.IsTrue(weather.RainParticleSystem.collision.enabled, "3D rain must enable PhysX World collision.");
+            Assert.AreEqual(ParticleSystemCollisionType.World, weather.RainParticleSystem.collision.type);
+            Assert.AreEqual(ParticleSystemCollisionMode.Collision3D, weather.RainParticleSystem.collision.mode);
+            Assert.Greater(weather.RainParticleSystem.subEmitters.subEmittersCount, 0, "3D rain must attach splash sub-emitter on collision.");
+
+            int expectedRainMask = (1 << StagePhysicsLayers.StagePhysicsLayer) | (1 << StagePhysicsLayers.StageDebrisLayer);
+            Assert.AreEqual(expectedRainMask, weather.RainParticleSystem.collision.collidesWith.value, "3D rain must collide with StagePhysics and StageDebris.");
+
+            // Fixed-weather stage ignores RainyNight and forces defaultWeather (Day)
+            weather.StageData = treinoData;
+            weather.ApplyWeather(StageWeatherVariant.RainyNight);
+            Assert.AreEqual(StageWeatherVariant.Day, weather.CurrentWeather, "Stages with supportsWeatherVariants=false must force defaultWeather.");
+            Assert.IsFalse(weather.RainParticleSystem.gameObject.activeSelf, "Fixed-weather stage must disable 3D rain.");
+            Assert.IsFalse(nightLamp.activeSelf);
+
+            // CharacterSelectController Stage Select weather selector UI check
+            var roster = AssetDatabase.LoadAssetAtPath<FighterRoster>("Assets/UnDFight/Data/FighterRoster.asset");
+            var stageRoster = AssetDatabase.LoadAssetAtPath<StageRoster>("Assets/UnDFight/Data/StageRoster.asset");
+            if (roster != null && stageRoster != null)
+            {
+                GameSessionState.SelectWeather(StageWeatherVariant.Day);
+                var canvasGo = Track(new GameObject("Test_StageWeatherUI", typeof(RectTransform), typeof(Canvas)));
+                var ctrl = canvasGo.AddComponent<CharacterSelectController>();
+                var tex = Track(new Texture2D(2, 2));
+                var spr = Track(Sprite.Create(tex, new Rect(0, 0, 2, 2), new Vector2(0.5f, 0.5f)));
+                ctrl.ConfigureReferences(roster, stageRoster, spr, null, null);
+                ctrl.BuildUI(canvasGo.transform, spr);
+                ctrl.ConfirmBothAndOpenStageSelect(0, 1);
+
+                Assert.IsNotNull(ctrl.WeatherLabelText);
+                StringAssert.Contains("PÔR DO SOL", ctrl.WeatherLabelText.text);
+
+                ctrl.StepWeatherSelection(1);
+                Assert.AreEqual(StageWeatherVariant.Night, GameSessionState.SelectedWeather);
+                StringAssert.Contains("NOITE", ctrl.WeatherLabelText.text);
+
+                ctrl.StepWeatherSelection(1);
+                Assert.AreEqual(StageWeatherVariant.RainyNight, GameSessionState.SelectedWeather);
+                StringAssert.Contains("NOITE CHUVOSA", ctrl.WeatherLabelText.text);
+            }
         }
     }
 }

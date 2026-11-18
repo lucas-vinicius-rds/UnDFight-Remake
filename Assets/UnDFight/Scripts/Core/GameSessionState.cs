@@ -26,6 +26,7 @@ namespace UnDFight
         public static FighterData SelectedFighterP1 { get; set; }
         public static FighterData SelectedFighterP2 { get; set; }
         public static string SelectedStageSceneName { get; set; } = DefaultStageSceneName;
+        public static StageWeatherVariant SelectedWeather { get; set; } = StageWeatherVariant.Day;
         public static bool OpenStageSelectOnCharacterSelect { get; set; }
 
         public static bool IsTrainingMode => CurrentMode == GameMode.Training;
@@ -34,6 +35,31 @@ namespace UnDFight
         public static void SelectMode(GameMode mode)
         {
             CurrentMode = mode;
+        }
+
+        public static void SelectWeather(StageWeatherVariant variant)
+        {
+            SelectedWeather = variant;
+        }
+
+        public static void CycleWeather(int direction = 1)
+        {
+            const int count = 3;
+            int step = direction >= 0 ? 1 : -1;
+            int next = (((int)SelectedWeather + step) % count + count) % count;
+            SelectedWeather = (StageWeatherVariant)next;
+        }
+
+        public static string GetWeatherLabel(StageWeatherVariant variant, StageData stage = null)
+        {
+            return variant switch
+            {
+                StageWeatherVariant.Night => "NOITE",
+                StageWeatherVariant.RainyNight => "NOITE CHUVOSA",
+                _ => (stage != null && !string.IsNullOrWhiteSpace(stage.dayVariantLabel))
+                    ? stage.dayVariantLabel.ToUpperInvariant()
+                    : "DIA"
+            };
         }
 
         public static void CycleCpuDifficulty(int direction = 1)
@@ -105,6 +131,7 @@ namespace UnDFight
             SelectedFighterP1 = null;
             SelectedFighterP2 = null;
             SelectedStageSceneName = DefaultStageSceneName;
+            SelectedWeather = StageWeatherVariant.Day;
             OpenStageSelectOnCharacterSelect = false;
         }
 

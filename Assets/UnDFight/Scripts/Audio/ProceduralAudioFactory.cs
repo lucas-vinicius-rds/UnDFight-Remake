@@ -324,6 +324,73 @@ namespace UnDFight
             return clip;
         }
 
+        public static AudioClip CreateRainLoopClip()
+        {
+            const float durationSec = 4.0f;
+            int samples = Mathf.RoundToInt(durationSec * SampleRate);
+            float[] data = new float[samples];
+            var rng = new System.Random("Weather_Rain_Loop".GetHashCode());
+
+            // Pink-ish rain noise with soft high-frequency droplet patter and smooth loop crossfade
+            float b0 = 0f, b1 = 0f, b2 = 0f;
+            float lp = 0f;
+            for (int i = 0; i < samples; i++)
+            {
+                float t = i / (float)SampleRate;
+                float white = (float)rng.NextDouble() * 2f - 1f;
+                b0 = 0.997f * b0 + white * 0.029f;
+                b1 = 0.985f * b1 + white * 0.032f;
+                b2 = 0.950f * b2 + white * 0.048f;
+                float pink = (b0 + b1 + b2 + white * 0.08f) * 0.55f;
+
+                lp += 0.22f * (pink - lp);
+                float droplet = (rng.NextDouble() < 0.0025) ? (((float)rng.NextDouble() * 2f - 1f) * 0.28f) : 0f;
+                float swell = 0.88f + 0.12f * Mathf.Sin(2f * Mathf.PI * 0.5f * t);
+
+                float edgeFade = Mathf.Clamp01(t / 0.06f) * Mathf.Clamp01((durationSec - t) / 0.06f);
+                data[i] = Mathf.Clamp((lp + droplet) * swell * 0.42f * edgeFade, -0.95f, 0.95f);
+            }
+
+            AudioClip clip = AudioClip.Create("AMB_Weather_Rain_Loop", samples, 1, SampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        public static AudioClip CreateNightWindLoopClip()
+        {
+            const float durationSec = 6.0f;
+            int samples = Mathf.RoundToInt(durationSec * SampleRate);
+            float[] data = new float[samples];
+            var rng = new System.Random("Weather_NightWind_Loop".GetHashCode());
+
+            float lp = 0f;
+            float hp = 0f;
+            float prev = 0f;
+            float dt = 1f / SampleRate;
+
+            for (int i = 0; i < samples; i++)
+            {
+                float t = i / (float)SampleRate;
+                float white = (float)rng.NextDouble() * 2f - 1f;
+
+                // Gentle slow gusting cutoff (integer cycles over 6s for seamless loop)
+                float gustLfo = 0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * (1f / 6f) * t);
+                float cutoff = Mathf.Lerp(180f, 520f, gustLfo);
+                float rc = 1f / (2f * Mathf.PI * cutoff);
+                float alpha = dt / (rc + dt);
+                lp += alpha * (white - lp);
+                hp = 0.985f * (hp + lp - prev);
+                prev = lp;
+
+                float edgeFade = Mathf.Clamp01(t / 0.08f) * Mathf.Clamp01((durationSec - t) / 0.08f);
+                data[i] = Mathf.Clamp(hp * (0.28f + 0.22f * gustLfo) * edgeFade, -0.95f, 0.95f);
+            }
+
+            AudioClip clip = AudioClip.Create("AMB_Weather_NightWind_Loop", samples, 1, SampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
         private delegate float SampleFormula(float timeSec, float durationSec, System.Random rng);
 
         private static AudioClip BuildClip(string clipName, float durationSec, SampleFormula formula)

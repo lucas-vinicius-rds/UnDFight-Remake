@@ -14,6 +14,7 @@ namespace UnDFight
         [Header("Audio Sources")]
         [SerializeField] private AudioSource musicSource;
         [SerializeField] private AudioSource sfxSource;
+        [SerializeField] private AudioSource weatherAmbientSource;
 
         private AudioClip _uiMoveClip;
         private AudioClip _uiConfirmClip;
@@ -37,15 +38,19 @@ namespace UnDFight
         private AudioClip _propBreakGlassClip;
         private AudioClip _roundGongClip;
         private AudioClip _ambientMusicClip;
+        private AudioClip _rainAmbientClip;
+        private AudioClip _nightWindAmbientClip;
 
         private FightSimulation _boundSimulation;
         private MatchManager _boundMatchManager;
         private float _sfxVolume = 0.85f;
+        private float _weatherAmbientGain = 0f;
         private string _lastGongBanner = string.Empty;
         private bool _clipsGenerated;
 
         public AudioSource MusicSource => musicSource;
         public AudioSource SfxSource => sfxSource;
+        public AudioSource WeatherAmbientSource => weatherAmbientSource;
         public float SfxVolume => _sfxVolume;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -174,6 +179,51 @@ namespace UnDFight
             {
                 sfxSource.volume = 1f;
             }
+            if (weatherAmbientSource != null)
+            {
+                weatherAmbientSource.volume = Mathf.Clamp01(_sfxVolume * _weatherAmbientGain);
+            }
+        }
+
+        public void SetWeatherAmbience(StageWeatherVariant variant, bool enabled = true)
+        {
+            EnsureSources();
+            GenerateClipsIfNeeded();
+
+            if (!enabled || !Application.isPlaying || weatherAmbientSource == null || variant == StageWeatherVariant.Day)
+            {
+                StopWeatherAmbience();
+                return;
+            }
+
+            AudioClip targetClip = variant == StageWeatherVariant.RainyNight ? _rainAmbientClip : _nightWindAmbientClip;
+            _weatherAmbientGain = variant == StageWeatherVariant.RainyNight ? 0.42f : 0.24f;
+            weatherAmbientSource.volume = Mathf.Clamp01(_sfxVolume * _weatherAmbientGain);
+
+            if (weatherAmbientSource.clip != targetClip)
+            {
+                weatherAmbientSource.clip = targetClip;
+                weatherAmbientSource.loop = true;
+                weatherAmbientSource.Play();
+            }
+            else if (!weatherAmbientSource.isPlaying && targetClip != null)
+            {
+                weatherAmbientSource.loop = true;
+                weatherAmbientSource.Play();
+            }
+        }
+
+        public void StopWeatherAmbience()
+        {
+            _weatherAmbientGain = 0f;
+            if (weatherAmbientSource != null)
+            {
+                if (weatherAmbientSource.isPlaying)
+                {
+                    weatherAmbientSource.Stop();
+                }
+                weatherAmbientSource.clip = null;
+            }
         }
 
         public void PlayUiMove() => PlaySfx(_uiMoveClip, 0.75f);
@@ -299,6 +349,14 @@ namespace UnDFight
                 sfxSource.loop = false;
                 sfxSource.spatialBlend = 0f;
             }
+
+            if (weatherAmbientSource == null)
+            {
+                weatherAmbientSource = gameObject.AddComponent<AudioSource>();
+                weatherAmbientSource.playOnAwake = false;
+                weatherAmbientSource.loop = true;
+                weatherAmbientSource.spatialBlend = 0f;
+            }
         }
 
         private void GenerateClipsIfNeeded()
@@ -330,6 +388,8 @@ namespace UnDFight
             _propBreakGlassClip = ProceduralAudioFactory.CreatePropBreakGlassClip();
             _roundGongClip = ProceduralAudioFactory.CreateRoundGongClip();
             _ambientMusicClip = ProceduralAudioFactory.CreateAmbientMusicLoopClip();
+            _rainAmbientClip = ProceduralAudioFactory.CreateRainLoopClip();
+            _nightWindAmbientClip = ProceduralAudioFactory.CreateNightWindLoopClip();
             _clipsGenerated = true;
         }
 
@@ -341,6 +401,7 @@ namespace UnDFight
         private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             _lastGongBanner = string.Empty;
+            StopWeatherAmbience();
             BindSceneGameplaySources();
         }
 

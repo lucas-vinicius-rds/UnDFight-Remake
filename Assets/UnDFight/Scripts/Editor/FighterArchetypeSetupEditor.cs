@@ -2080,6 +2080,34 @@ namespace UnDFight.Editor
                 so.FindProperty("squashVisualOnCrouch").boolValue = false;
                 so.ApplyModifiedPropertiesWithoutUndo();
 
+                // Dedicated child on FighterDebrisPusher layer (12) for one-way kinematic -> dynamic debris pushing
+                GameObject pusherGo = new GameObject(FighterDebrisPusher.DefaultChildName);
+                pusherGo.transform.SetParent(root.transform, false);
+                pusherGo.transform.localPosition = Vector3.zero;
+                pusherGo.transform.localRotation = Quaternion.identity;
+                pusherGo.transform.localScale = Vector3.one;
+                int pusherLayer = LayerMask.NameToLayer(StagePhysicsLayers.FighterDebrisPusherLayerName);
+                if (pusherLayer >= 0) pusherGo.layer = pusherLayer;
+
+                CapsuleCollider pusherCol = pusherGo.AddComponent<CapsuleCollider>();
+                pusherCol.isTrigger = false;
+                pusherCol.radius = fighterData.pushboxRadius * 1.05f;
+                pusherCol.height = fighterData.heightMeters;
+                pusherCol.center = new Vector3(0f, fighterData.heightMeters * 0.5f, 0f);
+
+                Rigidbody pusherRb = pusherGo.AddComponent<Rigidbody>();
+                pusherRb.isKinematic = true;
+                pusherRb.useGravity = false;
+                pusherRb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                pusherRb.interpolation = RigidbodyInterpolation.None;
+
+                FighterDebrisPusher pusher = pusherGo.AddComponent<FighterDebrisPusher>();
+                var pusherSo = new SerializedObject(pusher);
+                pusherSo.FindProperty("fighter").objectReferenceValue = controllerComp;
+                pusherSo.FindProperty("body").objectReferenceValue = pusherRb;
+                pusherSo.FindProperty("pusherCollider").objectReferenceValue = pusherCol;
+                pusherSo.ApplyModifiedPropertiesWithoutUndo();
+
                 _ = inputHandler;
                 return PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             }

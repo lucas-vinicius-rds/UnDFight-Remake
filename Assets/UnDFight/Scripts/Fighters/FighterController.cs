@@ -104,9 +104,11 @@ namespace UnDFight
         private StageThrowableProp _pendingThrowProp;
         private int _stageInteractCooldownTicks;
         private Rigidbody _hurtboxRigidbody;
+        private FighterDebrisPusher _debrisPusher;
 
         public FightSimulation Simulation => _simulation;
-        public CapsuleCollider HurtboxCollider => hurtboxCollider != null ? hurtboxCollider : (hurtboxCollider = GetComponentInChildren<CapsuleCollider>());
+        public CapsuleCollider HurtboxCollider => hurtboxCollider != null ? hurtboxCollider : (hurtboxCollider = ResolveHurtboxCollider());
+        public FighterDebrisPusher DebrisPusher => _debrisPusher != null ? _debrisPusher : (_debrisPusher = GetComponentInChildren<FighterDebrisPusher>(true));
         public FighterData Data => fighterData;
         public FighterState State => _state;
         public AttackType CurrentAttack => _currentAttack;
@@ -192,21 +194,89 @@ namespace UnDFight
         private void Awake()
         {
             _inputHandler = GetComponent<PlayerInputHandler>();
-            if (visualRoot == null && transform.childCount > 0)
-            {
-                visualRoot = transform.GetChild(0);
-            }
-            if (hurtboxCollider == null)
-            {
-                hurtboxCollider = GetComponentInChildren<CapsuleCollider>();
-            }
+            ResolveVisualAndHurtboxReferences();
             if (fighterAnimator == null)
             {
                 fighterAnimator = GetComponentInChildren<Animator>();
             }
             EnsureKinematicHurtboxRigidbody();
+            EnsureDebrisPusher();
             SetupAnimatorForFixedTick();
             ApplyFighterDataScaling();
+        }
+
+        private void ResolveVisualAndHurtboxReferences()
+        {
+            if (visualRoot == null)
+            {
+                for (int i = 0; i < transform.childCount; i++)
+                {
+                    Transform child = transform.GetChild(i);
+                    if (child != null &&
+                        child.name != FighterDebrisPusher.DefaultChildName &&
+                        child.GetComponent<FighterDebrisPusher>() == null)
+                    {
+                        visualRoot = child;
+                        break;
+                    }
+                }
+            }
+            if (hurtboxCollider == null)
+            {
+                hurtboxCollider = ResolveHurtboxCollider();
+            }
+        }
+
+        private CapsuleCollider ResolveHurtboxCollider()
+        {
+            CapsuleCollider rootCap = GetComponent<CapsuleCollider>();
+            if (rootCap != null)
+            {
+                return rootCap;
+            }
+
+            CapsuleCollider[] all = GetComponentsInChildren<CapsuleCollider>(true);
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i] != null && all[i].GetComponent<FighterDebrisPusher>() == null)
+                {
+                    return all[i];
+                }
+            }
+            return null;
+        }
+
+        public FighterDebrisPusher EnsureDebrisPusher()
+        {
+            if (_debrisPusher == null)
+            {
+                _debrisPusher = GetComponentInChildren<FighterDebrisPusher>(true);
+            }
+
+            if (_debrisPusher == null)
+            {
+                Transform existing = transform.Find(FighterDebrisPusher.DefaultChildName);
+                GameObject pusherGo = existing != null
+                    ? existing.gameObject
+                    : new GameObject(FighterDebrisPusher.DefaultChildName);
+
+                if (existing == null)
+                {
+                    pusherGo.transform.SetParent(transform, false);
+                    pusherGo.transform.localPosition = Vector3.zero;
+                    pusherGo.transform.localRotation = Quaternion.identity;
+                    pusherGo.transform.localScale = Vector3.one;
+                }
+
+                _debrisPusher = pusherGo.GetComponent<FighterDebrisPusher>();
+                if (_debrisPusher == null)
+                {
+                    _debrisPusher = pusherGo.AddComponent<FighterDebrisPusher>();
+                }
+            }
+
+            _debrisPusher.BindFighter(this);
+            return _debrisPusher;
         }
 
         private void EnsureKinematicHurtboxRigidbody()
@@ -250,14 +320,7 @@ namespace UnDFight
             {
                 gameObject.layer = StagePhysicsLayers.FighterHurtboxLayer;
             }
-            if (visualRoot == null && transform.childCount > 0)
-            {
-                visualRoot = transform.GetChild(0);
-            }
-            if (hurtboxCollider == null)
-            {
-                hurtboxCollider = GetComponentInChildren<CapsuleCollider>();
-            }
+            ResolveVisualAndHurtboxReferences();
             if (_inputHandler == null)
             {
                 _inputHandler = GetComponent<PlayerInputHandler>();
@@ -294,9 +357,11 @@ namespace UnDFight
             _pendingThrowProp = null;
             _stageInteractCooldownTicks = 0;
             EnsureKinematicHurtboxRigidbody();
+            EnsureDebrisPusher();
             SetupAnimatorForFixedTick();
             ApplyFighterDataScaling();
             SnapVisualYaw();
+            _debrisPusher?.SyncFromFighter(useMovePosition: false);
             StepAnimatorTick(0f);
         }
 
@@ -338,6 +403,7 @@ namespace UnDFight
             transform.position = new Vector3(_currSimPos.x, _currSimPos.y, 0f);
             UpdateHurtboxDimensions();
             SnapVisualYaw();
+            _debrisPusher?.SyncFromFighter(useMovePosition: false);
 
             if (fighterAnimator != null && fighterAnimator.runtimeAnimatorController != null)
             {

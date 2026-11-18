@@ -52,6 +52,10 @@ namespace UnDFight
         [SerializeField] private UnityEngine.UI.Image stagePreviewBanner;
         [SerializeField] private TextMeshProUGUI stagePreviewTitle;
         [SerializeField] private TextMeshProUGUI stagePreviewSubtitle;
+        [SerializeField] private GameObject weatherSelectorBar;
+        [SerializeField] private UnityEngine.UI.Button weatherPrevButton;
+        [SerializeField] private UnityEngine.UI.Button weatherNextButton;
+        [SerializeField] private TextMeshProUGUI weatherLabelText;
         [SerializeField] private TextMeshProUGUI modeBannerText;
         [SerializeField] private TextMeshProUGUI footerHintText;
         [SerializeField] private TextMeshProUGUI p1HeaderText;
@@ -74,6 +78,7 @@ namespace UnDFight
         private float _stageTransitionTimer = -1f;
         private SelectStep _currentStep = SelectStep.FighterPick;
         private int _lastStageNavIndex = -1;
+        private bool _weatherManuallyChosenInStageSelect;
 
         private GameObject _p1PreviewInstance;
         private GameObject _p2PreviewInstance;
@@ -94,6 +99,7 @@ namespace UnDFight
         public bool P1Confirmed => _p1Confirmed;
         public bool P2Confirmed => _p2Confirmed;
         public SelectStep CurrentStep => _currentStep;
+        public TextMeshProUGUI WeatherLabelText => weatherLabelText;
 
         private void Awake()
         {
@@ -254,7 +260,7 @@ namespace UnDFight
             stageBox.anchorMin = new Vector2(0.5f, 0.50f);
             stageBox.anchorMax = new Vector2(0.5f, 0.50f);
             stageBox.pivot = new Vector2(0.5f, 0.5f);
-            stageBox.sizeDelta = new Vector2(620f, 520f);
+            stageBox.sizeDelta = new Vector2(620f, 640f);
             MenuUiFactory.AddBorder(stageBox, MenuUiFactory.BronzeBorder, whiteSprite, 2f);
             stageSelectPanel = stageBox.gameObject;
 
@@ -324,7 +330,95 @@ namespace UnDFight
             stagePreviewSubtitle.rectTransform.sizeDelta = new Vector2(-32f, 34f);
 
             stageNavigation = stageBox.gameObject.AddComponent<MenuNavigationGroup>();
+            EnsureWeatherSelectorBar();
             stageSelectPanel.SetActive(false);
+        }
+
+        private void EnsureWeatherSelectorBar()
+        {
+            if (stageSelectPanel == null)
+            {
+                return;
+            }
+
+            RectTransform stageBox = stageSelectPanel.GetComponent<RectTransform>();
+            if (stageBox != null && stageBox.sizeDelta.y < 620f)
+            {
+                stageBox.sizeDelta = new Vector2(Mathf.Max(620f, stageBox.sizeDelta.x), 640f);
+            }
+
+            Transform existing = stageSelectPanel.transform.Find("WeatherSelectorBar");
+            if (existing != null)
+            {
+                weatherSelectorBar = existing.gameObject;
+                weatherPrevButton = existing.Find("WeatherPrevBtn")?.GetComponent<UnityEngine.UI.Button>();
+                weatherNextButton = existing.Find("WeatherNextBtn")?.GetComponent<UnityEngine.UI.Button>();
+                weatherLabelText = existing.Find("WeatherLabel")?.GetComponent<TextMeshProUGUI>();
+            }
+            else
+            {
+                RectTransform bar = MenuUiFactory.CreatePanel("WeatherSelectorBar", stageSelectPanel.transform, MenuUiFactory.PanelDarkBg, whiteSprite, raycastTarget: true);
+                bar.anchorMin = new Vector2(0.5f, 1f);
+                bar.anchorMax = new Vector2(0.5f, 1f);
+                bar.pivot = new Vector2(0.5f, 1f);
+                bar.anchoredPosition = new Vector2(0f, -238f);
+                bar.sizeDelta = new Vector2(548f, 44f);
+                MenuUiFactory.AddBorder(bar, MenuUiFactory.BronzeBorder, whiteSprite, 1.5f);
+                weatherSelectorBar = bar.gameObject;
+
+                weatherPrevButton = CreateWeatherArrowButton("WeatherPrevBtn", bar, "<", isLeft: true);
+                weatherNextButton = CreateWeatherArrowButton("WeatherNextBtn", bar, ">", isLeft: false);
+
+                weatherLabelText = MenuUiFactory.CreateText(
+                    "WeatherLabel",
+                    bar,
+                    "CLIMA: PÔR DO SOL",
+                    18f,
+                    FontStyles.Bold,
+                    TextAlignmentOptions.Center,
+                    MenuUiFactory.AccentGold,
+                    characterSpacing: 4f);
+                MenuUiFactory.StretchFull(weatherLabelText.rectTransform, 60f, 2f, 60f, 2f);
+            }
+
+            if (weatherPrevButton != null)
+            {
+                weatherPrevButton.onClick.RemoveAllListeners();
+                weatherPrevButton.onClick.AddListener(() => StepWeatherSelection(-1));
+            }
+            if (weatherNextButton != null)
+            {
+                weatherNextButton.onClick.RemoveAllListeners();
+                weatherNextButton.onClick.AddListener(() => StepWeatherSelection(1));
+            }
+        }
+
+        private UnityEngine.UI.Button CreateWeatherArrowButton(string btnName, Transform parent, string symbol, bool isLeft)
+        {
+            RectTransform rt = MenuUiFactory.CreatePanel(btnName, parent, new Color(0.14f, 0.12f, 0.10f, 0.92f), whiteSprite, raycastTarget: true);
+            rt.anchorMin = new Vector2(isLeft ? 0f : 1f, 0f);
+            rt.anchorMax = new Vector2(isLeft ? 0f : 1f, 1f);
+            rt.pivot = new Vector2(isLeft ? 0f : 1f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(54f, 0f);
+
+            var btn = rt.gameObject.AddComponent<UnityEngine.UI.Button>();
+            btn.targetGraphic = rt.GetComponent<UnityEngine.UI.Image>();
+            var nav = btn.navigation;
+            nav.mode = UnityEngine.UI.Navigation.Mode.None;
+            btn.navigation = nav;
+
+            TextMeshProUGUI arrowTxt = MenuUiFactory.CreateText(
+                "Symbol",
+                rt,
+                symbol,
+                22f,
+                FontStyles.Bold,
+                TextAlignmentOptions.Center,
+                MenuUiFactory.AccentGold,
+                characterSpacing: 0f);
+            MenuUiFactory.StretchFull(arrowTxt.rectTransform, 2f, 2f, 2f, 2f);
+            return btn;
         }
 
         private void RebuildStageList()
@@ -334,6 +428,8 @@ namespace UnDFight
             {
                 return;
             }
+
+            EnsureWeatherSelectorBar();
 
             Transform box = stageSelectPanel.transform;
             for (int i = box.childCount - 1; i >= 0; i--)
@@ -358,21 +454,23 @@ namespace UnDFight
             }
 
             int totalRows = _stageChoices.Count + 1; // +1 for ALEATÓRIO
+            float rowHeight = totalRows > 4 ? 52f : 56f;
+            float rowSpacing = totalRows > 4 ? 62f : 66f;
             for (int i = 0; i < totalRows; i++)
             {
                 bool isRandom = i >= _stageChoices.Count;
                 string label = isRandom ? "ALEATÓRIO" : _stageChoices[i].displayName.ToUpperInvariant();
-                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"StageBtn_{i}", box, label, whiteSprite, 23f, TextAlignmentOptions.Center, characterSpacing: 6f);
+                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"StageBtn_{i}", box, label, whiteSprite, 22f, TextAlignmentOptions.Center, characterSpacing: 6f);
                 RectTransform rt = entry.Button.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.5f, 1f);
                 rt.anchorMax = new Vector2(0.5f, 1f);
                 rt.pivot = new Vector2(0.5f, 1f);
-                rt.anchoredPosition = new Vector2(0f, -248f - i * 74f);
-                rt.sizeDelta = new Vector2(548f, 60f);
+                rt.anchoredPosition = new Vector2(0f, -294f - i * rowSpacing);
+                rt.sizeDelta = new Vector2(548f, rowHeight);
 
                 int capturedIdx = i;
                 entry.OnSubmit = () => SubmitStageChoice(capturedIdx);
-                entry.OnHorizontalStep = dir => stageNavigation.SetSelectedIndex(stageNavigation.SelectedIndex + dir);
+                entry.OnHorizontalStep = dir => StepWeatherSelection(dir);
                 stageNavigation.AddItem(entry);
             }
 
@@ -743,11 +841,13 @@ namespace UnDFight
             _currentStep = SelectStep.StageSelect;
             _stageTransitionTimer = -1f;
             _inputCooldownFrames = 2;
+            _weatherManuallyChosenInStageSelect = false;
 
             if (rosterGridPanel != null) rosterGridPanel.SetActive(false);
             if (stageSelectPanel != null) stageSelectPanel.SetActive(true);
 
             EnsureRuntimeStageOptions();
+            EnsureWeatherSelectorBar();
             if (stageNavigation != null)
             {
                 int initialStageIdx = 0;
@@ -781,6 +881,30 @@ namespace UnDFight
             EnterFighterPickStep();
         }
 
+        public void StepWeatherSelection(int direction)
+        {
+            if (_currentStep != SelectStep.StageSelect || stageNavigation == null)
+            {
+                return;
+            }
+
+            int idx = stageNavigation.SelectedIndex;
+            bool isRandom = idx < 0 || idx >= _stageChoices.Count;
+            if (!isRandom)
+            {
+                StageData stage = _stageChoices[idx];
+                if (stage == null || !stage.supportsWeatherVariants)
+                {
+                    return;
+                }
+            }
+
+            GameSessionState.CycleWeather(direction);
+            _weatherManuallyChosenInStageSelect = true;
+            FightAudioManager.Instance?.PlayUiMove();
+            UpdateStagePreviewFromIndex();
+        }
+
         private void UpdateStagePreviewFromIndex()
         {
             if (stageNavigation == null || stagePreviewTitle == null || stagePreviewSubtitle == null)
@@ -789,26 +913,99 @@ namespace UnDFight
             }
 
             int idx = stageNavigation.SelectedIndex;
+            StageWeatherVariant weather = GameSessionState.SelectedWeather;
+
             if (idx >= 0 && idx < _stageChoices.Count)
             {
                 StageData stage = _stageChoices[idx];
+                bool supportsWeather = stage.supportsWeatherVariants;
+                StageWeatherVariant effectiveWeather = supportsWeather ? weather : stage.defaultWeather;
+
                 stagePreviewTitle.text = stage.displayName.ToUpperInvariant();
-                stagePreviewSubtitle.text = stage.subtitle;
+                if (supportsWeather)
+                {
+                    string weatherLabel = GameSessionState.GetWeatherLabel(effectiveWeather, stage);
+                    stagePreviewSubtitle.text = $"{stage.subtitle} • {weatherLabel}";
+                }
+                else
+                {
+                    stagePreviewSubtitle.text = stage.subtitle;
+                }
+
                 if (stagePreviewBanner != null)
                 {
                     stagePreviewBanner.sprite = stage.previewImage != null ? stage.previewImage : whiteSprite;
-                    stagePreviewBanner.color = stage.previewImage != null ? Color.white : stage.previewColor;
+                    Color baseCol = stage.previewImage != null ? Color.white : stage.previewColor;
+                    stagePreviewBanner.color = supportsWeather
+                        ? ApplyWeatherPreviewTint(baseCol, effectiveWeather)
+                        : baseCol;
                 }
+
+                UpdateWeatherSelectorVisuals(supportsWeather, effectiveWeather, stage, isRandom: false);
             }
             else
             {
                 stagePreviewTitle.text = "ALEATÓRIO";
-                stagePreviewSubtitle.text = "Escolher uma arena aleatória para o combate";
+                string weatherLabel = GameSessionState.GetWeatherLabel(weather, null);
+                stagePreviewSubtitle.text = _weatherManuallyChosenInStageSelect
+                    ? $"Arena aleatória • Clima: {weatherLabel}"
+                    : "Arena e clima aleatórios para o combate";
                 if (stagePreviewBanner != null)
                 {
                     stagePreviewBanner.sprite = whiteSprite;
-                    stagePreviewBanner.color = new Color(0.28f, 0.22f, 0.14f, 1f);
+                    stagePreviewBanner.color = ApplyWeatherPreviewTint(new Color(0.28f, 0.22f, 0.14f, 1f), weather);
                 }
+
+                UpdateWeatherSelectorVisuals(supportsWeather: true, weather, stage: null, isRandom: true);
+            }
+        }
+
+        private static Color ApplyWeatherPreviewTint(Color baseColor, StageWeatherVariant weather)
+        {
+            return weather switch
+            {
+                StageWeatherVariant.Night => new Color(baseColor.r * 0.45f, baseColor.g * 0.52f, baseColor.b * 0.88f, baseColor.a),
+                StageWeatherVariant.RainyNight => new Color(baseColor.r * 0.34f, baseColor.g * 0.44f, baseColor.b * 0.76f, baseColor.a),
+                _ => baseColor
+            };
+        }
+
+        private void UpdateWeatherSelectorVisuals(bool supportsWeather, StageWeatherVariant weather, StageData stage, bool isRandom)
+        {
+            if (weatherLabelText != null)
+            {
+                if (!supportsWeather)
+                {
+                    weatherLabelText.text = "CLIMA FIXO";
+                    weatherLabelText.color = new Color(0.50f, 0.48f, 0.46f, 0.90f);
+                }
+                else
+                {
+                    string wLabel = (isRandom && !_weatherManuallyChosenInStageSelect)
+                        ? "ALEATÓRIO"
+                        : GameSessionState.GetWeatherLabel(weather, stage);
+                    weatherLabelText.text = $"CLIMA: {wLabel}";
+                    weatherLabelText.color = weather switch
+                    {
+                        StageWeatherVariant.Night => new Color(0.64f, 0.80f, 1.0f, 1f),
+                        StageWeatherVariant.RainyNight => new Color(0.48f, 0.84f, 0.98f, 1f),
+                        _ => MenuUiFactory.AccentGold
+                    };
+                }
+            }
+
+            SetWeatherArrowInteractive(weatherPrevButton, supportsWeather);
+            SetWeatherArrowInteractive(weatherNextButton, supportsWeather);
+        }
+
+        private static void SetWeatherArrowInteractive(UnityEngine.UI.Button btn, bool active)
+        {
+            if (btn == null) return;
+            btn.interactable = active;
+            var txt = btn.GetComponentInChildren<TextMeshProUGUI>();
+            if (txt != null)
+            {
+                txt.color = active ? MenuUiFactory.AccentGold : new Color(0.36f, 0.34f, 0.32f, 0.65f);
             }
         }
 
@@ -819,13 +1016,27 @@ namespace UnDFight
             string sceneToLoad = fallbackFightSceneName;
             if (index >= 0 && index < _stageChoices.Count)
             {
-                GameSessionState.SelectStage(_stageChoices[index]);
+                StageData chosen = _stageChoices[index];
+                GameSessionState.SelectStage(chosen);
+                if (!chosen.supportsWeatherVariants)
+                {
+                    GameSessionState.SelectWeather(chosen.defaultWeather);
+                }
                 sceneToLoad = GameSessionState.ResolveStageSceneName(stageRoster, fallbackFightSceneName);
             }
             else if (_stageChoices.Count > 0)
             {
                 int randomIdx = Random.Range(0, _stageChoices.Count);
-                GameSessionState.SelectStage(_stageChoices[randomIdx]);
+                StageData chosen = _stageChoices[randomIdx];
+                GameSessionState.SelectStage(chosen);
+                if (!chosen.supportsWeatherVariants)
+                {
+                    GameSessionState.SelectWeather(chosen.defaultWeather);
+                }
+                else if (!_weatherManuallyChosenInStageSelect)
+                {
+                    GameSessionState.SelectWeather((StageWeatherVariant)Random.Range(0, 3));
+                }
                 sceneToLoad = GameSessionState.ResolveStageSceneName(stageRoster, fallbackFightSceneName);
             }
 
@@ -884,8 +1095,8 @@ namespace UnDFight
                 if (_currentStep == SelectStep.StageSelect)
                 {
                     footerHintText.text = GameSessionState.CurrentMode == GameMode.VersusCpu
-                        ? "WASD / SETAS / D-PAD: ESCOLHER ARENA   •   TAB / BOTÃO Y: DIFICULDADE CPU   •   ENTER / J / A: LUTAR   •   ESC / K / B: VOLTAR"
-                        : "WASD / SETAS / D-PAD: ESCOLHER ARENA   •   ENTER / J / A: INICIAR LUTA   •   ESC / K / B: VOLTAR AOS LUTADORES";
+                        ? "W/S OU ↑/↓: ARENA   •   A/D OU ←/→: CLIMA   •   TAB: DIFICULDADE CPU   •   ENTER / J: LUTAR   •   ESC / K: VOLTAR"
+                        : "W/S OU ↑/↓: ARENA   •   A/D OU ←/→: CLIMA   •   ENTER / J / A: INICIAR LUTA   •   ESC / K / B: VOLTAR";
                 }
                 else
                 {
@@ -1019,10 +1230,15 @@ namespace UnDFight
                 if (fc != null) fc.enabled = false;
                 var ih = instance.GetComponent<PlayerInputHandler>();
                 if (ih != null) ih.enabled = false;
-                var col = instance.GetComponent<Collider>();
-                if (col != null) col.enabled = false;
-                var rb = instance.GetComponent<Rigidbody>();
-                if (rb != null)
+                foreach (FighterDebrisPusher pusher in instance.GetComponentsInChildren<FighterDebrisPusher>(true))
+                {
+                    pusher.enabled = false;
+                }
+                foreach (Collider col in instance.GetComponentsInChildren<Collider>(true))
+                {
+                    col.enabled = false;
+                }
+                foreach (Rigidbody rb in instance.GetComponentsInChildren<Rigidbody>(true))
                 {
                     rb.isKinematic = true;
                     rb.useGravity = false;

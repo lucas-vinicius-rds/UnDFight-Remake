@@ -4,12 +4,20 @@ namespace UnDFight
 {
     /// <summary>
     /// Pooled physical debris shard driven by NVIDIA PhysX on the StageDebris layer.
-    /// Auto-sleeps/freezes after settling to preserve constant 60 FPS and resets deterministically.
+    /// When persistUntilReset is true (default), remains a real dynamic Rigidbody for the entire round
+    /// using PhysX Auto-Sleep so fighters, wind gusts, and combat shockwaves can kick or scatter it,
+    /// then resets cleanly at MatchManager.StartRound() or Training R-key reset.
     /// </summary>
     public class StageDebrisFragment : MonoBehaviour
     {
         [SerializeField] private Rigidbody body;
         [SerializeField] private Collider fragmentCollider;
+        [SerializeField] private StageWindAffectable windAffectable;
+        [SerializeField] private bool persistUntilReset = true;
+        [SerializeField, Min(0.01f)] private float autoSleepThreshold = 0.08f;
+        [SerializeField, Min(0f)] private float dynamicLinearDamping = 0.45f;
+        [SerializeField, Min(0f)] private float dynamicAngularDamping = 0.65f;
+        [SerializeField] private float fallOutMinY = -5f;
 
         private Vector3 _initialLocalPosition;
         private Quaternion _initialLocalRotation;
@@ -23,6 +31,8 @@ namespace UnDFight
 
         public Rigidbody Body => body;
         public Collider FragmentCollider => fragmentCollider;
+        public StageWindAffectable WindAffectable => windAffectable;
+        public bool PersistUntilReset { get => persistUntilReset; set => persistUntilReset = value; }
         public bool IsLaunched => _isLaunched;
         public bool IsFrozen => _isFrozen;
 
@@ -66,9 +76,40 @@ namespace UnDFight
             }
 
             body.useGravity = true;
+            body.sleepThreshold = autoSleepThreshold;
+            body.linearDamping = dynamicLinearDamping;
+            body.angularDamping = dynamicAngularDamping;
             body.collisionDetectionMode = CollisionDetectionMode.Discrete;
             body.interpolation = RigidbodyInterpolation.Interpolate;
             gameObject.layer = StagePhysicsLayers.StageDebrisLayer;
+
+            if (windAffectable == null)
+            {
+                windAffectable = GetComponent<StageWindAffectable>();
+            }
+            if (windAffectable == null)
+            {
+                windAffectable = gameObject.AddComponent<StageWindAffectable>();
+                windAffectable.Configure(cd: 1.05f, areaM2: 0.09f, sensitivity: 1.15f, wakeThreshold: 2.8f, bodyOverride: body);
+            }
+            else
+            {
+                windAffectable.TargetBody = body;
+            }
+        }
+
+        /// <summary>
+        /// Wakes a live dynamic debris fragment and applies an external PhysX impulse (shockwave, kick, wind).
+        /// </summary>
+        public void ApplyImpulse(Vector3 impulse, ForceMode mode = ForceMode.Impulse)
+        {
+            if (!_isLaunched || !gameObject.activeInHierarchy || body == null || body.isKinematic)
+            {
+                return;
+            }
+
+            body.WakeUp();
+            body.AddForce(impulse, mode);
         }
 
         public void Launch(
@@ -150,7 +191,30 @@ namespace UnDFight
                 return;
             }
 
+            // Safety net against falling beneath the stage floor
+            if (transform.position.y < fallOutMinY)
+            {
+                if (body != null)
+                {
+                    if (!body.isKinematic)
+                    {
+                        body.linearVelocity = Vector3.zero;
+                        body.angularVelocity = Vector3.zero;
+                    }
+                    body.Sleep();
+                }
+                _isLaunched = false;
+                gameObject.SetActive(false);
+                return;
+            }
+
             _elapsed += Time.deltaTime;
+            if (persistUntilReset)
+            {
+                // Persist as real dynamic Rigidbodies for the entire round using PhysX Auto-Sleep.
+                return;
+            }
+
             if (!_isFrozen && _elapsed >= _freezeAfterSeconds)
             {
                 FreezePhysics();

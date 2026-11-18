@@ -7,8 +7,9 @@ using UnityEngine.SceneManagement;
 namespace UnDFight.Editor
 {
     /// <summary>
-    /// Idempotent Editor setup utility configuring PhysX layer isolation (StagePhysics, StageDebris,
-    /// FighterHurtbox), reusable breakable stage prop prefabs, and Arena_Favela stage interactables.
+    /// Idempotent Editor setup utility configuring 5-layer PhysX isolation (StagePhysics, StageDebris,
+    /// FighterHurtbox, StageProjectile, FighterDebrisPusher), all 8 Fighter prefabs, reusable stage prop
+    /// prefabs (breakable, throwable, dynamic, hanging), StageData weather flags, and Arena_Favela Physics v2.
     /// </summary>
     public static class StagePhysicsSetupEditor
     {
@@ -18,26 +19,28 @@ namespace UnDFight.Editor
         public const string TablePrefabPath = StagePropsPrefabFolder + "/Prop_BreakableTable.prefab";
         public const string ThrowableChairPrefabPath = StagePropsPrefabFolder + "/Prop_ThrowableChair.prefab";
         public const string ThrowableBottlePrefabPath = StagePropsPrefabFolder + "/Prop_ThrowableBottle.prefab";
+        public const string DynamicCanPrefabPath = StagePropsPrefabFolder + "/Prop_DynamicCan.prefab";
+        public const string HangingSignPrefabPath = StagePropsPrefabFolder + "/Prop_HangingSign.prefab";
         public const string ArenaFavelaScenePath = "Assets/UnDFight/Scenes/Arena_Favela.unity";
+        public const string FavelaStageDataPath = "Assets/UnDFight/Data/StageData_FavelaCarioca.asset";
+        public const string TrainingStageDataPath = "Assets/UnDFight/Data/StageData_SalaDeTreino.asset";
 
-        private static readonly string[] FighterPrefabPaths =
+        [MenuItem("UnDFight/Setup/Configure Stage Physics v2 & Weather (Fase 15.1)", false, 120)]
+        public static void ApplyPhase15_1Setup()
         {
-            "Assets/UnDFight/Prefabs/Fighter_Lucas.prefab",
-            "Assets/UnDFight/Prefabs/Fighter_Tiago.prefab",
-            "Assets/UnDFight/Prefabs/Fighter_Jompes.prefab",
-            "Assets/UnDFight/Prefabs/Fighter_Rochard.prefab"
-        };
+            ApplyPhase12Setup();
+        }
 
-        [MenuItem("UnDFight/Setup/Configure Stage Physics & Arena Favela Props", false, 120)]
         public static void ApplyPhase12Setup()
         {
             EnsurePhysicsLayersAndMatrix();
             AssignFighterPrefabsLayerAndKinematicBody();
             CreateOrUpdateStagePropPrefabs();
+            ConfigureStageDataWeatherFlags();
             SetupArenaFavelaPropsAndManager();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[UnDFight] Fase 12.2 setup applied: PhysX layers isolated (incl. StageProjectile), Fighter hurtbox Rigidbodies updated, breakable & throwable StageProps prefabs generated, Arena_Favela updated.");
+            Debug.Log("[UnDFight] Fase 15.1 setup applied: 5 PhysX layers isolated (incl. FighterDebrisPusher), all 8 Fighter prefabs updated, persistent debris + DynamicCan/HangingSign prefabs generated, StageData weather flags set, Arena_Favela Wind & Weather configured.");
         }
 
         public static void EnsurePhysicsLayersAndMatrix()
@@ -53,6 +56,7 @@ namespace UnDFight.Editor
                     EnsureLayerSlot(layersProp, StagePhysicsLayers.PreferredStageDebrisLayer, StagePhysicsLayers.StageDebrisLayerName);
                     EnsureLayerSlot(layersProp, StagePhysicsLayers.PreferredFighterHurtboxLayer, StagePhysicsLayers.FighterHurtboxLayerName);
                     EnsureLayerSlot(layersProp, StagePhysicsLayers.PreferredStageProjectileLayer, StagePhysicsLayers.StageProjectileLayerName);
+                    EnsureLayerSlot(layersProp, StagePhysicsLayers.PreferredFighterDebrisPusherLayer, StagePhysicsLayers.FighterDebrisPusherLayerName);
                     tagManager.ApplyModifiedProperties();
                 }
             }
@@ -64,15 +68,15 @@ namespace UnDFight.Editor
         public static void AssignFighterPrefabsLayerAndKinematicBody()
         {
             int fighterLayer = LayerMask.NameToLayer(StagePhysicsLayers.FighterHurtboxLayerName);
+            int pusherLayer = LayerMask.NameToLayer(StagePhysicsLayers.FighterDebrisPusherLayerName);
 
-            for (int i = 0; i < FighterPrefabPaths.Length; i++)
+            string[] fighterPaths = Directory.Exists("Assets/UnDFight/Prefabs")
+                ? Directory.GetFiles("Assets/UnDFight/Prefabs", "Fighter_*.prefab", SearchOption.TopDirectoryOnly)
+                : new string[0];
+
+            for (int i = 0; i < fighterPaths.Length; i++)
             {
-                string path = FighterPrefabPaths[i];
-                if (!File.Exists(path))
-                {
-                    continue;
-                }
-
+                string path = fighterPaths[i].Replace('\\', '/');
                 GameObject root = PrefabUtility.LoadPrefabContents(path);
                 if (root == null)
                 {
@@ -108,11 +112,109 @@ namespace UnDFight.Editor
                     dirty = true;
                 }
 
+                FighterController fc = root.GetComponent<FighterController>();
+                float pushRadius = fc != null && fc.Data != null ? fc.Data.pushboxRadius : 0.36f;
+                float height = fc != null && fc.Data != null ? fc.Data.heightMeters : FighterScaling.ReferenceHeightMeters;
+
+                Transform pusherTr = root.transform.Find(FighterDebrisPusher.DefaultChildName);
+                GameObject pusherGo;
+                if (pusherTr == null)
+                {
+                    pusherGo = new GameObject(FighterDebrisPusher.DefaultChildName);
+                    pusherGo.transform.SetParent(root.transform, false);
+                    pusherGo.transform.localPosition = Vector3.zero;
+                    pusherGo.transform.localRotation = Quaternion.identity;
+                    pusherGo.transform.localScale = Vector3.one;
+                    dirty = true;
+                }
+                else
+                {
+                    pusherGo = pusherTr.gameObject;
+                }
+
+                if (pusherLayer >= 0 && pusherGo.layer != pusherLayer)
+                {
+                    pusherGo.layer = pusherLayer;
+                    dirty = true;
+                }
+
+                CapsuleCollider pusherCol = pusherGo.GetComponent<CapsuleCollider>();
+                if (pusherCol == null)
+                {
+                    pusherCol = pusherGo.AddComponent<CapsuleCollider>();
+                    dirty = true;
+                }
+                if (pusherCol.isTrigger || Mathf.Abs(pusherCol.height - height) > 0.01f)
+                {
+                    pusherCol.isTrigger = false;
+                    pusherCol.direction = 1;
+                    pusherCol.radius = pushRadius * 1.05f;
+                    pusherCol.height = height;
+                    pusherCol.center = new Vector3(0f, height * 0.5f, 0f);
+                    dirty = true;
+                }
+
+                Rigidbody pusherRb = pusherGo.GetComponent<Rigidbody>();
+                if (pusherRb == null)
+                {
+                    pusherRb = pusherGo.AddComponent<Rigidbody>();
+                    dirty = true;
+                }
+                if (!pusherRb.isKinematic || pusherRb.useGravity || pusherRb.collisionDetectionMode != CollisionDetectionMode.ContinuousSpeculative || pusherRb.interpolation != RigidbodyInterpolation.None)
+                {
+                    pusherRb.isKinematic = true;
+                    pusherRb.useGravity = false;
+                    pusherRb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                    pusherRb.interpolation = RigidbodyInterpolation.None;
+                    dirty = true;
+                }
+
+                FighterDebrisPusher pusherComp = pusherGo.GetComponent<FighterDebrisPusher>();
+                if (pusherComp == null)
+                {
+                    pusherComp = pusherGo.AddComponent<FighterDebrisPusher>();
+                    dirty = true;
+                }
+
+                var pusherSo = new SerializedObject(pusherComp);
+                if (pusherSo.FindProperty("fighter").objectReferenceValue != fc ||
+                    pusherSo.FindProperty("body").objectReferenceValue != pusherRb ||
+                    pusherSo.FindProperty("pusherCollider").objectReferenceValue != pusherCol)
+                {
+                    pusherSo.FindProperty("fighter").objectReferenceValue = fc;
+                    pusherSo.FindProperty("body").objectReferenceValue = pusherRb;
+                    pusherSo.FindProperty("pusherCollider").objectReferenceValue = pusherCol;
+                    pusherSo.ApplyModifiedPropertiesWithoutUndo();
+                    dirty = true;
+                }
+
                 if (dirty)
                 {
                     PrefabUtility.SaveAsPrefabAsset(root, path);
                 }
                 PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        public static void ConfigureStageDataWeatherFlags()
+        {
+            StageData favela = AssetDatabase.LoadAssetAtPath<StageData>(FavelaStageDataPath);
+            if (favela != null)
+            {
+                favela.supportsWeatherVariants = true;
+                favela.dayVariantLabel = "PÔR DO SOL";
+                favela.defaultWeather = StageWeatherVariant.Day;
+                favela.subtitle = "Bar do Jorge • Rio de Janeiro";
+                EditorUtility.SetDirty(favela);
+            }
+
+            StageData training = AssetDatabase.LoadAssetAtPath<StageData>(TrainingStageDataPath);
+            if (training != null)
+            {
+                training.supportsWeatherVariants = false;
+                training.dayVariantLabel = "DIA";
+                training.defaultWeather = StageWeatherVariant.Day;
+                EditorUtility.SetDirty(training);
             }
         }
 
@@ -128,12 +230,16 @@ namespace UnDFight.Editor
             Material yellowPlastic = LoadMaterialOrFallback("Assets/UnDFight/Art/Materials/StageFavela/Favela_PlasticYellow.mat");
             Material amberBottle = LoadMaterialOrFallback("Assets/UnDFight/Art/Materials/StageFavela/Favela_BottleAmber.mat");
             Material greenBottle = LoadMaterialOrFallback("Assets/UnDFight/Art/Materials/StageFavela/Favela_BottleGreen.mat");
+            Material woodSign = LoadMaterialOrFallback("Assets/UnDFight/Art/Materials/StageFavela/Favela_WoodSign.mat");
+            Material metalPole = LoadMaterialOrFallback("Assets/UnDFight/Art/Materials/StageFavela/Favela_RoofMetal.mat");
 
             BuildCratePrefab(CratePrefabPath, redPlastic, yellowPlastic);
             BuildCrateStackPrefab(CrateStackPrefabPath, redPlastic, yellowPlastic);
             BuildTablePrefab(TablePrefabPath, redPlastic, amberBottle, greenBottle);
             BuildThrowableChairPrefab(ThrowableChairPrefabPath, redPlastic, yellowPlastic);
             BuildThrowableBottlePrefab(ThrowableBottlePrefabPath, amberBottle, greenBottle, yellowPlastic);
+            BuildDynamicCanPrefab(DynamicCanPrefabPath, redPlastic, yellowPlastic);
+            BuildHangingSignPrefab(HangingSignPrefabPath, woodSign, metalPole);
         }
 
         public static void SetupArenaFavelaPropsAndManager()
@@ -187,6 +293,8 @@ namespace UnDFight.Editor
             GameObject tablePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(TablePrefabPath);
             GameObject chairPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ThrowableChairPrefabPath);
             GameObject bottlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ThrowableBottlePrefabPath);
+            GameObject canPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(DynamicCanPrefabPath);
+            GameObject signPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(HangingSignPrefabPath);
 
             InstantiateProp(crateStackPrefab, "Breakable_CrateStack_Left", propsGroup.transform, new Vector3(-6.35f, 0f, 1.32f), 8f);
             InstantiateProp(cratePrefab, "Breakable_Crate_MidLeft", propsGroup.transform, new Vector3(-4.85f, 0f, 1.42f), -12f);
@@ -195,6 +303,15 @@ namespace UnDFight.Editor
             InstantiateProp(tablePrefab, "Breakable_Table_Right", propsGroup.transform, new Vector3(5.45f, 0f, 1.38f), 6f);
             InstantiateProp(crateStackPrefab, "Breakable_CrateStack_Right", propsGroup.transform, new Vector3(6.85f, 0f, 1.28f), -10f);
 
+            // Loose PhysX dynamic cans near the combat plane (kicked by FighterDebrisPusher, pushed by wind & shockwaves)
+            InstantiateProp(canPrefab, "Dynamic_Can_Left", propsGroup.transform, new Vector3(-2.15f, 0.09f, 0.25f), 22f);
+            InstantiateProp(canPrefab, "Dynamic_Can_Center", propsGroup.transform, new Vector3(0.40f, 0.09f, -0.32f), -15f);
+            InstantiateProp(canPrefab, "Dynamic_Can_Right", propsGroup.transform, new Vector3(2.45f, 0.09f, 0.28f), 40f);
+
+            // Suspended HingeJoint sign near the bar/streetlamp reacting to wind gusts & combat shockwaves
+            InstantiateProp(signPrefab, "Hanging_BarSign", propsGroup.transform, new Vector3(-2.95f, 3.35f, 2.15f), 0f);
+
+            ConfigureArenaFavelaWindAndWeather(managerGo);
             manager.RefreshDiscoveredProps();
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -208,6 +325,138 @@ namespace UnDFight.Editor
             {
                 EditorSceneManager.OpenScene(PlayFromMainMenuEditor.MainMenuScenePath, OpenSceneMode.Single);
             }
+        }
+
+        private static void ConfigureArenaFavelaWindAndWeather(GameObject managerGo)
+        {
+            StageWindController wind = managerGo.GetComponent<StageWindController>();
+            if (wind == null)
+            {
+                wind = managerGo.AddComponent<StageWindController>();
+            }
+            wind.Configure(new Vector3(1f, 0f, 0.14f), baseSpeed: 1.5f, gustAmp: 1.2f, gustFreq: 0.28f);
+
+            StageWeatherController weather = managerGo.GetComponent<StageWeatherController>();
+            if (weather == null)
+            {
+                weather = managerGo.AddComponent<StageWeatherController>();
+            }
+
+            // Build/rebuild dedicated night-only lights (inactive by default for Day/Sunset)
+            GameObject existingNight = GameObject.Find("FavelaNightLights");
+            if (existingNight != null)
+            {
+                Object.DestroyImmediate(existingNight);
+            }
+            var nightRoot = new GameObject("FavelaNightLights");
+            CreatePointLight("NightLight_StreetLamp", nightRoot.transform, new Vector3(-1.18f, 4.95f, 1.85f), new Color(1.0f, 0.78f, 0.42f, 1f), intensity: 14f, range: 14f);
+            CreatePointLight("NightLight_BarFacade", nightRoot.transform, new Vector3(-6.20f, 2.75f, 2.25f), new Color(1.0f, 0.62f, 0.24f, 1f), intensity: 10f, range: 11f);
+            CreatePointLight("NightLight_RightWindow", nightRoot.transform, new Vector3(4.30f, 2.85f, 2.35f), new Color(1.0f, 0.80f, 0.48f, 1f), intensity: 8f, range: 10f);
+            nightRoot.SetActive(false);
+
+            Light keyLight = null;
+            var secondaryLights = new System.Collections.Generic.List<Light>();
+            var secondaryBaseIntensities = new System.Collections.Generic.List<float>();
+            foreach (Light l in Object.FindObjectsByType<Light>(FindObjectsInactive.Include))
+            {
+                if (l == null || l.type != LightType.Directional) continue;
+                if (l.name.Contains("SunKeyLight") || keyLight == null)
+                {
+                    if (keyLight != null && l.name.Contains("SunKeyLight"))
+                    {
+                        secondaryLights.Add(keyLight);
+                        secondaryBaseIntensities.Add(keyLight.intensity);
+                    }
+                    keyLight = l;
+                }
+                else
+                {
+                    secondaryLights.Add(l);
+                    secondaryBaseIntensities.Add(l.intensity);
+                }
+            }
+
+            var wetRenderers = new System.Collections.Generic.List<Renderer>();
+            string[] wetObjectNames = { "CobblestoneStreet", "SandShoulder_Front", "SandShoulder_Back", "Sidewalk_Back", "Bar_Floor" };
+            foreach (string objName in wetObjectNames)
+            {
+                GameObject go = GameObject.Find(objName);
+                if (go != null)
+                {
+                    Renderer r = go.GetComponent<Renderer>();
+                    if (r != null) wetRenderers.Add(r);
+                }
+            }
+
+            StageData favelaData = AssetDatabase.LoadAssetAtPath<StageData>(FavelaStageDataPath);
+
+            var dayProf = new StageWeatherController.WeatherProfile
+            {
+                directionalLightColor = new Color(1.00f, 0.62f, 0.26f, 1f),
+                directionalLightIntensity = 2.45f,
+                directionalLightEuler = new Vector3(24f, 228f, 0f),
+                ambientSkyColor = new Color(0.98f, 0.68f, 0.42f, 1f),
+                ambientEquatorColor = new Color(0.88f, 0.58f, 0.38f, 1f),
+                ambientGroundColor = new Color(0.48f, 0.32f, 0.22f, 1f),
+                fogEnabled = true,
+                fogColor = new Color(0.88f, 0.56f, 0.30f, 1f),
+                fogDensity = 0.0095f,
+                cameraBackgroundColor = new Color(0.80f, 0.48f, 0.26f, 1f),
+                skyTintColor = new Color(0.92f, 0.58f, 0.36f, 1f),
+                skyGroundColor = new Color(0.38f, 0.26f, 0.18f, 1f),
+                skyExposure = 1.15f,
+                skyAtmosphereThickness = 1.45f,
+                windBaseSpeed = 1.5f,
+                windGustAmplitude = 1.2f,
+                windGustFrequency = 0.28f,
+                secondaryLightsMultiplier = 1.0f
+            };
+
+            var nightProf = StageWeatherController.WeatherProfile.CreateDefaultNight();
+            var rainyProf = StageWeatherController.WeatherProfile.CreateDefaultRainyNight();
+
+            weather.SetProfiles(dayProf, nightProf, rainyProf);
+
+            var weatherSo = new SerializedObject(weather);
+            weatherSo.FindProperty("stageData").objectReferenceValue = favelaData;
+            weatherSo.FindProperty("mainDirectionalLight").objectReferenceValue = keyLight;
+            weatherSo.FindProperty("windController").objectReferenceValue = wind;
+
+            SerializedProperty secLightsProp = weatherSo.FindProperty("secondaryFillLights");
+            secLightsProp.arraySize = secondaryLights.Count;
+            SerializedProperty secIntProp = weatherSo.FindProperty("secondaryFillBaseIntensities");
+            secIntProp.arraySize = secondaryBaseIntensities.Count;
+            for (int i = 0; i < secondaryLights.Count; i++)
+            {
+                secLightsProp.GetArrayElementAtIndex(i).objectReferenceValue = secondaryLights[i];
+                secIntProp.GetArrayElementAtIndex(i).floatValue = secondaryBaseIntensities[i];
+            }
+
+            SerializedProperty nightObjsProp = weatherSo.FindProperty("nightOnlyObjects");
+            nightObjsProp.arraySize = 1;
+            nightObjsProp.GetArrayElementAtIndex(0).objectReferenceValue = nightRoot;
+
+            SerializedProperty wetProp = weatherSo.FindProperty("wetSurfaceRenderers");
+            wetProp.arraySize = wetRenderers.Count;
+            for (int i = 0; i < wetRenderers.Count; i++)
+            {
+                wetProp.GetArrayElementAtIndex(i).objectReferenceValue = wetRenderers[i];
+            }
+
+            weatherSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void CreatePointLight(string name, Transform parent, Vector3 worldPos, Color color, float intensity, float range)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.position = worldPos;
+            var light = go.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = color;
+            light.intensity = intensity;
+            light.range = range;
+            light.shadows = LightShadows.None;
         }
 
         private static void InstantiateProp(GameObject prefab, string instanceName, Transform parent, Vector3 pos, float rotY)
@@ -413,11 +662,131 @@ namespace UnDFight.Editor
 
             Rigidbody rb = go.AddComponent<Rigidbody>();
             rb.useGravity = true;
+            rb.sleepThreshold = 0.08f;
+            rb.linearDamping = 0.45f;
+            rb.angularDamping = 0.65f;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
 
+            var wind = go.AddComponent<StageWindAffectable>();
+            wind.Configure(cd: 1.05f, areaM2: 0.09f, sensitivity: 1.15f, wakeThreshold: 2.8f, bodyOverride: rb);
+
             var frag = go.AddComponent<StageDebrisFragment>();
+            frag.PersistUntilReset = true;
             frag.EnsureComponents();
             go.SetActive(false);
+        }
+
+        private static void BuildDynamicCanPrefab(string prefabPath, Material redMat, Material yellowMat)
+        {
+            var root = new GameObject("Prop_DynamicCan");
+            root.layer = StagePhysicsLayers.StageDebrisLayer;
+            try
+            {
+                CreatePrimitivePart("CanBody", PrimitiveType.Cylinder, root.transform, Vector3.zero, Vector3.zero, new Vector3(0.11f, 0.09f, 0.11f), redMat);
+                CreatePrimitivePart("CanStripe", PrimitiveType.Cylinder, root.transform, Vector3.zero, Vector3.zero, new Vector3(0.114f, 0.032f, 0.114f), yellowMat);
+
+                var col = root.AddComponent<CapsuleCollider>();
+                col.isTrigger = false;
+                col.radius = 0.06f;
+                col.height = 0.18f;
+                col.center = Vector3.zero;
+
+                var rb = root.AddComponent<Rigidbody>();
+                rb.mass = 0.25f;
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.sleepThreshold = 0.08f;
+                rb.linearDamping = 0.35f;
+                rb.angularDamping = 0.55f;
+                rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+                var wind = root.AddComponent<StageWindAffectable>();
+                wind.Configure(cd: 1.05f, areaM2: 0.11f, sensitivity: 1.35f, wakeThreshold: 1.9f, bodyOverride: rb);
+
+                var dyn = root.AddComponent<StageDynamicProp>();
+                var so = new SerializedObject(dyn);
+                so.FindProperty("body").objectReferenceValue = rb;
+                so.FindProperty("propCollider").objectReferenceValue = col;
+                so.FindProperty("windAffectable").objectReferenceValue = wind;
+                so.FindProperty("materialType").enumValueIndex = (int)StagePropMaterialType.ConcreteOrMetal;
+                so.FindProperty("mass").floatValue = 0.25f;
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void BuildHangingSignPrefab(string prefabPath, Material boardMat, Material bracketMat)
+        {
+            var root = new GameObject("Prop_HangingSign");
+            try
+            {
+                // Top mounting bar visual on the kinematic anchor
+                CreatePrimitivePart("TopMountBar", PrimitiveType.Cube, root.transform, Vector3.zero, Vector3.zero, new Vector3(1.05f, 0.05f, 0.08f), bracketMat);
+
+                var anchorRb = root.AddComponent<Rigidbody>();
+                anchorRb.isKinematic = true;
+                anchorRb.useGravity = false;
+
+                var bodyGo = new GameObject("HangingBody");
+                bodyGo.layer = StagePhysicsLayers.StageDebrisLayer;
+                bodyGo.transform.SetParent(root.transform, false);
+                bodyGo.transform.localPosition = new Vector3(0f, -0.36f, 0f);
+                bodyGo.transform.localRotation = Quaternion.identity;
+
+                CreatePrimitivePart("ChainLeft", PrimitiveType.Cylinder, bodyGo.transform, new Vector3(-0.34f, 0.22f, 0f), Vector3.zero, new Vector3(0.025f, 0.14f, 0.025f), bracketMat);
+                CreatePrimitivePart("ChainRight", PrimitiveType.Cylinder, bodyGo.transform, new Vector3(0.34f, 0.22f, 0f), Vector3.zero, new Vector3(0.025f, 0.14f, 0.025f), bracketMat);
+                CreatePrimitivePart("SignBoard", PrimitiveType.Cube, bodyGo.transform, new Vector3(0f, -0.04f, 0f), Vector3.zero, new Vector3(0.92f, 0.42f, 0.06f), boardMat);
+                CreatePrimitivePart("SignTrim", PrimitiveType.Cube, bodyGo.transform, new Vector3(0f, -0.04f, 0f), Vector3.zero, new Vector3(0.96f, 0.045f, 0.075f), bracketMat);
+
+                var box = bodyGo.AddComponent<BoxCollider>();
+                box.size = new Vector3(0.94f, 0.44f, 0.08f);
+                box.center = new Vector3(0f, -0.04f, 0f);
+                box.isTrigger = false;
+
+                var swingRb = bodyGo.AddComponent<Rigidbody>();
+                swingRb.mass = 1.4f;
+                swingRb.isKinematic = false;
+                swingRb.useGravity = true;
+                swingRb.linearDamping = 0.25f;
+                swingRb.angularDamping = 0.85f;
+                swingRb.sleepThreshold = 0.02f;
+                swingRb.interpolation = RigidbodyInterpolation.Interpolate;
+
+                var hinge = bodyGo.AddComponent<HingeJoint>();
+                hinge.connectedBody = anchorRb;
+                hinge.axis = Vector3.forward;
+                hinge.anchor = new Vector3(0f, 0.36f, 0f);
+                hinge.autoConfigureConnectedAnchor = false;
+                hinge.connectedAnchor = Vector3.zero;
+                hinge.useSpring = true;
+                hinge.spring = new JointSpring { spring = 6.5f, damper = 1.6f, targetPosition = 0f };
+                hinge.useLimits = true;
+                hinge.limits = new JointLimits { min = -55f, max = 55f, bounciness = 0.1f };
+
+                var wind = bodyGo.AddComponent<StageWindAffectable>();
+                wind.Configure(cd: 1.25f, areaM2: 0.36f, sensitivity: 1.45f, wakeThreshold: 1.0f, bodyOverride: swingRb);
+
+                var hanging = root.AddComponent<StageHangingProp>();
+                var so = new SerializedObject(hanging);
+                so.FindProperty("anchorBody").objectReferenceValue = anchorRb;
+                so.FindProperty("swingBody").objectReferenceValue = swingRb;
+                so.FindProperty("hingeJoint").objectReferenceValue = hinge;
+                so.FindProperty("windAffectable").objectReferenceValue = wind;
+                so.FindProperty("hingeAxis").vector3Value = Vector3.forward;
+                so.FindProperty("localPivotOnSwingBody").vector3Value = new Vector3(0f, 0.36f, 0f);
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
         }
 
         private static void BuildThrowableChairPrefab(string prefabPath, Material redMat, Material yellowMat)

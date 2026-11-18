@@ -27,6 +27,9 @@ namespace UnDFight
 
         private readonly List<StagePropBase> _props = new List<StagePropBase>();
         private readonly List<StageThrowableProp> _throwables = new List<StageThrowableProp>();
+        private readonly List<StageDynamicProp> _dynamicProps = new List<StageDynamicProp>();
+        private readonly List<StageHangingProp> _hangingProps = new List<StageHangingProp>();
+        private readonly List<StageDebrisFragment> _debrisFragments = new List<StageDebrisFragment>();
         private readonly List<IStageResettable> _resettables = new List<IStageResettable>();
 
         private Transform _physicsBoundsRoot;
@@ -40,6 +43,9 @@ namespace UnDFight
         public MatchManager MatchManager => matchManager;
         public IReadOnlyList<StagePropBase> DiscoveredProps => _props;
         public IReadOnlyList<StageThrowableProp> ThrowableProps => _throwables;
+        public IReadOnlyList<StageDynamicProp> DynamicProps => _dynamicProps;
+        public IReadOnlyList<StageHangingProp> HangingProps => _hangingProps;
+        public IReadOnlyList<StageDebrisFragment> DebrisFragments => _debrisFragments;
         public IReadOnlyList<IStageResettable> Resettables => _resettables;
         public BoxCollider GroundPhysicsCollider => _groundCollider;
         public BoxCollider LeftWallPhysicsCollider => _leftWallCollider;
@@ -84,12 +90,16 @@ namespace UnDFight
         }
 
         /// <summary>
-        /// Auto-discovers all StagePropBase and IStageResettable components in the active scene.
+        /// Auto-discovers all StagePropBase, StageDynamicProp, StageHangingProp, StageDebrisFragment,
+        /// and IStageResettable components in the active scene.
         /// </summary>
         public void RefreshDiscoveredProps()
         {
             _props.Clear();
             _throwables.Clear();
+            _dynamicProps.Clear();
+            _hangingProps.Clear();
+            _debrisFragments.Clear();
             _resettables.Clear();
 
             StagePropBase[] foundProps = FindObjectsByType<StagePropBase>(FindObjectsInactive.Include);
@@ -113,6 +123,37 @@ namespace UnDFight
                 _resettables.Add(prop);
             }
 
+            StageDynamicProp[] foundDynamic = FindObjectsByType<StageDynamicProp>(FindObjectsInactive.Include);
+            for (int i = 0; i < foundDynamic.Length; i++)
+            {
+                StageDynamicProp dyn = foundDynamic[i];
+                if (dyn == null) continue;
+                dyn.CacheInitialTransform();
+                dyn.EnsureComponents();
+                _dynamicProps.Add(dyn);
+                if (!_resettables.Contains(dyn)) _resettables.Add(dyn);
+            }
+
+            StageHangingProp[] foundHanging = FindObjectsByType<StageHangingProp>(FindObjectsInactive.Include);
+            for (int i = 0; i < foundHanging.Length; i++)
+            {
+                StageHangingProp hang = foundHanging[i];
+                if (hang == null) continue;
+                hang.EnsureComponents();
+                hang.CacheInitialTransform();
+                _hangingProps.Add(hang);
+                if (!_resettables.Contains(hang)) _resettables.Add(hang);
+            }
+
+            StageDebrisFragment[] foundDebris = FindObjectsByType<StageDebrisFragment>(FindObjectsInactive.Include);
+            for (int i = 0; i < foundDebris.Length; i++)
+            {
+                if (foundDebris[i] != null)
+                {
+                    _debrisFragments.Add(foundDebris[i]);
+                }
+            }
+
             MonoBehaviour[] allBehaviours = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include);
             for (int i = 0; i < allBehaviours.Length; i++)
             {
@@ -121,6 +162,90 @@ namespace UnDFight
                     _resettables.Add(resettable);
                 }
             }
+        }
+
+        /// <summary>
+        /// Propagates a physical radial shockwave impulse to active debris fragments, StageDynamicProps,
+        /// and StageHangingProps within radius. Never affects deterministic fighters.
+        /// </summary>
+        public int ApplyStageShockwave(Vector3 origin, float radius, float force)
+        {
+            if (radius <= 0.01f || force <= 0.01f)
+            {
+                return 0;
+            }
+
+            int affected = 0;
+
+            for (int i = 0; i < _debrisFragments.Count; i++)
+            {
+                StageDebrisFragment frag = _debrisFragments[i];
+                if (frag == null || !frag.IsLaunched || !frag.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                if (TryComputeShockwaveImpulse(origin, frag.transform.position, radius, force, 0.35f, out Vector3 impulse))
+                {
+                    frag.ApplyImpulse(impulse, ForceMode.Impulse);
+                    affected++;
+                }
+            }
+
+            for (int i = 0; i < _dynamicProps.Count; i++)
+            {
+                StageDynamicProp dyn = _dynamicProps[i];
+                if (dyn == null || !dyn.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                if (TryComputeShockwaveImpulse(origin, dyn.transform.position, radius, force, 0.30f, out Vector3 impulse))
+                {
+                    dyn.ApplyImpulse(impulse, ForceMode.Impulse);
+                    affected++;
+                }
+            }
+
+            for (int i = 0; i < _hangingProps.Count; i++)
+            {
+                StageHangingProp hang = _hangingProps[i];
+                if (hang == null || !hang.gameObject.activeInHierarchy || hang.SwingBody == null)
+                {
+                    continue;
+                }
+
+                if (TryComputeShockwaveImpulse(origin, hang.SwingBody.worldCenterOfMass, radius * 1.45f, force * 0.85f, 0.08f, out Vector3 impulse))
+                {
+                    hang.ApplyImpulse(impulse, ForceMode.Impulse);
+                    affected++;
+                }
+            }
+
+            return affected;
+        }
+
+        private static bool TryComputeShockwaveImpulse(
+            Vector3 origin,
+            Vector3 targetPos,
+            float radius,
+            float force,
+            float upwardLift,
+            out Vector3 impulse)
+        {
+            Vector3 delta = targetPos - origin;
+            float dist = delta.magnitude;
+            if (dist > radius)
+            {
+                impulse = Vector3.zero;
+                return false;
+            }
+
+            float falloff = Mathf.Clamp01(1f - dist / radius);
+            Vector3 dir = dist > 0.05f ? (delta / dist) : new Vector3(1f, 0.35f, 0.15f).normalized;
+            dir.y = Mathf.Max(dir.y, upwardLift);
+            impulse = dir.normalized * (force * Mathf.Max(0.22f, falloff));
+            return true;
         }
 
         public StageThrowableProp FindNearestReadyThrowable(FighterController fighter)
@@ -357,6 +482,13 @@ namespace UnDFight
                     defenderPos,
                     simTick);
             }
+
+            if (isStrongImpact)
+            {
+                float radius = hit.IsSpecial ? 4.8f : 3.2f;
+                float shockForce = hit.IsSpecial ? 6.0f : 3.4f;
+                ApplyStageShockwave(new Vector3(hit.ContactPoint.x, hit.ContactPoint.y, 0f), radius, shockForce);
+            }
         }
 
         private void HandleFighterGroundImpact(FighterController fighter)
@@ -382,6 +514,8 @@ namespace UnDFight
 
                 prop.TryHandleKnockdownImpact(pos, pushDirX, simTick);
             }
+
+            ApplyStageShockwave(new Vector3(pos.x, pos.y + 0.12f, 0f), radius: 3.8f, force: 4.5f);
         }
 
         private BoxCollider EnsureBoxCollider(string childName, int layer, Vector3 localPos, Vector3 size)

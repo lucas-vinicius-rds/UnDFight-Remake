@@ -190,6 +190,7 @@ GameObject:
   - component: {fileID: 2044563963045127111}
   - component: {fileID: 4987429718799704998}
   - component: {fileID: 8788026592812139458}
+  - component: {fileID: 8170972532404324369}
   - component: {fileID: 9170071413922441792}
   m_Layer: 9
   m_Name: BottleShard_1
@@ -300,8 +301,8 @@ Rigidbody:
   m_GameObject: {fileID: 4135109784082428122}
   serializedVersion: 5
   m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_LinearDamping: 0.45
+  m_AngularDamping: 0.65
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -318,6 +319,23 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &8170972532404324369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4135109784082428122}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 807d91e4965367e49a4719dec4a29e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageWindAffectable
+  targetBody: {fileID: 8788026592812139458}
+  dragCoefficient: 1.05
+  crossSectionArea: 0.09
+  windSensitivity: 1.15
+  wakeGustThreshold: 2.8
 --- !u!114 &9170071413922441792
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -332,6 +350,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageDebrisFragment
   body: {fileID: 8788026592812139458}
   fragmentCollider: {fileID: 2044563963045127111}
+  windAffectable: {fileID: 8170972532404324369}
+  persistUntilReset: 1
+  autoSleepThreshold: 0.08
+  dynamicLinearDamping: 0.45
+  dynamicAngularDamping: 0.65
+  fallOutMinY: -5
 --- !u!1 &4213970427887226015
 GameObject:
   m_ObjectHideFlags: 0
@@ -473,6 +497,7 @@ GameObject:
   - component: {fileID: 5816144464367785991}
   - component: {fileID: 5363777639832370496}
   - component: {fileID: 2630040471832943735}
+  - component: {fileID: 8587887871004082742}
   - component: {fileID: 5863724685510020057}
   m_Layer: 9
   m_Name: LegShard_0
@@ -583,8 +608,8 @@ Rigidbody:
   m_GameObject: {fileID: 4370161671304279346}
   serializedVersion: 5
   m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_LinearDamping: 0.45
+  m_AngularDamping: 0.65
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -601,6 +626,23 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &8587887871004082742
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4370161671304279346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 807d91e4965367e49a4719dec4a29e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageWindAffectable
+  targetBody: {fileID: 2630040471832943735}
+  dragCoefficient: 1.05
+  crossSectionArea: 0.09
+  windSensitivity: 1.15
+  wakeGustThreshold: 2.8
 --- !u!114 &5863724685510020057
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -615,6 +657,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageDebrisFragment
   body: {fileID: 2630040471832943735}
   fragmentCollider: {fileID: 5816144464367785991}
+  windAffectable: {fileID: 8587887871004082742}
+  persistUntilReset: 1
+  autoSleepThreshold: 0.08
+  dynamicLinearDamping: 0.45
+  dynamicAngularDamping: 0.65
+  fallOutMinY: -5
 --- !u!1 &4808565750033875312
 GameObject:
   m_ObjectHideFlags: 0
@@ -628,6 +676,7 @@ GameObject:
   - component: {fileID: 8951255959161901774}
   - component: {fileID: 3669394652615734453}
   - component: {fileID: 8976489450641223462}
+  - component: {fileID: 5610251343755502893}
   - component: {fileID: 6578029618652174742}
   m_Layer: 9
   m_Name: TopShard_1
@@ -738,8 +787,8 @@ Rigidbody:
   m_GameObject: {fileID: 4808565750033875312}
   serializedVersion: 5
   m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_LinearDamping: 0.45
+  m_AngularDamping: 0.65
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -756,6 +805,23 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &5610251343755502893
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4808565750033875312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 807d91e4965367e49a4719dec4a29e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageWindAffectable
+  targetBody: {fileID: 8976489450641223462}
+  dragCoefficient: 1.05
+  crossSectionArea: 0.09
+  windSensitivity: 1.15
+  wakeGustThreshold: 2.8
 --- !u!114 &6578029618652174742
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -770,6 +836,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageDebrisFragment
   body: {fileID: 8976489450641223462}
   fragmentCollider: {fileID: 8951255959161901774}
+  windAffectable: {fileID: 5610251343755502893}
+  persistUntilReset: 1
+  autoSleepThreshold: 0.08
+  dynamicLinearDamping: 0.45
+  dynamicAngularDamping: 0.65
+  fallOutMinY: -5
 --- !u!1 &4821108965941299802
 GameObject:
   m_ObjectHideFlags: 0
@@ -1002,6 +1074,7 @@ GameObject:
   - component: {fileID: 5275078964159700835}
   - component: {fileID: 3397886169568863553}
   - component: {fileID: 271525207986034016}
+  - component: {fileID: 7584204152796394430}
   - component: {fileID: 7177849582715194997}
   m_Layer: 9
   m_Name: TopShard_0
@@ -1112,8 +1185,8 @@ Rigidbody:
   m_GameObject: {fileID: 7165666761464265434}
   serializedVersion: 5
   m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_LinearDamping: 0.45
+  m_AngularDamping: 0.65
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -1130,6 +1203,23 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &7584204152796394430
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7165666761464265434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 807d91e4965367e49a4719dec4a29e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageWindAffectable
+  targetBody: {fileID: 271525207986034016}
+  dragCoefficient: 1.05
+  crossSectionArea: 0.09
+  windSensitivity: 1.15
+  wakeGustThreshold: 2.8
 --- !u!114 &7177849582715194997
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1144,6 +1234,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageDebrisFragment
   body: {fileID: 271525207986034016}
   fragmentCollider: {fileID: 5275078964159700835}
+  windAffectable: {fileID: 7584204152796394430}
+  persistUntilReset: 1
+  autoSleepThreshold: 0.08
+  dynamicLinearDamping: 0.45
+  dynamicAngularDamping: 0.65
+  fallOutMinY: -5
 --- !u!1 &7356879209011734905
 GameObject:
   m_ObjectHideFlags: 0
@@ -1157,6 +1253,7 @@ GameObject:
   - component: {fileID: 2705416883441798509}
   - component: {fileID: 7002831157657472032}
   - component: {fileID: 3446957641630180036}
+  - component: {fileID: 4901622905147361876}
   - component: {fileID: 4645337195207909043}
   m_Layer: 9
   m_Name: LegShard_1
@@ -1267,8 +1364,8 @@ Rigidbody:
   m_GameObject: {fileID: 7356879209011734905}
   serializedVersion: 5
   m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_LinearDamping: 0.45
+  m_AngularDamping: 0.65
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -1285,6 +1382,23 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &4901622905147361876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7356879209011734905}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 807d91e4965367e49a4719dec4a29e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageWindAffectable
+  targetBody: {fileID: 3446957641630180036}
+  dragCoefficient: 1.05
+  crossSectionArea: 0.09
+  windSensitivity: 1.15
+  wakeGustThreshold: 2.8
 --- !u!114 &4645337195207909043
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1299,6 +1413,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageDebrisFragment
   body: {fileID: 3446957641630180036}
   fragmentCollider: {fileID: 2705416883441798509}
+  windAffectable: {fileID: 4901622905147361876}
+  persistUntilReset: 1
+  autoSleepThreshold: 0.08
+  dynamicLinearDamping: 0.45
+  dynamicAngularDamping: 0.65
+  fallOutMinY: -5
 --- !u!1 &7487798443309310722
 GameObject:
   m_ObjectHideFlags: 0
@@ -1402,6 +1522,7 @@ GameObject:
   - component: {fileID: 7698097964394521096}
   - component: {fileID: 5136923884562022722}
   - component: {fileID: 3604739422234512333}
+  - component: {fileID: 801070753650915846}
   - component: {fileID: 8455368605854732043}
   m_Layer: 9
   m_Name: BottleShard_2
@@ -1512,8 +1633,8 @@ Rigidbody:
   m_GameObject: {fileID: 8382502164719657749}
   serializedVersion: 5
   m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_LinearDamping: 0.45
+  m_AngularDamping: 0.65
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -1530,6 +1651,23 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &801070753650915846
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8382502164719657749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 807d91e4965367e49a4719dec4a29e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageWindAffectable
+  targetBody: {fileID: 3604739422234512333}
+  dragCoefficient: 1.05
+  crossSectionArea: 0.09
+  windSensitivity: 1.15
+  wakeGustThreshold: 2.8
 --- !u!114 &8455368605854732043
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1544,6 +1682,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageDebrisFragment
   body: {fileID: 3604739422234512333}
   fragmentCollider: {fileID: 7698097964394521096}
+  windAffectable: {fileID: 801070753650915846}
+  persistUntilReset: 1
+  autoSleepThreshold: 0.08
+  dynamicLinearDamping: 0.45
+  dynamicAngularDamping: 0.65
+  fallOutMinY: -5
 --- !u!1 &8562674558984707456
 GameObject:
   m_ObjectHideFlags: 0
@@ -1737,6 +1881,7 @@ GameObject:
   - component: {fileID: 155909349620817729}
   - component: {fileID: 8984239217429642059}
   - component: {fileID: 8167214460535569083}
+  - component: {fileID: 5157279595623547}
   - component: {fileID: 4317254455494869144}
   m_Layer: 9
   m_Name: TopShard_2
@@ -1847,8 +1992,8 @@ Rigidbody:
   m_GameObject: {fileID: 9121830572026526648}
   serializedVersion: 5
   m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_LinearDamping: 0.45
+  m_AngularDamping: 0.65
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -1865,6 +2010,23 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &5157279595623547
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9121830572026526648}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 807d91e4965367e49a4719dec4a29e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageWindAffectable
+  targetBody: {fileID: 8167214460535569083}
+  dragCoefficient: 1.05
+  crossSectionArea: 0.09
+  windSensitivity: 1.15
+  wakeGustThreshold: 2.8
 --- !u!114 &4317254455494869144
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1879,6 +2041,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageDebrisFragment
   body: {fileID: 8167214460535569083}
   fragmentCollider: {fileID: 155909349620817729}
+  windAffectable: {fileID: 5157279595623547}
+  persistUntilReset: 1
+  autoSleepThreshold: 0.08
+  dynamicLinearDamping: 0.45
+  dynamicAngularDamping: 0.65
+  fallOutMinY: -5
 --- !u!1 &9192987266902737501
 GameObject:
   m_ObjectHideFlags: 0
@@ -1892,6 +2060,7 @@ GameObject:
   - component: {fileID: 148784172777251628}
   - component: {fileID: 5746498775473684373}
   - component: {fileID: 2375102293067060738}
+  - component: {fileID: 3164257613747234517}
   - component: {fileID: 1271851793327123457}
   m_Layer: 9
   m_Name: TopShard_3
@@ -2002,8 +2171,8 @@ Rigidbody:
   m_GameObject: {fileID: 9192987266902737501}
   serializedVersion: 5
   m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_LinearDamping: 0.45
+  m_AngularDamping: 0.65
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -2020,6 +2189,23 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &3164257613747234517
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9192987266902737501}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 807d91e4965367e49a4719dec4a29e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageWindAffectable
+  targetBody: {fileID: 2375102293067060738}
+  dragCoefficient: 1.05
+  crossSectionArea: 0.09
+  windSensitivity: 1.15
+  wakeGustThreshold: 2.8
 --- !u!114 &1271851793327123457
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2034,3 +2220,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageDebrisFragment
   body: {fileID: 2375102293067060738}
   fragmentCollider: {fileID: 148784172777251628}
+  windAffectable: {fileID: 3164257613747234517}
+  persistUntilReset: 1
+  autoSleepThreshold: 0.08
+  dynamicLinearDamping: 0.45
+  dynamicAngularDamping: 0.65
+  fallOutMinY: -5

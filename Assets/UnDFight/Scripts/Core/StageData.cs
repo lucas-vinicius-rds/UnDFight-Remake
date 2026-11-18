@@ -15,5 +15,10 @@ namespace UnDFight
         public Color previewColor = new Color(0.85f, 0.45f, 0.16f, 1f);
         public Color accentColor = new Color(1.0f, 0.72f, 0.0f, 1f);
         public Sprite previewImage;
+
+        [Header("Weather & Time-of-Day Variants")]
+        public bool supportsWeatherVariants = false;
+        public string dayVariantLabel = "DIA";
+        public StageWeatherVariant defaultWeather = StageWeatherVariant.Day;
     }
 }
