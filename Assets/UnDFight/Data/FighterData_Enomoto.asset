@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28ae1d8b8b5fc5d4f9e46675799d4ca7, type: 3}
+  m_Name: FighterData_Enomoto
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.FighterData
+  fighterName: Enomoto
+  archetype: 3
+  prefab: {fileID: 6192894442121141406, guid: 66e871cb5aef02545826a0bf68224194, type: 3}
+  portrait: {fileID: 0}
+  heightMeters: 1.77
+  weightKg: 80
+  fbxHeightPrebaked: 1
+  maxHealth: 1000
+  walkForwardSpeed: 4.3
+  walkBackwardSpeed: 3.3
+  crouchWalkForwardSpeed: 2.3
+  crouchWalkBackwardSpeed: 1.8
+  dashForwardSpeed: 8.2
+  dashForwardTicks: 14
+  dashBackwardSpeed: 7
+  dashBackwardTicks: 16
+  backdashInvulnerableTicks: 5
+  jumpForce: 12.55
+  baseGravity: 34
+  crouchHeightRatio: 0.62
+  pushboxRadius: 0.36
+  lightPunch: {fileID: 11400000, guid: 68bc136b543e13947a185596ea905438, type: 2}
+  heavyPunch: {fileID: 11400000, guid: beb97d01202b6c3488b04f3ba6a0bcb2, type: 2}
+  lightKick: {fileID: 11400000, guid: 910d363484eb795449d1762e4f5b32ac, type: 2}
+  heavyKick: {fileID: 11400000, guid: 39fd3c829d782b8429b576314eff4c7f, type: 2}
+  crouchKick: {fileID: 11400000, guid: 02bcafeb8d11a3b4e958e6118e05c733, type: 2}
+  jumpAttack: {fileID: 11400000, guid: e52755d7adcaefa4db55eccbb453a453, type: 2}
+  throwMove: {fileID: 11400000, guid: 74a6c81fc81622f469eccdd079aef928, type: 2}
+  exHeavyPunch: {fileID: 11400000, guid: 4b52f00085ffe2a478e3b38a7e8aad79, type: 2}
+  exHeavyKick: {fileID: 11400000, guid: 0fd2d280a1b361b47af3ac63aa585feb, type: 2}
+  specialMove: {fileID: 11400000, guid: fbd6ee658e05e414f890c8f09fe9cb21, type: 2}

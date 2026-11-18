@@ -51,15 +51,120 @@ namespace UnDFight.Tests
         }
 
         [Test]
-        public void FighterRoster_ContainsFourPlayableFightersInExpectedOrder()
+        public void FighterRoster_ContainsSevenPlayableFightersInExpectedOrder()
         {
             var roster = AssetDatabase.LoadAssetAtPath<FighterRoster>("Assets/UnDFight/Data/FighterRoster.asset");
             Assert.IsNotNull(roster);
-            Assert.AreEqual(4, roster.Count);
+            Assert.AreEqual(7, roster.Count);
             Assert.AreEqual("Lucas", roster.GetFighter(0).fighterName);
             Assert.AreEqual("Tiago", roster.GetFighter(1).fighterName);
             Assert.AreEqual("Jompes", roster.GetFighter(2).fighterName);
             Assert.AreEqual("Rochard", roster.GetFighter(3).fighterName);
+            Assert.AreEqual("Isaac", roster.GetFighter(4).fighterName);
+            Assert.AreEqual("Enomoto", roster.GetFighter(5).fighterName);
+            Assert.AreEqual("Gabubu", roster.GetFighter(6).fighterName);
+        }
+
+        [Test]
+        public void FighterAssets_IsaacEnomotoAndGabubu_HaveCompleteMovesets52Bones24ClipsAndHurtboxPhysics()
+        {
+            var isaac = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Isaac.asset");
+            var enomoto = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Enomoto.asset");
+            var gabubu = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Gabubu.asset");
+            Assert.IsNotNull(isaac, "Missing FighterData_Isaac");
+            Assert.IsNotNull(enomoto, "Missing FighterData_Enomoto");
+            Assert.IsNotNull(gabubu, "Missing FighterData_Gabubu");
+
+            // Isaac: 1.73 m / 73 kg / Light / AgileStriker — Punho Esmeralda
+            Assert.AreEqual(1.73f, isaac.heightMeters, 0.001f);
+            Assert.AreEqual(73f, isaac.weightKg, 0.01f);
+            Assert.AreEqual(WeightClass.Light, isaac.WeightCategory);
+            Assert.AreEqual(FightingArchetype.AgileStriker, isaac.archetype);
+            Assert.IsTrue(isaac.fbxHeightPrebaked);
+            Assert.AreEqual(1.0f, isaac.VisualScale, 1e-5f);
+            AssertLightTicks(isaac);
+            Assert.AreEqual("Punho Esmeralda", isaac.specialMove.moveName);
+            Assert.AreEqual(SpecialMechanicType.AntiAirSpin, isaac.specialMove.specialMechanic);
+            Assert.IsTrue(isaac.specialMove.antiAirInvulnerable);
+            Assert.AreEqual(4.4f, isaac.specialMove.lungeSpeed, 0.01f);
+            Assert.AreEqual(14, isaac.specialMove.superFreezeTicks);
+            Assert.AreEqual(22, isaac.specialMove.TotalTicks);
+
+            // Enomoto: 1.77 m / 80 kg / Medium / TechnicalStriker — Estocada do Cavalheiro
+            Assert.AreEqual(1.77f, enomoto.heightMeters, 0.001f);
+            Assert.AreEqual(80f, enomoto.weightKg, 0.01f);
+            Assert.AreEqual(WeightClass.Medium, enomoto.WeightCategory);
+            Assert.AreEqual(FightingArchetype.TechnicalStriker, enomoto.archetype);
+            Assert.IsTrue(enomoto.fbxHeightPrebaked);
+            Assert.AreEqual(1.0f, enomoto.VisualScale, 1e-5f);
+            AssertMediumTicks(enomoto);
+            Assert.AreEqual("Estocada do Cavalheiro", enomoto.specialMove.moveName);
+            Assert.AreEqual(SpecialMechanicType.ProjectileShot, enomoto.specialMove.specialMechanic);
+            Assert.IsTrue(enomoto.specialMove.spawnsProjectile);
+            Assert.AreEqual(10.2f, enomoto.specialMove.projectileSpeed, 0.01f);
+            Assert.AreEqual(14, enomoto.specialMove.superFreezeTicks);
+            Assert.AreEqual(28, enomoto.specialMove.TotalTicks);
+
+            // Gabubu: 1.62 m / 67 kg / Light / StreetScrappy — Riff Destruidor
+            Assert.AreEqual(1.62f, gabubu.heightMeters, 0.001f);
+            Assert.AreEqual(67f, gabubu.weightKg, 0.01f);
+            Assert.AreEqual(WeightClass.Light, gabubu.WeightCategory);
+            Assert.AreEqual(FightingArchetype.StreetScrappy, gabubu.archetype);
+            Assert.IsTrue(gabubu.fbxHeightPrebaked);
+            Assert.AreEqual(1.0f, gabubu.VisualScale, 1e-5f);
+            AssertLightTicks(gabubu);
+            Assert.AreEqual("Riff Destruidor", gabubu.specialMove.moveName);
+            Assert.AreEqual(SpecialMechanicType.MultiHitRush, gabubu.specialMove.specialMechanic);
+            Assert.Greater(gabubu.specialMove.secondActiveStartTick, gabubu.specialMove.LastActiveTick);
+            Assert.GreaterOrEqual(gabubu.specialMove.secondActiveEndTick, gabubu.specialMove.secondActiveStartTick);
+            Assert.Greater(gabubu.specialMove.secondHitDamage, 0);
+            Assert.AreEqual(3.9f, gabubu.specialMove.lungeSpeed, 0.01f);
+            Assert.AreEqual(14, gabubu.specialMove.superFreezeTicks);
+            Assert.AreEqual(24, gabubu.specialMove.TotalTicks);
+
+            // Verify 52 Humanoid bones, 24 60fps clips (heightFromFeet=false), AOC_*, and PhysX FighterHurtbox setup
+            string isaacFbx = "Assets/UnDFight/Art/Models/Isaac/Isaac.fbx";
+            string enomotoFbx = "Assets/UnDFight/Art/Models/Enomoto/Enomoto.fbx";
+            string gabubuFbx = "Assets/UnDFight/Art/Models/Gabubu/Gabubu.fbx";
+
+            AssertMovesetMatchesFbx(isaac, isaacFbx, "AOC_Isaac");
+            AssertMovesetMatchesFbx(enomoto, enomotoFbx, "AOC_Enomoto");
+            AssertMovesetMatchesFbx(gabubu, gabubuFbx, "AOC_Gabubu");
+
+            Assert.AreEqual(52, ((ModelImporter)AssetImporter.GetAtPath(isaacFbx)).humanDescription.human.Length);
+            Assert.AreEqual(52, ((ModelImporter)AssetImporter.GetAtPath(enomotoFbx)).humanDescription.human.Length);
+            Assert.AreEqual(52, ((ModelImporter)AssetImporter.GetAtPath(gabubuFbx)).humanDescription.human.Length);
+
+            AssertPrefabHurtboxPhysics(isaac.prefab);
+            AssertPrefabHurtboxPhysics(enomoto.prefab);
+            AssertPrefabHurtboxPhysics(gabubu.prefab);
+        }
+
+        private static void AssertMediumTicks(FighterData data)
+        {
+            Assert.AreEqual(16, data.lightPunch.TotalTicks);
+            Assert.AreEqual(27, data.heavyPunch.TotalTicks);
+            Assert.AreEqual(19, data.lightKick.TotalTicks);
+            Assert.AreEqual(33, data.heavyKick.TotalTicks);
+            Assert.AreEqual(28, data.crouchKick.TotalTicks);
+            Assert.AreEqual(18, data.jumpAttack.TotalTicks);
+            Assert.AreEqual(22, data.throwMove.TotalTicks);
+        }
+
+        private static void AssertPrefabHurtboxPhysics(GameObject prefab)
+        {
+            Assert.IsNotNull(prefab);
+            Assert.AreEqual(StagePhysicsLayers.FighterHurtboxLayer, prefab.layer, $"{prefab.name} must be on FighterHurtbox layer (10)");
+
+            CapsuleCollider col = prefab.GetComponent<CapsuleCollider>();
+            Assert.IsNotNull(col, $"{prefab.name} missing CapsuleCollider");
+            Assert.IsTrue(col.isTrigger, $"{prefab.name} CapsuleCollider must be trigger");
+
+            Rigidbody rb = prefab.GetComponent<Rigidbody>();
+            Assert.IsNotNull(rb, $"{prefab.name} missing Rigidbody");
+            Assert.IsTrue(rb.isKinematic, $"{prefab.name} Rigidbody must be kinematic");
+            Assert.IsFalse(rb.useGravity, $"{prefab.name} Rigidbody must disable gravity");
+            Assert.AreEqual(CollisionDetectionMode.ContinuousSpeculative, rb.collisionDetectionMode);
         }
 
         [Test]
@@ -362,6 +467,131 @@ namespace UnDFight.Tests
             foreach (string requiredState in new[] { "CrouchWalkForward", "CrouchWalkBackward", "DashForward", "DashBackward", "CrouchKick", "JumpAttack", "Throw" })
             {
                 Assert.IsTrue(stateNames.Contains(requiredState), $"AC_Fighter missing required state '{requiredState}'");
+            }
+        }
+
+        [Test]
+        public void NewFighters_SpecialMoves_ExecuteDistinctMechanicsDeterministically_AndSelectCardsAutoSize()
+        {
+            var isaacData = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Isaac.asset");
+            var enomotoData = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Enomoto.asset");
+            var gabubuData = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Gabubu.asset");
+            var roster = AssetDatabase.LoadAssetAtPath<FighterRoster>("Assets/UnDFight/Data/FighterRoster.asset");
+
+            // 1. CharacterSelectController 4x2 grid card auto-sizing (13..24, NoWrap) for all 7 fighters
+            var canvasGo = Track(new GameObject("TestSelectCanvas", typeof(RectTransform), typeof(Canvas)));
+            var selectCtrl = canvasGo.AddComponent<CharacterSelectController>();
+            var tex = Track(new Texture2D(2, 2));
+            var sprite = Track(Sprite.Create(tex, new Rect(0, 0, 2, 2), new Vector2(0.5f, 0.5f)));
+            selectCtrl.ConfigureReferences(roster, null, sprite, null, null);
+            selectCtrl.BuildUI(canvasGo.transform, sprite);
+
+            Transform grid = canvasGo.transform.Find("RosterGridPanel/Grid");
+            Assert.IsNotNull(grid);
+            Assert.AreEqual(7, grid.childCount);
+            for (int i = 0; i < grid.childCount; i++)
+            {
+                var nameTmp = grid.GetChild(i).Find("Name")?.GetComponent<TMPro.TextMeshProUGUI>();
+                Assert.IsNotNull(nameTmp);
+                Assert.IsTrue(nameTmp.enableAutoSizing, $"Card {i} Name must enable auto-sizing");
+                Assert.AreEqual(13f, nameTmp.fontSizeMin, 0.01f);
+                Assert.AreEqual(24f, nameTmp.fontSizeMax, 0.01f);
+                Assert.AreEqual(TMPro.TextWrappingModes.NoWrap, nameTmp.textWrappingMode);
+            }
+
+            // 2. Gabubu's Riff Destruidor (MultiHitRush): 2 distinct active hits + knockdown
+            {
+                var simGo = Track(new GameObject("Sim_Gabubu"));
+                var sim = simGo.AddComponent<FightSimulation>();
+                var p1Go = Track(new GameObject("Gabubu"));
+                p1Go.transform.position = new Vector3(-0.65f, 0f, 0f);
+                p1Go.AddComponent<PlayerInputHandler>();
+                var p1 = p1Go.AddComponent<FighterController>();
+                p1.SetFighterData(gabubuData);
+
+                var p2Go = Track(new GameObject("Defender"));
+                p2Go.transform.position = new Vector3(0.45f, 0f, 0f);
+                p2Go.AddComponent<PlayerInputHandler>();
+                var p2 = p2Go.AddComponent<FighterController>();
+                p2.SetFighterData(isaacData);
+
+                sim.SetParticipants(p1, p2);
+                p1.InputHandler.SetSimulatedInput(default, true);
+                p2.InputHandler.SetSimulatedInput(default, true);
+                p1.SetSuperGauge(100);
+
+                var hits = new List<CombatHitEvent>();
+                sim.OnCombatHit += e => hits.Add(e);
+
+                p1.InputHandler.BufferButton(FighterInputButton.Special);
+                sim.StepSimulationTicks(1 + 14 + 28); // 1 start + 14 superFreeze + hit1/hitstop/hit2
+
+                Assert.AreEqual(2, hits.Count, "Gabubu's Riff Destruidor must register 2 distinct hits");
+                Assert.AreEqual(2, hits[1].ComboCount);
+                Assert.AreEqual(FighterState.KnockDown, p2.State);
+            }
+
+            // 3. Enomoto's Estocada do Cavalheiro (ProjectileShot): spawns projectile at 10.2 m/s and hits from afar
+            {
+                var simGo = Track(new GameObject("Sim_Enomoto"));
+                var sim = simGo.AddComponent<FightSimulation>();
+                var p1Go = Track(new GameObject("Enomoto"));
+                p1Go.transform.position = new Vector3(-1.50f, 0f, 0f);
+                p1Go.AddComponent<PlayerInputHandler>();
+                var p1 = p1Go.AddComponent<FighterController>();
+                p1.SetFighterData(enomotoData);
+
+                var p2Go = Track(new GameObject("Defender"));
+                p2Go.transform.position = new Vector3(1.50f, 0f, 0f);
+                p2Go.AddComponent<PlayerInputHandler>();
+                var p2 = p2Go.AddComponent<FighterController>();
+                p2.SetFighterData(isaacData);
+
+                sim.SetParticipants(p1, p2);
+                p1.InputHandler.SetSimulatedInput(default, true);
+                p2.InputHandler.SetSimulatedInput(default, true);
+                p1.SetSuperGauge(100);
+
+                var hits = new List<CombatHitEvent>();
+                sim.OnCombatHit += e => hits.Add(e);
+
+                p1.InputHandler.BufferButton(FighterInputButton.Special);
+                sim.StepSimulationTicks(1 + 14 + 35); // start + freeze + startup(8) + projectile flight
+
+                Assert.AreEqual(1, hits.Count, "Enomoto's projectile must hit distant opponent");
+                Assert.Less(p2.CurrentHealth, p2.MaxHealth);
+                Assert.AreEqual(FighterState.KnockDown, p2.State);
+            }
+
+            // 4. Isaac's Punho Esmeralda (AntiAirSpin): anti-air invulnerability + knockdown hit
+            {
+                var simGo = Track(new GameObject("Sim_Isaac"));
+                var sim = simGo.AddComponent<FightSimulation>();
+                var p1Go = Track(new GameObject("Isaac"));
+                p1Go.transform.position = new Vector3(-0.55f, 0f, 0f);
+                p1Go.AddComponent<PlayerInputHandler>();
+                var p1 = p1Go.AddComponent<FighterController>();
+                p1.SetFighterData(isaacData);
+
+                var p2Go = Track(new GameObject("Jumper"));
+                p2Go.transform.position = new Vector3(0.55f, 0f, 0f);
+                p2Go.AddComponent<PlayerInputHandler>();
+                var p2 = p2Go.AddComponent<FighterController>();
+                p2.SetFighterData(gabubuData);
+
+                sim.SetParticipants(p1, p2);
+                p1.InputHandler.SetSimulatedInput(default, true);
+                p2.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = -1f, MoveY = 1f }, true);
+                p1.SetSuperGauge(100);
+
+                sim.StepSimulationTicks(3); // P2 jumps forward
+                p2.InputHandler.SetSimulatedInput(default, true);
+                p2.InputHandler.BufferButton(FighterInputButton.HeavyKick); // JumpAttack!
+                p1.InputHandler.BufferButton(FighterInputButton.Special);   // Punho Esmeralda!
+
+                sim.StepSimulationTicks(1 + 14 + 14);
+                Assert.AreEqual(p1.MaxHealth, p1.CurrentHealth, "Isaac must evade aerial JumpAttack during Punho Esmeralda");
+                Assert.Less(p2.CurrentHealth, p2.MaxHealth, "Isaac's Punho Esmeralda must punish jumping attacker");
             }
         }
     }

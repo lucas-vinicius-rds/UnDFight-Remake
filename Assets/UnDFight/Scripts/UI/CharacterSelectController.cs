@@ -412,6 +412,10 @@ namespace UnDFight
             PlaceRow(hdr.rectTransform, -14f, 26f);
 
             nameTmp = MenuUiFactory.CreateText("FighterName", card, "LUCAS", 36f, FontStyles.Bold, align, Color.white, characterSpacing: 6f);
+            nameTmp.enableAutoSizing = true;
+            nameTmp.fontSizeMin = 20f;
+            nameTmp.fontSizeMax = 36f;
+            nameTmp.textWrappingMode = TextWrappingModes.NoWrap;
             PlaceRow(nameTmp.rectTransform, -44f, 44f);
 
             heightTmp = MenuUiFactory.CreateText("Height", card, "ALTURA: 1,81 M", 19f, FontStyles.Normal, align, new Color(0.80f, 0.78f, 0.74f, 1f), characterSpacing: 2f);
@@ -493,6 +497,10 @@ namespace UnDFight
             p2Rim.sizeDelta = new Vector2(0f, 5f);
 
             TextMeshProUGUI nameTmp = MenuUiFactory.CreateText("Name", go.transform, data.fighterName.ToUpperInvariant(), 24f, FontStyles.Bold, TextAlignmentOptions.Center, Color.white, characterSpacing: 5f);
+            nameTmp.enableAutoSizing = true;
+            nameTmp.fontSizeMin = 13f;
+            nameTmp.fontSizeMax = 24f;
+            nameTmp.textWrappingMode = TextWrappingModes.NoWrap;
             MenuUiFactory.StretchFull(nameTmp.rectTransform, 8f, 22f, 8f, 10f);
 
             TextMeshProUGUI badgeTmp = MenuUiFactory.CreateText("Badge", go.transform, "", 14f, FontStyles.Bold, TextAlignmentOptions.Bottom, MenuUiFactory.AccentGold, characterSpacing: 3f);

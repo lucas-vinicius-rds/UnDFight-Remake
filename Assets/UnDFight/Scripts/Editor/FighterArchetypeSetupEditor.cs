@@ -62,22 +62,40 @@ namespace UnDFight.Editor
         private const string TiagoFbxPath = "Assets/UnDFight/Art/Models/Tiago/Tiago.fbx";
         private const string JompesFbxPath = "Assets/UnDFight/Art/Models/Jompes/Jompes.fbx";
         private const string RochardFbxPath = "Assets/UnDFight/Art/Models/Rochard/Rochard.fbx";
+        private const string IsaacFbxPath = "Assets/UnDFight/Art/Models/Isaac/Isaac.fbx";
+        private const string EnomotoFbxPath = "Assets/UnDFight/Art/Models/Enomoto/Enomoto.fbx";
+        private const string GabubuFbxPath = "Assets/UnDFight/Art/Models/Gabubu/Gabubu.fbx";
         private const string LucasOverridePath = "Assets/UnDFight/Art/Animations/AOC_Lucas.overrideController";
         private const string TiagoOverridePath = "Assets/UnDFight/Art/Animations/AOC_Tiago.overrideController";
         private const string JompesOverridePath = "Assets/UnDFight/Art/Animations/AOC_Jompes.overrideController";
         private const string RochardOverridePath = "Assets/UnDFight/Art/Animations/AOC_Rochard.overrideController";
+        private const string IsaacOverridePath = "Assets/UnDFight/Art/Animations/AOC_Isaac.overrideController";
+        private const string EnomotoOverridePath = "Assets/UnDFight/Art/Animations/AOC_Enomoto.overrideController";
+        private const string GabubuOverridePath = "Assets/UnDFight/Art/Animations/AOC_Gabubu.overrideController";
         private const string JompesMatPath = "Assets/UnDFight/Art/Materials/Jompes_Mat.mat";
         private const string RochardMatPath = "Assets/UnDFight/Art/Materials/Rochard_Mat.mat";
+        private const string IsaacMatPath = "Assets/UnDFight/Art/Materials/Isaac_Mat.mat";
+        private const string EnomotoMatPath = "Assets/UnDFight/Art/Materials/Enomoto_Mat.mat";
+        private const string GabubuMatPath = "Assets/UnDFight/Art/Materials/Gabubu_Mat.mat";
         private const string JompesTextureFolder = "Assets/UnDFight/Art/Source/Jompes";
         private const string RochardTextureFolder = "Assets/UnDFight/Art/Source/Rochard";
+        private const string IsaacTextureFolder = "Assets/UnDFight/Art/Source/Isaac";
+        private const string EnomotoTextureFolder = "Assets/UnDFight/Art/Source/Enomoto";
+        private const string GabubuTextureFolder = "Assets/UnDFight/Art/Source/Gabubu";
         private const string LucasPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Lucas.prefab";
         private const string TiagoPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Tiago.prefab";
         private const string JompesPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Jompes.prefab";
         private const string RochardPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Rochard.prefab";
+        private const string IsaacPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Isaac.prefab";
+        private const string EnomotoPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Enomoto.prefab";
+        private const string GabubuPrefabPath = "Assets/UnDFight/Prefabs/Fighter_Gabubu.prefab";
         private const string LucasDataPath = "Assets/UnDFight/Data/FighterData_Lucas.asset";
         private const string TiagoDataPath = "Assets/UnDFight/Data/FighterData_Tiago.asset";
         private const string JompesDataPath = "Assets/UnDFight/Data/FighterData_Jompes.asset";
         private const string RochardDataPath = "Assets/UnDFight/Data/FighterData_Rochard.asset";
+        private const string IsaacDataPath = "Assets/UnDFight/Data/FighterData_Isaac.asset";
+        private const string EnomotoDataPath = "Assets/UnDFight/Data/FighterData_Enomoto.asset";
+        private const string GabubuDataPath = "Assets/UnDFight/Data/FighterData_Gabubu.asset";
 
         private static readonly HashSet<string> LoopClipNames = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -176,21 +194,33 @@ namespace UnDFight.Editor
             return $"Phase 9.1 Unity setup complete: Lucas ({lucasBones}/52 human bones, Heavy/HeavyBrawler) & Tiago ({tiagoBones}/52 human bones, Medium/StreetScrappy) updated cleanly.";
         }
 
+        [MenuItem("UnDFight/Setup Fase 14.1 - Isaac, Enomoto & Gabubu (Elenco 7)")]
+        public static void ApplyPhase14_1SetupMenu()
+        {
+            string summary = ApplyPhase14_1Setup();
+            Debug.Log("[FighterArchetypeSetupEditor] " + summary);
+        }
+
         [MenuItem("UnDFight/Setup Fase 11 - Pés no Chão & Especiais")]
         public static void ApplyPhase11SetupMenu()
         {
-            string summary = ApplyPhase10Setup();
+            string summary = ApplyPhase14_1Setup();
             Debug.Log("[FighterArchetypeSetupEditor] " + summary);
         }
 
         [MenuItem("UnDFight/Setup Fase 10 - Jompes & Rochard")]
         public static void ApplyPhase10SetupMenu()
         {
-            string summary = ApplyPhase10Setup();
+            string summary = ApplyPhase14_1Setup();
             Debug.Log("[FighterArchetypeSetupEditor] " + summary);
         }
 
         public static string ApplyPhase10Setup()
+        {
+            return ApplyPhase14_1Setup();
+        }
+
+        public static string ApplyPhase14_1Setup()
         {
             ApplyPhase9Setup();
 
@@ -226,7 +256,62 @@ namespace UnDFight.Editor
                 prefabPath: RochardPrefabPath,
                 fighterDataPath: RochardDataPath);
 
-            UpdateFighterRoster(LucasDataPath, TiagoDataPath, JompesDataPath, RochardDataPath);
+            SetupCompleteFighter(
+                fighterName: "Isaac",
+                archetype: FightingArchetype.AgileStriker,
+                heightMeters: 1.73f,
+                weightKg: 73.0f,
+                walkForwardSpeed: 4.50f,
+                walkBackwardSpeed: 3.50f,
+                jumpForce: 12.9f,
+                fbxPath: IsaacFbxPath,
+                expectedTakePrefix: "Isaac_Armature|",
+                overridePath: IsaacOverridePath,
+                materialPath: IsaacMatPath,
+                textureFolder: IsaacTextureFolder,
+                prefabPath: IsaacPrefabPath,
+                fighterDataPath: IsaacDataPath);
+
+            SetupCompleteFighter(
+                fighterName: "Enomoto",
+                archetype: FightingArchetype.TechnicalStriker,
+                heightMeters: 1.77f,
+                weightKg: 80.0f,
+                walkForwardSpeed: 4.30f,
+                walkBackwardSpeed: 3.30f,
+                jumpForce: 12.55f,
+                fbxPath: EnomotoFbxPath,
+                expectedTakePrefix: "Enomoto_Armature|",
+                overridePath: EnomotoOverridePath,
+                materialPath: EnomotoMatPath,
+                textureFolder: EnomotoTextureFolder,
+                prefabPath: EnomotoPrefabPath,
+                fighterDataPath: EnomotoDataPath);
+
+            SetupCompleteFighter(
+                fighterName: "Gabubu",
+                archetype: FightingArchetype.StreetScrappy,
+                heightMeters: 1.62f,
+                weightKg: 67.0f,
+                walkForwardSpeed: 4.40f,
+                walkBackwardSpeed: 3.35f,
+                jumpForce: 12.75f,
+                fbxPath: GabubuFbxPath,
+                expectedTakePrefix: "Gabubu_Armature|",
+                overridePath: GabubuOverridePath,
+                materialPath: GabubuMatPath,
+                textureFolder: GabubuTextureFolder,
+                prefabPath: GabubuPrefabPath,
+                fighterDataPath: GabubuDataPath);
+
+            UpdateFighterRoster(
+                LucasDataPath,
+                TiagoDataPath,
+                JompesDataPath,
+                RochardDataPath,
+                IsaacDataPath,
+                EnomotoDataPath,
+                GabubuDataPath);
             SerializeFightHudInScenes();
 
             AssetDatabase.SaveAssets();
@@ -236,7 +321,10 @@ namespace UnDFight.Editor
             int tiagoBones = CountMappedHumanBones(TiagoFbxPath);
             int jompesBones = CountMappedHumanBones(JompesFbxPath);
             int rochardBones = CountMappedHumanBones(RochardFbxPath);
-            return $"Phase 13.4 setup complete: Lucas({lucasBones}), Tiago({tiagoBones}), Jompes({jompesBones}), Rochard({rochardBones}) [24 clips, heightFromFeet=false].";
+            int isaacBones = CountMappedHumanBones(IsaacFbxPath);
+            int enomotoBones = CountMappedHumanBones(EnomotoFbxPath);
+            int gabubuBones = CountMappedHumanBones(GabubuFbxPath);
+            return $"Phase 14.1 setup complete: Lucas({lucasBones}), Tiago({tiagoBones}), Jompes({jompesBones}), Rochard({rochardBones}), Isaac({isaacBones}), Enomoto({enomotoBones}), Gabubu({gabubuBones}) [24 clips, heightFromFeet=false].";
         }
 
         public static int CountMappedHumanBones(string fbxPath)
@@ -1058,7 +1146,7 @@ namespace UnDFight.Editor
                 walkBackwardSpeed,
                 jumpForce);
 
-            MoveSpec[] specs = BuildArchetypeMoveSpecs(data.WeightCategory, archetype);
+            MoveSpec[] specs = BuildArchetypeMoveSpecs(data.WeightCategory, archetype, fighterName);
             CreateOrUpdateFighterMoveset(fighterName, archetype, fighterDataPath, specs);
 
             GameObject prefab = CreateOrUpdateFighterPrefab(prefabPath, fighterName, fbxPath, mat, aoc, data);
@@ -1066,7 +1154,7 @@ namespace UnDFight.Editor
             EditorUtility.SetDirty(data);
         }
 
-        private static MoveSpec[] BuildArchetypeMoveSpecs(WeightClass weightClass, FightingArchetype archetype)
+        private static MoveSpec[] BuildArchetypeMoveSpecs(WeightClass weightClass, FightingArchetype archetype, string fighterName = null)
         {
             var list = new List<MoveSpec>(GetWeightClassPresetSpecs(weightClass));
             MoveSpec[] specs = list.ToArray();
@@ -1170,31 +1258,63 @@ namespace UnDFight.Editor
                             specs[i].HitboxSize = new Vector2(1.06f, 0.50f);
                         }
                     }
-                    specialSpec = new MoveSpec
+                    if (string.Equals(fighterName, "Gabubu", StringComparison.Ordinal))
                     {
-                        MoveName = "Sequência de Rua",
-                        Type = AttackType.Special,
-                        Startup = 7,
-                        Active = 3,
-                        Recovery = 18,
-                        Damage = 105,
-                        SecondHitDamage = 145,
-                        SecondActiveStartTick = 12,
-                        SecondActiveEndTick = 14,
-                        ChipDamage = 30,
-                        Hitstun = 22,
-                        Blockstun = 15,
-                        Hitstop = 10,
-                        Knockback = 4.6f,
-                        Height = HitHeight.Mid,
-                        CausesKnockdown = true,
-                        HitboxOffset = new Vector2(0.88f, 1.18f),
-                        HitboxSize = new Vector2(1.16f, 0.66f),
-                        LungeSpeed = 3.8f,
-                        SpecialMechanic = SpecialMechanicType.MultiHitRush,
-                        SuperCost = FighterData.SpecialSuperCost,
-                        SuperFreezeTicks = 14,
-                    };
+                        // Light StreetScrappy (24-frame Special clip: Hit 1 ticks 7..9, Hit 2 ticks 11..13)
+                        specialSpec = new MoveSpec
+                        {
+                            MoveName = "Riff Destruidor",
+                            Type = AttackType.Special,
+                            Startup = 6,
+                            Active = 3,
+                            Recovery = 15,
+                            Damage = 95,
+                            SecondHitDamage = 135,
+                            SecondActiveStartTick = 11,
+                            SecondActiveEndTick = 13,
+                            ChipDamage = 28,
+                            Hitstun = 22,
+                            Blockstun = 15,
+                            Hitstop = 10,
+                            Knockback = 4.4f,
+                            Height = HitHeight.Mid,
+                            CausesKnockdown = true,
+                            HitboxOffset = new Vector2(0.86f, 1.12f),
+                            HitboxSize = new Vector2(1.14f, 0.64f),
+                            LungeSpeed = 3.9f,
+                            SpecialMechanic = SpecialMechanicType.MultiHitRush,
+                            SuperCost = FighterData.SpecialSuperCost,
+                            SuperFreezeTicks = 14,
+                        };
+                    }
+                    else
+                    {
+                        specialSpec = new MoveSpec
+                        {
+                            MoveName = "Sequência de Rua",
+                            Type = AttackType.Special,
+                            Startup = 7,
+                            Active = 3,
+                            Recovery = 18,
+                            Damage = 105,
+                            SecondHitDamage = 145,
+                            SecondActiveStartTick = 12,
+                            SecondActiveEndTick = 14,
+                            ChipDamage = 30,
+                            Hitstun = 22,
+                            Blockstun = 15,
+                            Hitstop = 10,
+                            Knockback = 4.6f,
+                            Height = HitHeight.Mid,
+                            CausesKnockdown = true,
+                            HitboxOffset = new Vector2(0.88f, 1.18f),
+                            HitboxSize = new Vector2(1.16f, 0.66f),
+                            LungeSpeed = 3.8f,
+                            SpecialMechanic = SpecialMechanicType.MultiHitRush,
+                            SuperCost = FighterData.SpecialSuperCost,
+                            SuperFreezeTicks = 14,
+                        };
+                    }
                     break;
 
                 case FightingArchetype.TechnicalStriker:
@@ -1202,45 +1322,79 @@ namespace UnDFight.Editor
                     {
                         if (specs[i].Type == AttackType.LightPunch)
                         {
-                            specs[i].Damage = 44;
+                            specs[i].Damage += 2;
                             specs[i].HitboxOffset = new Vector2(0.64f, 1.12f);
                         }
                         else if (specs[i].Type == AttackType.LightKick)
                         {
-                            specs[i].Damage = 54;
+                            specs[i].Damage += 2;
                             specs[i].HitboxOffset = new Vector2(0.72f, 0.48f);
                         }
                     }
-                    specialSpec = new MoveSpec
+                    if (string.Equals(fighterName, "Enomoto", StringComparison.Ordinal))
                     {
-                        MoveName = "Golpe Sombrio",
-                        Type = AttackType.Special,
-                        Startup = 7,
-                        Active = 4,
-                        Recovery = 13,
-                        Damage = 210,
-                        ChipDamage = 28,
-                        Hitstun = 22,
-                        Blockstun = 14,
-                        Hitstop = 10,
-                        Knockback = 4.4f,
-                        Height = HitHeight.Mid,
-                        CausesKnockdown = true,
-                        HitboxOffset = new Vector2(0.90f, 1.14f),
-                        HitboxSize = new Vector2(1.14f, 0.58f),
-                        LungeSpeed = 1.6f,
-                        SpecialMechanic = SpecialMechanicType.ProjectileShot,
-                        SuperCost = FighterData.SpecialSuperCost,
-                        SpawnsProjectile = true,
-                        ProjectileSpeed = 10.5f,
-                        ProjectileLifetimeTicks = 45,
-                        ProjectileSpawnOffset = new Vector2(0.70f, 1.15f),
-                        ProjectileHitboxSize = new Vector2(0.58f, 0.48f),
-                        SuperFreezeTicks = 14,
-                    };
+                        // Medium TechnicalStriker (28-frame Special clip: 8 + 5 + 15)
+                        specialSpec = new MoveSpec
+                        {
+                            MoveName = "Estocada do Cavalheiro",
+                            Type = AttackType.Special,
+                            Startup = 8,
+                            Active = 5,
+                            Recovery = 15,
+                            Damage = 220,
+                            ChipDamage = 30,
+                            Hitstun = 23,
+                            Blockstun = 15,
+                            Hitstop = 10,
+                            Knockback = 4.5f,
+                            Height = HitHeight.Mid,
+                            CausesKnockdown = true,
+                            HitboxOffset = new Vector2(0.92f, 1.18f),
+                            HitboxSize = new Vector2(1.16f, 0.58f),
+                            LungeSpeed = 1.8f,
+                            SpecialMechanic = SpecialMechanicType.ProjectileShot,
+                            SuperCost = FighterData.SpecialSuperCost,
+                            SpawnsProjectile = true,
+                            ProjectileSpeed = 10.2f,
+                            ProjectileLifetimeTicks = 45,
+                            ProjectileSpawnOffset = new Vector2(0.72f, 1.20f),
+                            ProjectileHitboxSize = new Vector2(0.60f, 0.50f),
+                            SuperFreezeTicks = 14,
+                        };
+                    }
+                    else
+                    {
+                        specialSpec = new MoveSpec
+                        {
+                            MoveName = "Golpe Sombrio",
+                            Type = AttackType.Special,
+                            Startup = 7,
+                            Active = 4,
+                            Recovery = 13,
+                            Damage = 210,
+                            ChipDamage = 28,
+                            Hitstun = 22,
+                            Blockstun = 14,
+                            Hitstop = 10,
+                            Knockback = 4.4f,
+                            Height = HitHeight.Mid,
+                            CausesKnockdown = true,
+                            HitboxOffset = new Vector2(0.90f, 1.14f),
+                            HitboxSize = new Vector2(1.14f, 0.58f),
+                            LungeSpeed = 1.6f,
+                            SpecialMechanic = SpecialMechanicType.ProjectileShot,
+                            SuperCost = FighterData.SpecialSuperCost,
+                            SpawnsProjectile = true,
+                            ProjectileSpeed = 10.5f,
+                            ProjectileLifetimeTicks = 45,
+                            ProjectileSpawnOffset = new Vector2(0.70f, 1.15f),
+                            ProjectileHitboxSize = new Vector2(0.58f, 0.48f),
+                            SuperFreezeTicks = 14,
+                        };
+                    }
                     break;
 
-                default: // AgileStriker (Rochard)
+                default: // AgileStriker (Rochard / Isaac)
                     for (int i = 0; i < specs.Length; i++)
                     {
                         if (specs[i].Type == AttackType.LightKick)
@@ -1255,31 +1409,62 @@ namespace UnDFight.Editor
                             specs[i].HitboxSize = new Vector2(1.08f, 0.56f);
                         }
                     }
-                    specialSpec = new MoveSpec
+                    if (string.Equals(fighterName, "Isaac", StringComparison.Ordinal))
                     {
-                        MoveName = "Tornado Relâmpago",
-                        Type = AttackType.Special,
-                        Startup = 6,
-                        Active = 4,
-                        Recovery = 12,
-                        Damage = 225,
-                        ChipDamage = 26,
-                        Hitstun = 22,
-                        Blockstun = 14,
-                        Hitstop = 10,
-                        Knockback = 4.4f,
-                        Height = HitHeight.High,
-                        CausesKnockdown = true,
-                        HitboxOffset = new Vector2(0.86f, 1.32f),
-                        HitboxSize = new Vector2(1.26f, 1.05f),
-                        LungeSpeed = 4.6f,
-                        SpecialMechanic = SpecialMechanicType.AntiAirSpin,
-                        SuperCost = FighterData.SpecialSuperCost,
-                        AntiAirInvulnerable = true,
-                        AntiAirStartTick = 1,
-                        AntiAirEndTick = 12,
-                        SuperFreezeTicks = 14,
-                    };
+                        specialSpec = new MoveSpec
+                        {
+                            MoveName = "Punho Esmeralda",
+                            Type = AttackType.Special,
+                            Startup = 6,
+                            Active = 4,
+                            Recovery = 12,
+                            Damage = 225,
+                            ChipDamage = 28,
+                            Hitstun = 22,
+                            Blockstun = 14,
+                            Hitstop = 11,
+                            Knockback = 4.3f,
+                            Height = HitHeight.High,
+                            CausesKnockdown = true,
+                            HitboxOffset = new Vector2(0.84f, 1.30f),
+                            HitboxSize = new Vector2(1.22f, 1.08f),
+                            LungeSpeed = 4.4f,
+                            SpecialMechanic = SpecialMechanicType.AntiAirSpin,
+                            SuperCost = FighterData.SpecialSuperCost,
+                            AntiAirInvulnerable = true,
+                            AntiAirStartTick = 1,
+                            AntiAirEndTick = 12,
+                            SuperFreezeTicks = 14,
+                        };
+                    }
+                    else
+                    {
+                        specialSpec = new MoveSpec
+                        {
+                            MoveName = "Tornado Relâmpago",
+                            Type = AttackType.Special,
+                            Startup = 6,
+                            Active = 4,
+                            Recovery = 12,
+                            Damage = 225,
+                            ChipDamage = 26,
+                            Hitstun = 22,
+                            Blockstun = 14,
+                            Hitstop = 10,
+                            Knockback = 4.4f,
+                            Height = HitHeight.High,
+                            CausesKnockdown = true,
+                            HitboxOffset = new Vector2(0.86f, 1.32f),
+                            HitboxSize = new Vector2(1.26f, 1.05f),
+                            LungeSpeed = 4.6f,
+                            SpecialMechanic = SpecialMechanicType.AntiAirSpin,
+                            SuperCost = FighterData.SpecialSuperCost,
+                            AntiAirInvulnerable = true,
+                            AntiAirStartTick = 1,
+                            AntiAirEndTick = 12,
+                            SuperFreezeTicks = 14,
+                        };
+                    }
                     break;
             }
 

@@ -1,4 +1,4 @@
-﻿# UnDFight Remake - Acompanhamento de Fases
+# UnDFight Remake - Acompanhamento de Fases
 
 Legenda: [ ] pendente | [~] em andamento | [x] concluida
 
@@ -7,7 +7,7 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 ## Decisoes
 - Unity (C#, URP, Input System novo), 2.5D lateral, simulacao em 60 Hz
 - Versus local + CPU simples; teclado e gamepad
-- Lutadores: Lucas (man_in_black) 1,81 m / 92 kg | Tiago 1,79 m / 87 kg | Jompes 1,65 m / 70 kg | Rochard 1,75 m / 67 kg
+- Lutadores: Lucas (man_in_black) 1,81 m / 92 kg | Tiago 1,79 m / 87 kg | Jompes 1,65 m / 70 kg | Rochard 1,75 m / 67 kg | Isaac 1,73 m / 73 kg | Enomoto 1,77 m / 80 kg | Gabubu 1,62 m / 67 kg
 - Golpes: soco fraco/forte, chute fraco/forte, golpe especial exclusivo (100% barra), chain combos no acerto, agachar, pular, bloquear
 - Modelos originais: D:\Tralhas\Models (copiar, nao mover)
 - Mapa: favela carioca ao por do sol (referencia enviada)
@@ -20,7 +20,9 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 - [x] Fase 4 - Blender: Tiago (reuso do script)
 - [x] Fase 5 - Combate: hitbox/hurtbox, vida, rounds, HUD
 - [x] Fase 6 - Menus: principal, opcoes, selecao, pausa
+- [x] Fase 6.1 - Redesign dos menus estilo MKX, diorama 3D no MainMenu e selecao de mapas (`Arena_Favela` jogavel)
 - [x] Fase 7 - Mapa 3D (favela)
+- [x] Fase 7.1 - Eliminacao de Z-fighting na `Arena_Favela` e inicio automatico no Menu Principal
 - [x] Fase 8 - CPU e polimento
 - [x] Fase 9 - Faixas de peso, arquetipos e animacoes exclusivas (Lucas e Tiago)
 - [x] Fase 9.1 - Rig de dedos 52 ossos Humanoid e punhos fechados (Lucas e Tiago)
@@ -31,10 +33,10 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 - [x] Fase 11.3 - Giro completo de 180 graus ao trocar de lado (clipe Turn180 60fps, AC_Fighter cancelavel e rotacao visual frontal sem atraso logico)
 - [x] Fase 12.1 - Base reutilizavel de interacao de cenario com NVIDIA PhysX (layers StagePhysics/StageDebris/FighterHurtbox) e objetos quebraveis na Arena_Favela
 - [x] Fase 12.2 - Interacao de mapa estilo Mortal Kombat (arremesso de objetos com PhysX, combo HoldBlock+LightPunch, prompt contextual na HUD e Kinematic Rigidbody nas hurtboxes)
-
 - [x] Fase 13.1 - Movimentacao avancada e golpes direcionais (Dash/Backdash, Throw + Throw Tech, CrouchKick e JumpAttack em 60 Hz)
 - [x] Fase 13.2 - Especiais unicos por arquetipo, golpes EX (50%) e Super Flash com zoom de camera (100%)
 - [x] Fase 13.3 - Polimento cinematografico e detalhamento das 22 animacoes 60 fps por lutador (`character_pipeline.py`)
 - [x] Fase 13.4 - Correcao de queda/derrota (`Defeat`, `KnockDown`, `GetUp`) e sistema de andar agachado (`CrouchWalkForward` / `CrouchWalkBackward`, 24 clipes)
+- [x] Fase 14.1 - Novos lutadores regulares: Isaac (1,73 m / 73 kg, AgileStriker), Enomoto (1,77 m / 80 kg, TechnicalStriker) e Gabubu (1,62 m / 67 kg, StreetScrappy) — elenco expandido de 4 para 7 lutadores
 
 - Decisao: animacoes em 60 fps (1 frame anim = 1 tick de simulacao)

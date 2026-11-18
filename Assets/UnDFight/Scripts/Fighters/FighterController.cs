@@ -762,7 +762,8 @@ namespace UnDFight
             _blockFromCrouch = false;
             _ticksSinceLastHit = 0;
 
-            float hitKbSpeed = move.knockback * BaseKnockbackVelocityScale * kbMult;
+            float multiHitKbFactor = (move.specialMechanic == SpecialMechanicType.MultiHitRush && !isSecondaryMultiHit) ? 0.35f : 1f;
+            float hitKbSpeed = move.knockback * multiHitKbFactor * BaseKnockbackVelocityScale * kbMult;
             knockbackVelocity = pushDir * hitKbSpeed;
             _simVelocity.x = knockbackVelocity;
 

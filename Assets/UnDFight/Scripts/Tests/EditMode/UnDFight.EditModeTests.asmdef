@@ -4,6 +4,7 @@
     "references": [
         "UnDFight.Runtime",
         "Unity.InputSystem",
+        "Unity.TextMeshPro",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

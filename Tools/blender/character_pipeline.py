@@ -78,6 +78,135 @@ def get_fighter_framedata(config=None):
     return weight_class, style, fd
 
 
+def _build_isaac_special(idle0, framedata):
+    """Punho Esmeralda (Isaac): crouched coil -> rising anti-air skyward uppercut punch -> cushioned landing."""
+    s, a, r = framedata["Special"]
+    ant_f, hit_start, hit_follow, hit_end, rechamber_f, end_f = _attack_subframes(s, a, r)
+    sp_ant = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.075),
+        "Hips":          (4.0, 0.0, -26.0),
+        "Spine":         (5.0, 0.0, -18.0),
+        "Chest":         (5.0, 0.0, -20.0),
+        "Neck":          (-5.0, 0.0, 24.0),
+        "Head":          (-4.0, 0.0, 22.0),
+        "RightShoulder": (0.0, -14.0, -14.0),
+        "RightUpperArm": (12.0, -44.0, 18.0),
+        "RightLowerArm": (12.0, 28.0, 112.0),
+        "LeftUpperArm":  (-10.0, 48.0, -56.0),
+        "LeftLowerArm":  (12.0, -32.0, -102.0),
+        "LeftUpperLeg":  (-38.0, -5.0, 6.0),
+        "LeftLowerLeg":  (42.0, 0.0, 0.0),
+        "RightUpperLeg": (16.0, 6.0, -5.0),
+        "RightLowerLeg": (28.0, 0.0, 0.0),
+    })
+    sp_hit = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, 0.042),
+        "Hips":          (-6.0, 4.0, 26.0),
+        "Spine":         (-6.0, 2.0, 18.0),
+        "Chest":         (-5.0, 2.0, 20.0),
+        "UpperChest":    (-4.0, 2.0, 14.0),
+        "Neck":          (-6.0, 0.0, -26.0),
+        "Head":          (-4.0, 0.0, -24.0),
+        "RightShoulder": (0.0, 16.0, 18.0),
+        "RightUpperArm": (-22.0, 40.0, 20.0),
+        "RightLowerArm": (6.0, 34.0, 24.0),
+        "RightHand":     (-10.0, 24.0, 0.0),
+        "LeftUpperArm":  (-14.0, 46.0, -58.0),
+        "LeftLowerArm":  (12.0, -32.0, -104.0),
+        "LeftUpperLeg":  (-84.0, -6.0, 8.0),
+        "LeftLowerLeg":  (98.0, 0.0, 0.0),
+        "LeftFoot":      (18.0, 0.0, 0.0),
+        "RightUpperLeg": (8.0, -4.0, 5.0),
+        "RightLowerLeg": (14.0, 0.0, 0.0),
+    })
+    sp_follow = merge_pose(sp_hit, {
+        "HipsOffset":    (0.0, 0.0, 0.024),
+        "Hips":          (-7.0, 5.0, 30.0),
+        "RightUpperArm": (-24.0, 46.0, 18.0),
+        "RightLowerArm": (4.0, 36.0, 18.0),
+    })
+    sp_rechamber = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.075),
+        "Hips":          (2.0, 2.0, 16.0),
+        "Spine":         (5.0, 0.0, 4.0),
+        "RightUpperArm": (-10.0, -38.0, 48.0),
+        "RightLowerArm": (12.0, 34.0, 98.0),
+        "LeftUpperLeg":  (-40.0, -5.0, 6.0),
+        "LeftLowerLeg":  (42.0, 0.0, 0.0),
+        "RightUpperLeg": (14.0, 5.0, -4.0),
+        "RightLowerLeg": (28.0, 0.0, 0.0),
+    })
+    kf = {1: idle0, ant_f: sp_ant, hit_start: sp_hit, hit_end: sp_follow, end_f: idle0}
+    if hit_follow is not None:
+        kf[hit_follow] = sp_hit
+    if rechamber_f is not None:
+        kf[rechamber_f] = sp_rechamber
+    return kf
+
+
+def _build_enomoto_special(idle0, framedata):
+    """Estocada do Cavalheiro (Enomoto): poised gentleman fencing chamber -> crisp spear-palm projectile thrust."""
+    s, a, r = framedata["Special"]
+    ant_f, hit_start, hit_follow, hit_end, rechamber_f, end_f = _attack_subframes(s, a, r)
+    spear_hand = relaxed_grip(0.18)
+    sp_ant = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.056),
+        "Hips":          (2.0, 0.0, -26.0),
+        "Spine":         (3.0, 0.0, -18.0),
+        "Chest":         (3.0, 0.0, -20.0),
+        "Neck":          (-4.0, 0.0, 24.0),
+        "Head":          (-3.5, 0.0, 22.0),
+        "RightShoulder": (0.0, -14.0, -16.0),
+        "RightUpperArm": (10.0, -46.0, 14.0),
+        "RightLowerArm": (12.0, 32.0, 118.0),
+        "LeftShoulder":  (0.0, 12.0, -10.0),
+        "LeftUpperArm":  (-8.0, 48.0, -58.0),
+        "LeftLowerArm":  (14.0, -38.0, -116.0),
+        "LeftUpperLeg":  (-32.0, -5.0, 5.0),
+        "LeftLowerLeg":  (26.0, 0.0, 0.0),
+        "RightUpperLeg": (20.0, 6.0, -5.0),
+        "RightLowerLeg": (14.0, 0.0, 0.0),
+    })
+    sp_hit = merge_pose(idle0, merge_pose(spear_hand, {
+        "HipsOffset":    (0.0, 0.0, -0.052),
+        "Hips":          (2.5, 0.0, 28.0),
+        "Spine":         (4.0, 0.0, 18.0),
+        "Chest":         (4.0, 0.0, 20.0),
+        "UpperChest":    (3.0, 0.0, 12.0),
+        "Neck":          (-5.0, 0.0, -30.0),
+        "Head":          (-4.0, 0.0, -28.0),
+        "RightShoulder": (0.0, -6.0, 20.0),
+        "RightUpperArm": (-10.0, 0.0, 30.0),
+        "RightLowerArm": (0.0, 46.0, 4.0),
+        "RightHand":     (-18.0, 20.0, -28.0),
+        "LeftShoulder":  (0.0, 14.0, -12.0),
+        "LeftUpperArm":  (-8.0, 50.0, -54.0),
+        "LeftLowerArm":  (14.0, -38.0, -116.0),
+        "LeftUpperLeg":  (-32.0, -5.0, 5.0),
+        "LeftLowerLeg":  (26.0, 0.0, 0.0),
+        "RightUpperLeg": (18.0, 6.0, -5.0),
+        "RightLowerLeg": (12.0, 0.0, 0.0),
+    }))
+    sp_follow = merge_pose(sp_hit, {
+        "HipsOffset":    (0.0, 0.0, -0.056),
+        "Hips":          (3.0, 0.0, 31.0),
+        "RightShoulder": (0.0, -4.0, 22.0),
+        "RightLowerArm": (0.0, 50.0, 2.0),
+    })
+    sp_rechamber = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.042),
+        "Hips":          (1.5, 0.0, 24.0),
+        "RightUpperArm": (-6.0, -38.0, 58.0),
+        "RightLowerArm": (14.0, 40.0, 114.0),
+    })
+    kf = {1: idle0, ant_f: sp_ant, hit_start: sp_hit, hit_end: sp_follow, end_f: idle0}
+    if hit_follow is not None:
+        kf[hit_follow] = sp_hit
+    if rechamber_f is not None:
+        kf[rechamber_f] = sp_rechamber
+    return kf
+
+
 CHARACTER_CONFIGS = {
     "Lucas": {
         "name": "Lucas",
@@ -274,6 +403,156 @@ CHARACTER_CONFIGS = {
             "RightLowerLeg": ((-0.1133, 0.0031, 0.4899), (-0.1208, 0.0719, 0.1388)),
             "RightFoot":     ((-0.1208, 0.0719, 0.1388), (-0.1489,-0.0497, 0.0434)),
             "RightToes":     ((-0.1489,-0.0497, 0.0434), (-0.1844,-0.2028, 0.0434)),
+        },
+    },
+    "Isaac": {
+        "name": "Isaac",
+        "archetype_label": "Agile Striker",
+        "weight_kg": 73.0,
+        "weight_class": "light",
+        "fighting_style": "agile_striker",
+        "mesh_name": "Isaac_Body",
+        "armature_name": "Isaac_Armature",
+        "material_name": "Isaac_Mat",
+        "source_fbx": os.path.join(
+            PROJECT_ROOT,
+            r"Assets\UnDFight\Art\Source\Isaac\Meshy_AI_Emerald_Strength_biped_Animation_Running_withSkin.fbx",
+        ),
+        "textures_dir": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Isaac"),
+        "orig_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Isaac_original.blend"),
+        "work_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Isaac.blend"),
+        "export_fbx": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Models\Isaac\Isaac.fbx"),
+        "target_height": 1.73,
+        "target_tris": 30000,
+        "body_tris_target": 12000,
+        "hair_z_threshold": 1.40,
+        "center_x": 0.0000,
+        "fps": 60,
+        "special_doc_note": "Especial **Punho Esmeralda**: agachamento elástico seguido de gancho ascendente anti-aéreo explosivo (`RightHand`)",
+        "anim_overrides": {"Special": _build_isaac_special},
+        "joints": {
+            "Hips":          ((0.0000, -0.0390, 0.9270), (0.0000, -0.0261, 1.0489)),
+            "Spine":         ((0.0000, -0.0261, 1.0489), (0.0000, -0.0131, 1.1708)),
+            "Chest":         ((0.0000, -0.0131, 1.1708), (0.0000, -0.0002, 1.2927)),
+            "UpperChest":    ((0.0000, -0.0002, 1.2927), (0.0000,  0.0091, 1.3803)),
+            "Neck":          ((0.0000,  0.0091, 1.3803), (0.0000,  0.0165, 1.4495)),
+            "Head":          ((0.0000,  0.0165, 1.4495), (0.0000,  0.0050, 1.7150)),
+            "LeftShoulder":  ((0.0373,  0.0143, 1.3464), (0.1866,  0.0288, 1.3464)),
+            "LeftUpperArm":  ((0.1866,  0.0288, 1.3464), (0.3956,  0.0576, 1.2830)),
+            "LeftLowerArm":  ((0.3956,  0.0576, 1.2830), (0.6083,  0.0431, 1.2830)),
+            "LeftHand":      ((0.6083,  0.0431, 1.2830), (0.7033,  0.0340, 1.2760)),
+            "RightShoulder": ((-0.0373, 0.0137, 1.3427), (-0.1866, 0.0276, 1.3427)),
+            "RightUpperArm": ((-0.1866, 0.0276, 1.3427), (-0.3807, 0.0536, 1.2830)),
+            "RightLowerArm": ((-0.3807, 0.0536, 1.2830), (-0.5971, 0.0457, 1.2867)),
+            "RightHand":     ((-0.5971, 0.0457, 1.2867), (-0.6921, 0.0355, 1.2805)),
+            "LeftUpperLeg":  ((0.0898, -0.0316, 0.8384), (0.1269, -0.0021, 0.4843)),
+            "LeftLowerLeg":  ((0.1269, -0.0021, 0.4843), (0.1567,  0.0562, 0.1298)),
+            "LeftFoot":      ((0.1567,  0.0562, 0.1298), (0.1781, -0.0488, 0.0400)),
+            "LeftToes":      ((0.1781, -0.0488, 0.0400), (0.2061, -0.1859, 0.0400)),
+            "RightUpperLeg": ((-0.0873,-0.0318, 0.8392), (-0.1232,-0.0031, 0.4880)),
+            "RightLowerLeg": ((-0.1232,-0.0031, 0.4880), (-0.1493, 0.0540, 0.1335)),
+            "RightFoot":     ((-0.1493, 0.0540, 0.1335), (-0.1742,-0.0493, 0.0384)),
+            "RightToes":     ((-0.1742,-0.0493, 0.0384), (-0.2076,-0.1879, 0.0384)),
+        },
+    },
+    "Enomoto": {
+        "name": "Enomoto",
+        "archetype_label": "Technical Striker",
+        "weight_kg": 80.0,
+        "weight_class": "medium",
+        "fighting_style": "technical_striker",
+        "mesh_name": "Enomoto_Body",
+        "armature_name": "Enomoto_Armature",
+        "material_name": "Enomoto_Mat",
+        "source_fbx": os.path.join(
+            PROJECT_ROOT,
+            r"Assets\UnDFight\Art\Source\Enomoto\Meshy_AI_Modern_Gentleman_pois_biped_Animation_01a05a9b-b701-7510-8e23-90b8faa3c118_withSkin.fbx",
+        ),
+        "textures_dir": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Enomoto"),
+        "orig_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Enomoto_original.blend"),
+        "work_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Enomoto.blend"),
+        "export_fbx": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Models\Enomoto\Enomoto.fbx"),
+        "target_height": 1.77,
+        "target_tris": 30000,
+        "body_tris_target": 12000,
+        "hair_z_threshold": 1.50,
+        "center_x": 0.0038,
+        "fps": 60,
+        "special_doc_note": "Especial **Estocada do Cavalheiro**: postura elegante seguida de estocada perfurante de mão aberta disparando projétil (`RightHand`)",
+        "anim_overrides": {"Special": _build_enomoto_special},
+        "joints": {
+            "Hips":          ((0.0038, -0.0235, 0.9911), (0.0039, -0.0138, 1.1240)),
+            "Spine":         ((0.0039, -0.0138, 1.1240), (0.0040, -0.0041, 1.2569)),
+            "Chest":         ((0.0040, -0.0041, 1.2569), (0.0041,  0.0056, 1.3898)),
+            "UpperChest":    ((0.0041,  0.0056, 1.3898), (0.0042,  0.0128, 1.4890)),
+            "Neck":          ((0.0042,  0.0128, 1.4890), (0.0043,  0.0180, 1.5606)),
+            "Head":          ((0.0043,  0.0180, 1.5606), (0.0043,  0.0080, 1.7550)),
+            "LeftShoulder":  ((0.0418,  0.0201, 1.4231), (0.1929,  0.0346, 1.4231)),
+            "LeftUpperArm":  ((0.1929,  0.0346, 1.4231), (0.4206,  0.0731, 1.3768)),
+            "LeftLowerArm":  ((0.4206,  0.0731, 1.3768), (0.6522,  0.0524, 1.3729)),
+            "LeftHand":      ((0.6522,  0.0524, 1.3729), (0.7442,  0.0420, 1.3755)),
+            "RightShoulder": ((-0.0346, 0.0199, 1.4231), (-0.1891, 0.0343, 1.4231)),
+            "RightUpperArm": ((-0.1891, 0.0343, 1.4231), (-0.3975, 0.0721, 1.3729)),
+            "RightLowerArm": ((-0.3975, 0.0721, 1.3729), (-0.6368, 0.0551, 1.3729)),
+            "RightHand":     ((-0.6368, 0.0551, 1.3729), (-0.7308, 0.0400, 1.3745)),
+            "LeftUpperLeg":  ((0.1013, -0.0222, 0.8900), (0.1428, -0.0168, 0.4854)),
+            "LeftLowerLeg":  ((0.1428, -0.0168, 0.4854), (0.1775,  0.0581, 0.1264)),
+            "LeftFoot":      ((0.1775,  0.0581, 0.1264), (0.1967, -0.0514, 0.0378)),
+            "LeftToes":      ((0.1967, -0.0514, 0.0378), (0.2212, -0.1914, 0.0378)),
+            "RightUpperLeg": ((-0.0910,-0.0226, 0.8900), (-0.1312,-0.0190, 0.4854)),
+            "RightLowerLeg": ((-0.1312,-0.0190, 0.4854), (-0.1659, 0.0552, 0.1226)),
+            "RightFoot":     ((-0.1659, 0.0552, 0.1226), (-0.1938,-0.0539, 0.0374)),
+            "RightToes":     ((-0.1938,-0.0539, 0.0374), (-0.2289,-0.1907, 0.0374)),
+        },
+    },
+    "Gabubu": {
+        "name": "Gabubu",
+        "archetype_label": "Street Scrappy",
+        "weight_kg": 67.0,
+        "weight_class": "light",
+        "fighting_style": "street_scrappy",
+        "mesh_name": "Gabubu_Body",
+        "armature_name": "Gabubu_Armature",
+        "material_name": "Gabubu_Mat",
+        "source_fbx": os.path.join(
+            PROJECT_ROOT,
+            r"Assets\UnDFight\Art\Source\Gabubu\Meshy_AI_Studio_Rocker_Pose_biped_Animation_Running_withSkin.fbx",
+        ),
+        "textures_dir": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Gabubu"),
+        "orig_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Gabubu_original.blend"),
+        "work_blend": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Source\Blend\Gabubu.blend"),
+        "export_fbx": os.path.join(PROJECT_ROOT, r"Assets\UnDFight\Art\Models\Gabubu\Gabubu.fbx"),
+        "target_height": 1.62,
+        "target_tris": 30000,
+        "body_tris_target": 12000,
+        "hair_z_threshold": 1.37,
+        "center_x": 0.0008,
+        "fps": 60,
+        "special_doc_note": "Especial **Riff Destruidor**: investida dupla feroz em 2 acertos combinando cruzado de esquerda e golpe descendente pesado (`LeftHand`+`RightHand`)",
+        "anim_overrides": {},
+        "joints": {
+            "Hips":          ((0.0008, -0.0177, 0.8294), (0.0023, -0.0082, 0.9730)),
+            "Spine":         ((0.0023, -0.0082, 0.9730), (0.0038,  0.0013, 1.1166)),
+            "Chest":         ((0.0038,  0.0013, 1.1166), (0.0052,  0.0108, 1.2602)),
+            "UpperChest":    ((0.0052,  0.0108, 1.2602), (0.0076,  0.0172, 1.3560)),
+            "Neck":          ((0.0076,  0.0172, 1.3560), (0.0097,  0.0231, 1.4448)),
+            "Head":          ((0.0097,  0.0231, 1.4448), (0.0097,  0.0100, 1.6050)),
+            "LeftShoulder":  ((0.0403,  0.0247, 1.2993), (0.1806,  0.0386, 1.2993)),
+            "LeftUpperArm":  ((0.1806,  0.0386, 1.2993), (0.3962,  0.0748, 1.2527)),
+            "LeftLowerArm":  ((0.3962,  0.0748, 1.2527), (0.5961,  0.0667, 1.2519)),
+            "LeftHand":      ((0.5961,  0.0667, 1.2519), (0.6816,  0.0588, 1.2415)),
+            "RightShoulder": ((-0.0319, 0.0247, 1.2993), (-0.1806, 0.0386, 1.2993)),
+            "RightUpperArm": ((-0.1806, 0.0386, 1.2993), (-0.3962, 0.0748, 1.2527)),
+            "RightLowerArm": ((-0.3962, 0.0748, 1.2527), (-0.5961, 0.0667, 1.2519)),
+            "RightHand":     ((-0.5961, 0.0667, 1.2519), (-0.6816, 0.0604, 1.2405)),
+            "LeftUpperLeg":  ((0.0845, -0.0129, 0.7580), (0.1181,  0.0064, 0.4725)),
+            "LeftLowerLeg":  ((0.1181,  0.0064, 0.4725), (0.1394,  0.0490, 0.1164)),
+            "LeftFoot":      ((0.1394,  0.0490, 0.1164), (0.1569, -0.0542, 0.0386)),
+            "LeftToes":      ((0.1569, -0.0542, 0.0386), (0.1787, -0.1828, 0.0386)),
+            "RightUpperLeg": ((-0.0841,-0.0129, 0.7580), (-0.1181, 0.0064, 0.4725)),
+            "RightLowerLeg": ((-0.1181, 0.0064, 0.4725), (-0.1394, 0.0488, 0.1164)),
+            "RightFoot":     ((-0.1394, 0.0488, 0.1164), (-0.1568,-0.0545, 0.0387)),
+            "RightToes":     ((-0.1568,-0.0545, 0.0387), (-0.1785,-0.1831, 0.0387)),
         },
     },
 }
@@ -3858,9 +4137,10 @@ def clean_character_mesh(config):
     # Apply rotation & scale first
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
 
-    # Remove loose vertices and small disconnected floating islands
+    # Weld split UV-seam vertices first, then remove loose vertices and floating dust islands
     bm = bmesh.new()
     bm.from_mesh(mesh_obj.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
     bm.verts.ensure_lookup_table()
 
     # Remove completely loose verts
@@ -3894,7 +4174,6 @@ def clean_character_mesh(config):
                 if v.is_valid:
                     bm.verts.remove(v)
 
-    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     bm.to_mesh(mesh_obj.data)
     bm.free()
@@ -4629,7 +4908,10 @@ def write_frame_data_doc(config):
         s, a, r = fd[mname]
         tot = s + a + r
         dur_str = f"{tot/60.0:.3f}".replace(".", ",")
-        note = style_notes.get(mname) or common_attack_notes[mname]
+        if mname == "Special" and config.get("special_doc_note"):
+            note = config["special_doc_note"]
+        else:
+            note = style_notes.get(mname) or common_attack_notes[mname]
         return f"| **{mname}** | {s} | {a} | {r} | {tot} | {dur_str} s | {s+1}–{s+a} | {note} |"
 
     doc_path = os.path.join(PROJECT_ROOT, "Docs", f"FrameData_{name}.md")
