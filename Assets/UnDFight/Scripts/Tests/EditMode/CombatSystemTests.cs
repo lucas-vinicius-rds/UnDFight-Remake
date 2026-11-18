@@ -737,8 +737,8 @@ namespace UnDFight.Tests
             rigVsCrouch.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 1f }, true);
             rigVsCrouch.P2.InputHandler.SetSimulatedInput(new FighterInputState { MoveY = -1f, HoldBlock = true }, true);
 
-            // Jump across toward P2 and press JumpAttack on descent (tick 28 of jump arc)
-            rigVsCrouch.Sim.StepSimulationTicks(28);
+            // Jump across toward P2 and press JumpAttack on descent (tick 26 of jump arc)
+            rigVsCrouch.Sim.StepSimulationTicks(26);
             Assert.IsFalse(rigVsCrouch.P1.IsGrounded);
             rigVsCrouch.P1.InputHandler.SetSimulatedInput(default, true);
             rigVsCrouch.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
@@ -763,7 +763,7 @@ namespace UnDFight.Tests
             rigVsStand.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 1f }, true);
             rigVsStand.P2.InputHandler.SetSimulatedInput(new FighterInputState { HoldBlock = true }, true);
 
-            rigVsStand.Sim.StepSimulationTicks(28);
+            rigVsStand.Sim.StepSimulationTicks(26);
             rigVsStand.P1.InputHandler.SetSimulatedInput(default, true);
             rigVsStand.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
 
@@ -1046,7 +1046,7 @@ namespace UnDFight.Tests
             rig.Special.antiAirEndTick = 12;
             rig.Special.superFreezeTicks = 0;
 
-            rig.P1.SetSimPositionX(-2.3f);
+            rig.P1.SetSimPositionX(-2.15f);
             rig.P2.SetSimPositionX(0.55f);
             rig.Sim.ForceUpdateFacing();
             rig.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 1f }, true);
@@ -1054,7 +1054,7 @@ namespace UnDFight.Tests
             rig.P2.SetSuperGauge(100);
 
             // P1 jumps in and starts JumpAttack on descent
-            rig.Sim.StepSimulationTicks(27);
+            rig.Sim.StepSimulationTicks(24);
             rig.P1.InputHandler.SetSimulatedInput(default, true);
             rig.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
             rig.Sim.StepSimulationTicks(4);
@@ -1424,6 +1424,63 @@ namespace UnDFight.Tests
             Assert.IsTrue(events[3].IsSpecial);
             Assert.AreEqual(4, events[3].ComboCount);
             Assert.AreEqual(Mathf.RoundToInt(rig.Special.damage * 0.60f), events[3].DamageDealt);
+        }
+
+        [Test]
+        public void Jump_SynchronizesJumpProgressWithPhysicsParabola_ReachingHalfAtApexAndLandingCleanly()
+        {
+            FighterRig rig = CreateRig();
+            rig.P1.SetSimPositionX(-2.0f);
+            rig.P2.SetSimPositionX(2.0f);
+            rig.Sim.ForceUpdateFacing();
+            rig.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 1f }, true);
+            rig.P2.InputHandler.SetSimulatedInput(default, true);
+
+            // Tick 1: immediate takeoff (_isGrounded = false, State = Jump, JumpProgress > 0)
+            rig.Sim.StepSimulationTicks(1);
+            rig.P1.InputHandler.SetSimulatedInput(default, true);
+            Assert.IsFalse(rig.P1.IsGrounded, "StartJump must take off immediately on tick 1.");
+            Assert.AreEqual(FighterState.Jump, rig.P1.State);
+            Assert.Greater(rig.P1.JumpProgress, 0.01f);
+            Assert.Less(rig.P1.JumpProgress, 0.08f);
+
+            float prevProgress = rig.P1.JumpProgress;
+            float maxY = rig.P1.SimPosition.y;
+            float progressAtClosestZeroVy = -1f;
+            float minAbsVy = float.MaxValue;
+            float maxAirProgress = prevProgress;
+            int airTicks = 1;
+
+            for (int tick = 2; tick <= 65 && !rig.P1.IsGrounded; tick++)
+            {
+                rig.Sim.StepSimulationTicks(1);
+                if (!rig.P1.IsGrounded)
+                {
+                    airTicks++;
+                    Assert.AreEqual(FighterState.Jump, rig.P1.State, $"Fighter must remain in Jump state on air tick {tick}.");
+                    Assert.Greater(rig.P1.JumpProgress, prevProgress, $"JumpProgress must increase monotonically on air tick {tick}.");
+                    prevProgress = rig.P1.JumpProgress;
+                    maxAirProgress = Mathf.Max(maxAirProgress, rig.P1.JumpProgress);
+                    maxY = Mathf.Max(maxY, rig.P1.SimPosition.y);
+
+                    float absVy = Mathf.Abs(rig.P1.SimVelocity.y);
+                    if (absVy < minAbsVy)
+                    {
+                        minAbsVy = absVy;
+                        progressAtClosestZeroVy = rig.P1.JumpProgress;
+                    }
+                }
+            }
+
+            Assert.IsTrue(rig.P1.IsGrounded, "Fighter must land cleanly on the ground.");
+            Assert.AreEqual(FighterState.Idle, rig.P1.State, "Fighter must return to Idle immediately upon landing.");
+            Assert.AreEqual(0f, rig.P1.JumpProgress, 1e-4f, "JumpProgress must reset to 0 upon landing.");
+            Assert.AreEqual(0.50f, progressAtClosestZeroVy, 0.04f, "JumpProgress must be ~0.50 at the physical apex (SimVelocity.y ≈ 0).");
+            Assert.GreaterOrEqual(maxAirProgress, 0.94f, "JumpProgress must reach ~0.95..0.99 right before landing.");
+            Assert.GreaterOrEqual(maxY, 1.85f);
+            Assert.LessOrEqual(maxY, 2.20f);
+            Assert.GreaterOrEqual(airTicks, 43);
+            Assert.LessOrEqual(airTicks, 51);
         }
     }
 }

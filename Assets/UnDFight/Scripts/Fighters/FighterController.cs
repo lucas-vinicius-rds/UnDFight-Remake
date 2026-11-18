@@ -45,6 +45,7 @@ namespace UnDFight
         private static readonly int IsGroundedParamHash = Animator.StringToHash("IsGrounded");
         private static readonly int IsTurningParamHash = Animator.StringToHash("IsTurning");
         private static readonly int AlreadyCrouchedParamHash = Animator.StringToHash("AlreadyCrouched");
+        private static readonly int JumpProgressParamHash = Animator.StringToHash("JumpProgress");
         private static readonly int HitReactStateHash = Animator.StringToHash("HitReact");
         private static readonly int BlockStateHash = Animator.StringToHash("Block");
         private static readonly int IdleStateHash = Animator.StringToHash("Idle");
@@ -84,6 +85,9 @@ namespace UnDFight
         private int _receivedComboDamage;
         private bool _grantedStartSuperOnCurrentMove;
         private bool _hasUsedAirAttackThisJump;
+        private float _jumpElapsedSeconds;
+        private float _jumpExpectedAirSeconds = 0.75f;
+        private float _jumpProgress;
         private bool _hasAbsorbedArmorThisAttack;
         private bool _hasResetSecondActiveWindow;
         private bool _hasSpawnedProjectileThisAttack;
@@ -115,6 +119,9 @@ namespace UnDFight
         public float VisualYaw => _visualYaw;
         public bool IsTurnAnimActive => _isTurnAnimActive;
         public bool IsGrounded => _isGrounded;
+        public float JumpProgress => _jumpProgress;
+        public float JumpElapsedSeconds => _jumpElapsedSeconds;
+        public float JumpExpectedAirSeconds => _jumpExpectedAirSeconds;
         public int CurrentHealth => _currentHealth;
         public int MaxHealth => fighterData != null ? fighterData.maxHealth : 1000;
         public int SuperGauge => _superGauge;
@@ -282,6 +289,8 @@ namespace UnDFight
             _receivedComboDamage = 0;
             _grantedStartSuperOnCurrentMove = false;
             _hasUsedAirAttackThisJump = false;
+            _jumpElapsedSeconds = 0f;
+            _jumpProgress = 0f;
             _pendingThrowProp = null;
             _stageInteractCooldownTicks = 0;
             EnsureKinematicHurtboxRigidbody();
@@ -320,6 +329,8 @@ namespace UnDFight
             _receivedComboDamage = 0;
             _grantedStartSuperOnCurrentMove = false;
             _hasUsedAirAttackThisJump = false;
+            _jumpElapsedSeconds = 0f;
+            _jumpProgress = 0f;
             _pendingThrowProp = null;
             _stageInteractCooldownTicks = 0;
             _inputHandler?.ClearBufferedInputs();
@@ -951,12 +962,15 @@ namespace UnDFight
                 }
 
                 ApplyGravityAndIntegrate(dt);
+                AdvanceAirJumpProgress(dt);
 
                 if (_state == FighterState.Attack && _currentAttack == AttackType.JumpAttack)
                 {
                     if (_isGrounded)
                     {
                         _hasUsedAirAttackThisJump = false;
+                        _jumpElapsedSeconds = 0f;
+                        _jumpProgress = 0f;
                         _simVelocity.x = 0f;
                         _knockbackDecelPerSec = 0f;
                         EnterState(FighterState.Idle);
@@ -1110,9 +1124,12 @@ namespace UnDFight
                     StartAirAttack(airAttack))
                 {
                     ApplyGravityAndIntegrate(dt);
+                    AdvanceAirJumpProgress(dt);
                     if (_isGrounded)
                     {
                         _hasUsedAirAttackThisJump = false;
+                        _jumpElapsedSeconds = 0f;
+                        _jumpProgress = 0f;
                         _simVelocity.x = 0f;
                         EnterState(FighterState.Idle);
                     }
@@ -1122,9 +1139,12 @@ namespace UnDFight
                 }
 
                 ApplyGravityAndIntegrate(dt);
+                AdvanceAirJumpProgress(dt);
                 if (_isGrounded)
                 {
                     _hasUsedAirAttackThisJump = false;
+                    _jumpElapsedSeconds = 0f;
+                    _jumpProgress = 0f;
                     _simVelocity.x = 0f;
                     EnterState(FighterState.Idle);
                 }
@@ -1274,7 +1294,7 @@ namespace UnDFight
 
             if (!_isGrounded)
             {
-                float gravity = fighterData != null ? fighterData.EffectiveGravity : 34f;
+                float gravity = fighterData != null ? fighterData.EffectiveGravity : 28f;
                 _simVelocity.y -= gravity * dt;
             }
 
@@ -1287,6 +1307,7 @@ namespace UnDFight
                 _simVelocity.y = 0f;
                 _isGrounded = true;
                 _hasUsedAirAttackThisJump = false;
+                _jumpElapsedSeconds = 0f;
             }
         }
 
@@ -1354,17 +1375,36 @@ namespace UnDFight
 
         private void StartJump(float moveX, float dt)
         {
-            float jumpForce = fighterData != null ? fighterData.jumpForce : 12.5f;
-            float walkSpeed = fighterData != null ? fighterData.EffectiveWalkForwardSpeed : 4.2f;
+            float jumpForce = fighterData != null ? fighterData.jumpForce : 10.6f;
+            float gravity = fighterData != null ? fighterData.EffectiveGravity : 28.0f;
+            float walkSpeed = fighterData != null ? fighterData.EffectiveWalkForwardSpeed : 3.7f;
             _blockFromCrouch = false;
             _hasUsedAirAttackThisJump = false;
+            _jumpElapsedSeconds = 0f;
+            _jumpExpectedAirSeconds = Mathf.Max(0.25f, (2f * jumpForce) / Mathf.Max(1f, gravity));
+            _jumpProgress = 0f;
             _simVelocity.y = jumpForce;
             _simVelocity.x = moveX * walkSpeed;
             _isGrounded = false;
             EnterState(FighterState.Jump);
             ApplyGravityAndIntegrate(dt);
+            AdvanceAirJumpProgress(dt);
             UpdateHurtboxDimensions();
             StepAnimatorTick(dt);
+        }
+
+        private void AdvanceAirJumpProgress(float dt)
+        {
+            if (_isGrounded)
+            {
+                _jumpElapsedSeconds = 0f;
+                _jumpProgress = 0f;
+                return;
+            }
+
+            _jumpElapsedSeconds += dt;
+            float expected = Mathf.Max(0.25f, _jumpExpectedAirSeconds);
+            _jumpProgress = Mathf.Clamp(_jumpElapsedSeconds / expected, 0f, 0.99f);
         }
 
         private void StartDash(bool isForward, float dt)
@@ -1767,6 +1807,7 @@ namespace UnDFight
             fighterAnimator.SetBool(IsGroundedParamHash, _isGrounded);
             fighterAnimator.SetBool(IsTurningParamHash, _isTurnAnimActive);
             fighterAnimator.SetBool(AlreadyCrouchedParamHash, _enteredCrouchFromCrouch);
+            fighterAnimator.SetFloat(JumpProgressParamHash, _jumpProgress);
             fighterAnimator.Update(dt);
         }
 

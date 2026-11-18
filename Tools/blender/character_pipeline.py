@@ -3508,64 +3508,73 @@ def build_style_attacks(style, idle0, framedata):
 def build_common_actions(idle0):
     anims = {}
 
-    # Jump (36 frames: 1..37 — crouch prep 5 -> takeoff 10 -> tuck peak 18 -> extend 28 -> cushioned land 32 -> Idle 37)
-    jump_prep = merge_pose(idle0, {
-        "HipsOffset":    (0.0, 0.0, -0.18),
-        "Spine":         (12.0, 0.0, 4.0),
-        "LeftUpperArm":  (-6.0, 48.0, -34.0),
-        "RightUpperArm": (-6.0, -48.0, 34.0),
-        "LeftUpperLeg":  (-56.0, -4.0, 6.0),
-        "LeftLowerLeg":  (70.0, 0.0, 0.0),
-        "LeftFoot":      (-14.0, 0.0, 0.0),
-        "RightUpperLeg": (-46.0, 4.0, -6.0),
-        "RightLowerLeg": (64.0, 0.0, 0.0),
-        "RightFoot":     (-18.0, 0.0, 0.0),
-    })
+    # Jump (48 frames: 1..49 — pure aerial arc 0.00..1.00 driven by JumpProgress in Unity:
+    # takeoff 1 (0.00) -> ascend 13 (0.25) -> apex 25 (0.50) -> descend 37 (0.75) -> contact 49 (1.00))
     jump_takeoff = merge_pose(idle0, {
-        "HipsOffset":    (0.0, 0.0, 0.14),
-        "Spine":         (4.0, 0.0, 4.0),
-        "LeftUpperArm":  (-18.0, 36.0, -48.0),
-        "RightUpperArm": (-18.0, -36.0, 48.0),
-        "LeftUpperLeg":  (-58.0, -4.0, 6.0),
-        "LeftLowerLeg":  (66.0, 0.0, 0.0),
-        "LeftFoot":      (22.0, 0.0, 0.0),
+        "HipsOffset":    (0.0, 0.0, 0.015),
+        "Spine":         (3.0, 0.0, 4.0),
+        "Chest":         (2.0, 0.0, 4.0),
+        "LeftUpperArm":  (-14.0, 42.0, -48.0),
+        "RightUpperArm": (-14.0, -42.0, 48.0),
+        "LeftUpperLeg":  (-48.0, -4.0, 6.0),
+        "LeftLowerLeg":  (52.0, 0.0, 0.0),
+        "LeftFoot":      (14.0, 0.0, 0.0),
         "RightUpperLeg": (12.0, 4.0, -6.0),
         "RightLowerLeg": (18.0, 0.0, 0.0),
-        "RightFoot":     (28.0, 0.0, 0.0),
+        "RightFoot":     (18.0, 0.0, 0.0),
+    })
+    jump_ascend = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, 0.032),
+        "Spine":         (5.0, 0.0, 4.0),
+        "Chest":         (3.0, 0.0, 4.0),
+        "LeftUpperArm":  (-16.0, 38.0, -52.0),
+        "RightUpperArm": (-16.0, -38.0, 52.0),
+        "LeftUpperLeg":  (-64.0, -4.0, 6.0),
+        "LeftLowerLeg":  (76.0, 0.0, 0.0),
+        "LeftFoot":      (20.0, 0.0, 0.0),
+        "RightUpperLeg": (-28.0, 4.0, -6.0),
+        "RightLowerLeg": (52.0, 0.0, 0.0),
+        "RightFoot":     (22.0, 0.0, 0.0),
     })
     jump_peak = merge_pose(idle0, {
-        "HipsOffset":    (0.0, 0.0, 0.44),
-        "Spine":         (8.0, 0.0, 4.0),
-        "LeftUpperArm":  (-15.0, 40.0, -52.0),
-        "RightUpperArm": (-15.0, -40.0, 52.0),
-        "LeftUpperLeg":  (-82.0, -4.0, 6.0),
-        "LeftLowerLeg":  (100.0, 0.0, 0.0),
-        "LeftFoot":      (25.0, 0.0, 0.0),
-        "RightUpperLeg": (-56.0, 4.0, -6.0),
-        "RightLowerLeg": (88.0, 0.0, 0.0),
-        "RightFoot":     (25.0, 0.0, 0.0),
+        "HipsOffset":    (0.0, 0.0, 0.045),
+        "Spine":         (6.0, 0.0, 4.0),
+        "Chest":         (4.0, 0.0, 4.0),
+        "LeftUpperArm":  (-15.0, 40.0, -54.0),
+        "RightUpperArm": (-15.0, -40.0, 54.0),
+        "LeftUpperLeg":  (-74.0, -4.0, 6.0),
+        "LeftLowerLeg":  (90.0, 0.0, 0.0),
+        "LeftFoot":      (22.0, 0.0, 0.0),
+        "RightUpperLeg": (-52.0, 4.0, -6.0),
+        "RightLowerLeg": (82.0, 0.0, 0.0),
+        "RightFoot":     (22.0, 0.0, 0.0),
     })
     jump_descend = merge_pose(idle0, {
-        "HipsOffset":    (0.0, 0.0, 0.14),
-        "Spine":         (8.0, 0.0, 4.0),
+        "HipsOffset":    (0.0, 0.0, 0.025),
+        "Spine":         (5.0, 0.0, 4.0),
+        "Chest":         (3.0, 0.0, 4.0),
         "LeftUpperArm":  (-14.0, 44.0, -56.0),
         "RightUpperArm": (-14.0, -44.0, 56.0),
         "LeftUpperLeg":  (-46.0, -4.0, 6.0),
-        "LeftLowerLeg":  (44.0, 0.0, 0.0),
-        "LeftFoot":      (16.0, 0.0, 0.0),
-        "RightUpperLeg": (-22.0, 4.0, -6.0),
+        "LeftLowerLeg":  (46.0, 0.0, 0.0),
+        "LeftFoot":      (14.0, 0.0, 0.0),
+        "RightUpperLeg": (-18.0, 4.0, -6.0),
         "RightLowerLeg": (34.0, 0.0, 0.0),
-        "RightFoot":     (16.0, 0.0, 0.0),
+        "RightFoot":     (14.0, 0.0, 0.0),
     })
-    jump_land = merge_pose(jump_prep, {
-        "HipsOffset":    (0.0, 0.0, -0.15),
-        "Spine":         (10.0, 0.0, 4.0),
-        "LeftUpperLeg":  (-48.0, -4.0, 6.0),
-        "LeftLowerLeg":  (58.0, 0.0, 0.0),
-        "RightUpperLeg": (-38.0, 4.0, -6.0),
-        "RightLowerLeg": (52.0, 0.0, 0.0),
+    jump_contact = merge_pose(idle0, {
+        "HipsOffset":    (0.0, 0.0, -0.045),
+        "Spine":         (4.0, 0.0, 4.0),
+        "LeftUpperArm":  (-10.0, 46.0, -52.0),
+        "RightUpperArm": (-10.0, -46.0, 52.0),
+        "LeftUpperLeg":  (-32.0, -5.0, 6.0),
+        "LeftLowerLeg":  (20.0, 0.0, 0.0),
+        "LeftFoot":      (12.0, 0.0, 0.0),
+        "RightUpperLeg": (12.0, 5.0, -5.0),
+        "RightLowerLeg": (18.0, 0.0, 0.0),
+        "RightFoot":     (-18.0, 0.0, 0.0),
     })
-    anims["Jump"] = {1: idle0, 5: jump_prep, 10: jump_takeoff, 18: jump_peak, 28: jump_descend, 32: jump_land, 37: idle0}
+    anims["Jump"] = {1: jump_takeoff, 13: jump_ascend, 25: jump_peak, 37: jump_descend, 49: jump_contact}
 
     # Crouch (30 frames: hold crouch pose through frame 31)
     crouch_pose = merge_pose(idle0, {
@@ -4067,7 +4076,7 @@ def _get_clip_ground_modes(clip_name, style, keyframes):
     if clip_name in ("WalkForward", "WalkBackward", "CrouchWalkForward", "CrouchWalkBackward"):
         return {f: "min" for f in frames}
     if clip_name == "Jump":
-        return {1: "both", 5: "both", 32: "both", 37: "both"}
+        return {1: "min", 49: "both"}
     if clip_name == "KnockDown":
         return {f: ("both" if f in (1, 6) else "min") for f in frames}
     if clip_name == "GetUp":
@@ -4114,7 +4123,7 @@ def _get_clip_tangent_modes(clip_name, style, keyframes, framedata):
     if clip_name == "DashBackward":
         return {1: "AUTO_CLAMPED", 3: "SNAP_OUT", 6: "SNAP_IN", 11: "EASE_OUT", 14: "AUTO", 17: "SETTLE_IN"}
     if clip_name == "Jump":
-        return {1: "AUTO_CLAMPED", 5: "SNAP_OUT", 10: "SNAP_IN", 18: "AUTO", 28: "AUTO", 32: "EASE_OUT", 37: "SETTLE_IN"}
+        return {1: "SNAP_OUT", 13: "AUTO", 25: "AUTO_CLAMPED", 37: "AUTO", 49: "EASE_OUT"}
     if clip_name == "KnockDown":
         return {
             1: "AUTO_CLAMPED", 6: "SNAP_OUT", 15: "AUTO", 26: "VECTOR",
@@ -5312,7 +5321,7 @@ def write_frame_data_doc(config):
         "| **CrouchWalkBackward** | 48 (1–49) | 0,800 s | Sim | Não | Recuo tático agachado mantendo guarda baixa fechada e altura de hurtbox reduzida |",
         "| **DashForward** | 14 (1–15) | 0,233 s | Não | Não | Impulso explosivo para frente com inclinação de tronco, guarda firme e retorno ao `Idle` (cancelável após tick 8) |",
         "| **DashBackward** | 16 (1–17) | 0,267 s | Não | Não | Recuo elástico rápido afastando tronco/cabeça para trás e amortecendo na base (evasão nos 5 primeiros ticks) |",
-        "| **Jump** | 36 (1–37) | 0,600 s | Não | Não | Antecipação, elevação vertical local e pouso retornando ao `Idle` |",
+        "| **Jump** | 48 (1–49) | 0,800 s | Não | Não | Arco aéreo puro (`0.0` decolagem → `0.50` ápice → `1.0` contato no solo) sincronizado com `JumpProgress` |",
         "| **Crouch** | 30 (1–31) | 0,500 s | Não | Não | Agachamento em guarda baixa mantido até o frame 31 enquanto segurado |",
         f"| **BlockStand** | 24 (1–25) | 0,400 s | Não | Não | {style_notes['BlockStand']} |",
         "| **HitReact** | 20 (1–21) | 0,333 s | Não | Não | Recuo de tronco e cabeça ao sofrer golpe, recuperando para `Idle` |",

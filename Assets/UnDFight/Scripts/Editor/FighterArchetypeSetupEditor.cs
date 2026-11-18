@@ -193,7 +193,7 @@ namespace UnDFight.Editor
                 92.0f,
                 walkForwardSpeed: 3.7f,
                 walkBackwardSpeed: 2.8f,
-                jumpForce: 11.8f);
+                jumpForce: 10.6f);
             CreateOrUpdateFighterData(
                 TiagoDataPath,
                 "Tiago",
@@ -202,7 +202,7 @@ namespace UnDFight.Editor
                 87.0f,
                 walkForwardSpeed: 3.7f,
                 walkBackwardSpeed: 2.8f,
-                jumpForce: 11.8f);
+                jumpForce: 10.6f);
 
             MoveSpec[] lucasSpecs = BuildArchetypeMoveSpecs(WeightClass.Heavy, FightingArchetype.HeavyBrawler, "Lucas");
             MoveSpec[] tiagoSpecs = BuildArchetypeMoveSpecs(WeightClass.Medium, FightingArchetype.StreetScrappy, "Tiago");
@@ -272,7 +272,7 @@ namespace UnDFight.Editor
                 weightKg: 70.0f,
                 walkForwardSpeed: 3.85f,
                 walkBackwardSpeed: 2.95f,
-                jumpForce: 11.9f,
+                jumpForce: 10.7f,
                 fbxPath: JompesFbxPath,
                 expectedTakePrefix: "Jompes_Armature|",
                 overridePath: JompesOverridePath,
@@ -288,7 +288,7 @@ namespace UnDFight.Editor
                 weightKg: 67.0f,
                 walkForwardSpeed: 4.00f,
                 walkBackwardSpeed: 3.10f,
-                jumpForce: 12.25f,
+                jumpForce: 10.95f,
                 fbxPath: RochardFbxPath,
                 expectedTakePrefix: "Rochard_Armature|",
                 overridePath: RochardOverridePath,
@@ -304,7 +304,7 @@ namespace UnDFight.Editor
                 weightKg: 73.0f,
                 walkForwardSpeed: 3.95f,
                 walkBackwardSpeed: 3.05f,
-                jumpForce: 12.15f,
+                jumpForce: 10.85f,
                 fbxPath: IsaacFbxPath,
                 expectedTakePrefix: "Isaac_Armature|",
                 overridePath: IsaacOverridePath,
@@ -320,7 +320,7 @@ namespace UnDFight.Editor
                 weightKg: 80.0f,
                 walkForwardSpeed: 3.80f,
                 walkBackwardSpeed: 2.90f,
-                jumpForce: 11.85f,
+                jumpForce: 10.65f,
                 fbxPath: EnomotoFbxPath,
                 expectedTakePrefix: "Enomoto_Armature|",
                 overridePath: EnomotoOverridePath,
@@ -336,7 +336,7 @@ namespace UnDFight.Editor
                 weightKg: 67.0f,
                 walkForwardSpeed: 3.90f,
                 walkBackwardSpeed: 2.95f,
-                jumpForce: 12.05f,
+                jumpForce: 10.80f,
                 fbxPath: GabubuFbxPath,
                 expectedTakePrefix: "Gabubu_Armature|",
                 overridePath: GabubuOverridePath,
@@ -659,9 +659,63 @@ namespace UnDFight.Editor
             EnsureCrouchWalkStatesAndTransitions(sm, "IsTurning");
             EnsureTurn180StateAndTransitions(controller, sm, idleState);
             EnsureCrouchAlreadyCrouchedTransitions(controller, sm, "IsTurning", "AlreadyCrouched");
+            EnsureJumpProgressStateAndTransition(controller, sm, "JumpProgress");
             EnsureDashStatesAndTransitions(sm, idleState);
 
             EditorUtility.SetDirty(controller);
+        }
+
+        private static void EnsureJumpProgressStateAndTransition(
+            AnimatorController controller,
+            AnimatorStateMachine sm,
+            string jumpProgressParam)
+        {
+            bool hasParam = false;
+            foreach (AnimatorControllerParameter p in controller.parameters)
+            {
+                if (string.Equals(p.name, jumpProgressParam, StringComparison.Ordinal))
+                {
+                    hasParam = true;
+                    break;
+                }
+            }
+            if (!hasParam)
+            {
+                controller.AddParameter(new AnimatorControllerParameter
+                {
+                    name = jumpProgressParam,
+                    type = AnimatorControllerParameterType.Float,
+                    defaultFloat = 0f
+                });
+            }
+
+            AnimatorState jumpState = EnsureAnimatorStateFromBaseFbx(sm, "Jump", new Vector3(480f, -60f, 0f));
+            jumpState.timeParameterActive = true;
+            jumpState.timeParameter = jumpProgressParam;
+            jumpState.writeDefaultValues = true;
+
+            AnimatorStateTransition anyToJump = null;
+            foreach (AnimatorStateTransition tr in sm.anyStateTransitions)
+            {
+                if (tr.destinationState == jumpState)
+                {
+                    anyToJump = tr;
+                    break;
+                }
+            }
+            if (anyToJump == null)
+            {
+                anyToJump = sm.AddAnyStateTransition(jumpState);
+            }
+            anyToJump.canTransitionToSelf = false;
+            anyToJump.hasExitTime = false;
+            anyToJump.hasFixedDuration = true;
+            anyToJump.duration = 0.04f;
+            anyToJump.offset = 0f;
+            anyToJump.conditions = new[]
+            {
+                new AnimatorCondition { mode = AnimatorConditionMode.Equals, parameter = "State", threshold = (int)FighterState.Jump },
+            };
         }
 
         private static void EnsureCrouchAlreadyCrouchedTransitions(
@@ -1838,7 +1892,7 @@ namespace UnDFight.Editor
             data.dashBackwardTicks = 16;
             data.backdashInvulnerableTicks = 5;
             data.jumpForce = jumpForce;
-            data.baseGravity = 30.0f;
+            data.baseGravity = 28.0f;
             data.crouchHeightRatio = 0.62f;
             data.pushboxRadius = 0.36f;
             EditorUtility.SetDirty(data);

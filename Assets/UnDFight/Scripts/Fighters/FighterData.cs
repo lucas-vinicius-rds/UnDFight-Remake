@@ -31,8 +31,8 @@ namespace UnDFight
         [Min(1f)] public float dashBackwardSpeed = 6.2f;
         [Min(1)] public int dashBackwardTicks = 16;
         [Min(0)] public int backdashInvulnerableTicks = 5;
-        [Min(1f)] public float jumpForce = 11.8f;
-        [Min(1f)] public float baseGravity = 30.0f;
+        [Min(1f)] public float jumpForce = 10.6f;
+        [Min(1f)] public float baseGravity = 28.0f;
 
         [Header("Collision / Hurtbox")]
         [Range(0.3f, 0.9f)] public float crouchHeightRatio = 0.62f;

@@ -35,7 +35,7 @@
 | **CrouchWalkBackward** | 48 (1–49) | 0,800 s | Sim | Não | Recuo tático agachado mantendo guarda baixa fechada e altura de hurtbox reduzida |
 | **DashForward** | 14 (1–15) | 0,233 s | Não | Não | Impulso explosivo para frente com inclinação de tronco, guarda firme e retorno ao `Idle` (cancelável após tick 8) |
 | **DashBackward** | 16 (1–17) | 0,267 s | Não | Não | Recuo elástico rápido afastando tronco/cabeça para trás e amortecendo na base (evasão nos 5 primeiros ticks) |
-| **Jump** | 36 (1–37) | 0,600 s | Não | Não | Antecipação, elevação vertical local e pouso retornando ao `Idle` |
+| **Jump** | 48 (1–49) | 0,800 s | Não | Não | Arco aéreo puro (`0.0` decolagem → `0.50` ápice → `1.0` contato no solo) sincronizado com `JumpProgress` |
 | **Crouch** | 30 (1–31) | 0,500 s | Não | Não | Agachamento em guarda baixa mantido até o frame 31 enquanto segurado |
 | **BlockStand** | 24 (1–25) | 0,400 s | Não | Não | Encolhe os ombros e cruza os antebraços em frente ao rosto de forma instintiva até o último frame |
 | **HitReact** | 20 (1–21) | 0,333 s | Não | Não | Recuo de tronco e cabeça ao sofrer golpe, recuperando para `Idle` |

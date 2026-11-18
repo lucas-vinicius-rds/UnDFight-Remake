@@ -29,8 +29,8 @@ MonoBehaviour:
   dashBackwardSpeed: 6.2
   dashBackwardTicks: 16
   backdashInvulnerableTicks: 5
-  jumpForce: 11.8
-  baseGravity: 30
+  jumpForce: 10.6
+  baseGravity: 28
   crouchHeightRatio: 0.62
   pushboxRadius: 0.36
   lightPunch: {fileID: 11400000, guid: d50604e739a9b9445baac769ba85656c, type: 2}

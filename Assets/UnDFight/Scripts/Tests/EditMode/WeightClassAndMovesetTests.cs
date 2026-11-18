@@ -288,8 +288,8 @@ namespace UnDFight.Tests
             Assert.AreEqual(1.55f, lucas.crouchWalkBackwardSpeed, 0.01f);
             Assert.AreEqual(7.2f, lucas.dashForwardSpeed, 0.01f);
             Assert.AreEqual(6.2f, lucas.dashBackwardSpeed, 0.01f);
-            Assert.AreEqual(11.8f, lucas.jumpForce, 0.01f);
-            Assert.AreEqual(30.0f, lucas.baseGravity, 0.01f);
+            Assert.AreEqual(10.6f, lucas.jumpForce, 0.01f);
+            Assert.AreEqual(28.0f, lucas.baseGravity, 0.01f);
 
             Assert.AreEqual(SpecialMechanicType.MultiHitRush, tiago.specialMove.specialMechanic);
             Assert.AreEqual(17, tiago.specialMove.secondActiveStartTick);
@@ -334,7 +334,7 @@ namespace UnDFight.Tests
                 Assert.AreEqual(48, Mathf.RoundToInt(cwClip.length * 60f), $"{crouchWalkClipName} clip must be 48 frames in {fbxPath}");
             }
 
-            foreach (var (clipName, expectedFrames) in new[] { ("DashForward", 14), ("DashBackward", 16) })
+            foreach (var (clipName, expectedFrames) in new[] { ("DashForward", 14), ("DashBackward", 16), ("Jump", 48) })
             {
                 Assert.IsTrue(clips.TryGetValue(clipName, out AnimationClip dashClip), $"Missing {clipName} clip in {fbxPath}");
                 Assert.IsFalse(dashClip.isLooping, $"{fbxPath} {clipName} must not loop");
@@ -562,6 +562,42 @@ namespace UnDFight.Tests
             }
             Assert.IsTrue(foundStandingToCrouch, "AC_Fighter missing AnyState->Crouch transition with AlreadyCrouched=false and offset=0");
             Assert.IsTrue(foundAlreadyCrouchedToCrouch, "AC_Fighter missing AnyState->Crouch transition with AlreadyCrouched=true and offset>=0.2");
+
+            // Phase 14.1.3: JumpProgress Float parameter & Jump state Motion Time driven by JumpProgress
+            bool hasJumpProgress = false;
+            foreach (var p in controller.parameters)
+            {
+                if (p.name == "JumpProgress" && p.type == AnimatorControllerParameterType.Float)
+                {
+                    hasJumpProgress = true;
+                    break;
+                }
+            }
+            Assert.IsTrue(hasJumpProgress, "AC_Fighter must expose Float parameter 'JumpProgress'");
+
+            AnimatorState jumpState = null;
+            foreach (var cs in sm.states)
+            {
+                if (cs.state.name == "Jump")
+                {
+                    jumpState = cs.state;
+                    break;
+                }
+            }
+            Assert.IsNotNull(jumpState, "AC_Fighter must contain Jump state");
+            Assert.IsTrue(jumpState.timeParameterActive, "Jump state must enable timeParameterActive");
+            Assert.AreEqual("JumpProgress", jumpState.timeParameter, "Jump state must use JumpProgress as Motion Time parameter");
+
+            bool foundAnyToJump = false;
+            foreach (var tr in sm.anyStateTransitions)
+            {
+                if (tr.destinationState == jumpState)
+                {
+                    Assert.IsFalse(tr.canTransitionToSelf, "AnyState -> Jump must keep canTransitionToSelf=false");
+                    foundAnyToJump = true;
+                }
+            }
+            Assert.IsTrue(foundAnyToJump, "AC_Fighter missing AnyState -> Jump transition");
         }
 
         [Test]
