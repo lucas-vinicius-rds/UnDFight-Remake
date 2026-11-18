@@ -194,6 +194,21 @@ namespace UnDFight.Editor
             return $"Phase 9.1 Unity setup complete: Lucas ({lucasBones}/52 human bones, Heavy/HeavyBrawler) & Tiago ({tiagoBones}/52 human bones, Medium/StreetScrappy) updated cleanly.";
         }
 
+        [MenuItem("UnDFight/Setup Fase 13.5 - Transição Crouch sem Levantar")]
+        public static void ApplyPhase13_5SetupMenu()
+        {
+            string summary = ApplyPhase13_5Setup();
+            Debug.Log("[FighterArchetypeSetupEditor] " + summary);
+        }
+
+        public static string ApplyPhase13_5Setup()
+        {
+            EnsureAttackExitTransitions(BaseControllerPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            return "Phase 13.5 complete: AC_Fighter.controller updated with AlreadyCrouched parameter and dual AnyState->Crouch transitions (offset=0f vs offset=0.25f).";
+        }
+
         [MenuItem("UnDFight/Setup Fase 14.1 - Isaac, Enomoto & Gabubu (Elenco 7)")]
         public static void ApplyPhase14_1SetupMenu()
         {
@@ -604,9 +619,83 @@ namespace UnDFight.Editor
 
             EnsureCrouchWalkStatesAndTransitions(sm, "IsTurning");
             EnsureTurn180StateAndTransitions(controller, sm, idleState);
+            EnsureCrouchAlreadyCrouchedTransitions(controller, sm, "IsTurning", "AlreadyCrouched");
             EnsureDashStatesAndTransitions(sm, idleState);
 
             EditorUtility.SetDirty(controller);
+        }
+
+        private static void EnsureCrouchAlreadyCrouchedTransitions(
+            AnimatorController controller,
+            AnimatorStateMachine sm,
+            string isTurningParam,
+            string alreadyCrouchedParam)
+        {
+            bool hasParam = false;
+            foreach (AnimatorControllerParameter p in controller.parameters)
+            {
+                if (string.Equals(p.name, alreadyCrouchedParam, StringComparison.Ordinal))
+                {
+                    hasParam = true;
+                    break;
+                }
+            }
+            if (!hasParam)
+            {
+                controller.AddParameter(new AnimatorControllerParameter
+                {
+                    name = alreadyCrouchedParam,
+                    type = AnimatorControllerParameterType.Bool,
+                    defaultBool = false
+                });
+            }
+
+            AnimatorState crouchState = FindState(sm, "Crouch");
+            if (crouchState == null)
+            {
+                return;
+            }
+
+            var existingCrouchTransitions = new List<AnimatorStateTransition>();
+            foreach (AnimatorStateTransition tr in sm.anyStateTransitions)
+            {
+                if (tr.destinationState == crouchState)
+                {
+                    existingCrouchTransitions.Add(tr);
+                }
+            }
+            foreach (AnimatorStateTransition tr in existingCrouchTransitions)
+            {
+                sm.RemoveAnyStateTransition(tr);
+            }
+
+            // 1. Entering Crouch from standing: animate smoothly from frame 1 (offset = 0f)
+            AnimatorStateTransition fromStanding = sm.AddAnyStateTransition(crouchState);
+            fromStanding.canTransitionToSelf = false;
+            fromStanding.hasExitTime = false;
+            fromStanding.hasFixedDuration = true;
+            fromStanding.duration = 0.05f;
+            fromStanding.offset = 0f;
+            fromStanding.conditions = new[]
+            {
+                new AnimatorCondition { mode = AnimatorConditionMode.Equals, parameter = "State", threshold = (int)FighterState.Crouch },
+                new AnimatorCondition { mode = AnimatorConditionMode.IfNot, parameter = isTurningParam, threshold = 0f },
+                new AnimatorCondition { mode = AnimatorConditionMode.IfNot, parameter = alreadyCrouchedParam, threshold = 0f },
+            };
+
+            // 2. Entering Crouch while already crouched (CrouchWalk*, CrouchKick, crouch Block): skip standing startup (offset = 0.25f)
+            AnimatorStateTransition fromCrouched = sm.AddAnyStateTransition(crouchState);
+            fromCrouched.canTransitionToSelf = false;
+            fromCrouched.hasExitTime = false;
+            fromCrouched.hasFixedDuration = true;
+            fromCrouched.duration = 0.05f;
+            fromCrouched.offset = 0.25f;
+            fromCrouched.conditions = new[]
+            {
+                new AnimatorCondition { mode = AnimatorConditionMode.Equals, parameter = "State", threshold = (int)FighterState.Crouch },
+                new AnimatorCondition { mode = AnimatorConditionMode.IfNot, parameter = isTurningParam, threshold = 0f },
+                new AnimatorCondition { mode = AnimatorConditionMode.If, parameter = alreadyCrouchedParam, threshold = 0f },
+            };
         }
 
         private static void EnsureCrouchWalkStatesAndTransitions(AnimatorStateMachine sm, string isTurningParam)
@@ -886,6 +975,7 @@ namespace UnDFight.Editor
                 existing.hasExitTime = false;
                 existing.duration = 0.04f;
                 existing.hasFixedDuration = true;
+                existing.offset = string.Equals(dstName, "Crouch", StringComparison.Ordinal) ? 0.25f : 0f;
                 existing.conditions = requireTurnEnd
                     ? new[]
                     {

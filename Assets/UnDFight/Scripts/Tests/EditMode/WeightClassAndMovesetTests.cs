@@ -468,6 +468,102 @@ namespace UnDFight.Tests
             {
                 Assert.IsTrue(stateNames.Contains(requiredState), $"AC_Fighter missing required state '{requiredState}'");
             }
+
+            // Phase 13.5: AlreadyCrouched parameter & dual AnyState -> Crouch transitions
+            bool hasAlreadyCrouched = false;
+            foreach (var p in controller.parameters)
+            {
+                if (p.name == "AlreadyCrouched" && p.type == AnimatorControllerParameterType.Bool)
+                {
+                    hasAlreadyCrouched = true;
+                    break;
+                }
+            }
+            Assert.IsTrue(hasAlreadyCrouched, "AC_Fighter must expose Bool parameter 'AlreadyCrouched'");
+
+            bool foundStandingToCrouch = false;
+            bool foundAlreadyCrouchedToCrouch = false;
+            foreach (var tr in sm.anyStateTransitions)
+            {
+                if (tr.destinationState == null || tr.destinationState.name != "Crouch") continue;
+                foreach (var cond in tr.conditions)
+                {
+                    if (cond.parameter == "AlreadyCrouched")
+                    {
+                        if (cond.mode == AnimatorConditionMode.IfNot && Mathf.Approximately(tr.offset, 0f))
+                        {
+                            foundStandingToCrouch = true;
+                        }
+                        else if (cond.mode == AnimatorConditionMode.If && tr.offset >= 0.2f)
+                        {
+                            foundAlreadyCrouchedToCrouch = true;
+                        }
+                    }
+                }
+            }
+            Assert.IsTrue(foundStandingToCrouch, "AC_Fighter missing AnyState->Crouch transition with AlreadyCrouched=false and offset=0");
+            Assert.IsTrue(foundAlreadyCrouchedToCrouch, "AC_Fighter missing AnyState->Crouch transition with AlreadyCrouched=true and offset>=0.2");
+        }
+
+        [Test]
+        public void CrouchWalkToCrouch_EntersCrouchAtAlreadyCrouchedOffset_WithoutStandingUp()
+        {
+            var lucasData = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Lucas.asset");
+            var tiagoData = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Tiago.asset");
+            Assert.IsNotNull(lucasData);
+            Assert.IsNotNull(lucasData.prefab);
+
+            var simGo = Track(new GameObject("Sim_CrouchOffset"));
+            var sim = simGo.AddComponent<FightSimulation>();
+
+            var p1Go = Track(UnityEngine.Object.Instantiate(lucasData.prefab));
+            p1Go.transform.position = new Vector3(-1.5f, 0f, 0f);
+            var p1 = p1Go.GetComponent<FighterController>();
+            p1.SetFighterData(lucasData);
+
+            var p2Go = Track(UnityEngine.Object.Instantiate(tiagoData.prefab));
+            p2Go.transform.position = new Vector3(1.5f, 0f, 0f);
+            var p2 = p2Go.GetComponent<FighterController>();
+            p2.SetFighterData(tiagoData);
+
+            sim.SetParticipants(p1, p2);
+            p1.InputHandler.SetSimulatedInput(default, true);
+            p2.InputHandler.SetSimulatedInput(default, true);
+
+            Animator anim = p1Go.GetComponentInChildren<Animator>();
+            Assert.IsNotNull(anim);
+
+            // 1. Idle -> Crouch (coming from standing): normalizedTime starts < 0.20f
+            p1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 0f, MoveY = -1f }, true);
+            sim.StepSimulationTicks(1);
+            Assert.AreEqual(FighterState.Crouch, p1.State);
+            Assert.IsFalse(anim.GetBool("AlreadyCrouched"));
+
+            AnimatorStateInfo fromIdleInfo = anim.IsInTransition(0)
+                ? anim.GetNextAnimatorStateInfo(0)
+                : anim.GetCurrentAnimatorStateInfo(0);
+            Assert.IsTrue(fromIdleInfo.IsName("Crouch"));
+            Assert.Less(fromIdleInfo.normalizedTime, 0.20f, "Idle -> Crouch must start near frame 1 (normalizedTime < 0.20f)");
+
+            // 2. Advance into CrouchWalkForward for 10 ticks
+            p1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = -1f }, true);
+            sim.StepSimulationTicks(10);
+            Assert.AreEqual(FighterState.CrouchWalkForward, p1.State);
+
+            // 3. Release MoveX while keeping MoveY = -1 -> enters Crouch with AlreadyCrouched = true and normalizedTime >= 0.20f
+            p1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 0f, MoveY = -1f }, true);
+            for (int tick = 1; tick <= 6; tick++)
+            {
+                sim.StepSimulationTicks(1);
+                Assert.AreEqual(FighterState.Crouch, p1.State);
+                Assert.IsTrue(anim.GetBool("AlreadyCrouched"));
+
+                AnimatorStateInfo crouchInfo = anim.IsInTransition(0)
+                    ? anim.GetNextAnimatorStateInfo(0)
+                    : anim.GetCurrentAnimatorStateInfo(0);
+                Assert.IsTrue(crouchInfo.IsName("Crouch"), $"Tick {tick}: expected Crouch state");
+                Assert.GreaterOrEqual(crouchInfo.normalizedTime, 0.20f, $"Tick {tick}: CrouchWalkForward -> Crouch must skip standing frames (normalizedTime >= 0.20f)");
+            }
         }
 
         [Test]

@@ -43,6 +43,7 @@ namespace UnDFight
         private static readonly int AttackTriggerParamHash = Animator.StringToHash("AttackTrigger");
         private static readonly int IsGroundedParamHash = Animator.StringToHash("IsGrounded");
         private static readonly int IsTurningParamHash = Animator.StringToHash("IsTurning");
+        private static readonly int AlreadyCrouchedParamHash = Animator.StringToHash("AlreadyCrouched");
         private static readonly int HitReactStateHash = Animator.StringToHash("HitReact");
         private static readonly int BlockStateHash = Animator.StringToHash("Block");
         private static readonly int IdleStateHash = Animator.StringToHash("Idle");
@@ -65,6 +66,7 @@ namespace UnDFight
         private int _currentHealth;
         private bool _hasRegisteredHit;
         private bool _blockFromCrouch;
+        private bool _enteredCrouchFromCrouch;
         private bool _inputsEnabled = true;
         private int _wakeupInvincibilityTicks;
         private int _ticksSinceLastHit;
@@ -252,6 +254,7 @@ namespace UnDFight
             _stateTotalTicks = 0;
             _hasRegisteredHit = false;
             _blockFromCrouch = false;
+            _enteredCrouchFromCrouch = false;
             _wakeupInvincibilityTicks = 0;
             _ticksSinceLastHit = 0;
             _knockbackDecelPerSec = 0f;
@@ -287,6 +290,7 @@ namespace UnDFight
             _stateTotalTicks = 0;
             _hasRegisteredHit = false;
             _blockFromCrouch = false;
+            _enteredCrouchFromCrouch = false;
             _wakeupInvincibilityTicks = 0;
             _ticksSinceLastHit = 0;
             _knockbackDecelPerSec = 0f;
@@ -944,7 +948,13 @@ namespace UnDFight
                     {
                         _stateTotalTicks = 0;
                         _simVelocity.x = 0f;
-                        if (!_inputsEnabled || !input.HoldBlock)
+                        if (_inputsEnabled && input.MoveY < -0.5f)
+                        {
+                            _blockFromCrouch = true;
+                            EnterState(FighterState.Crouch);
+                            _blockFromCrouch = false;
+                        }
+                        else if (!_inputsEnabled || !input.HoldBlock)
                         {
                             _blockFromCrouch = false;
                             EnterState(FighterState.Idle);
@@ -954,7 +964,17 @@ namespace UnDFight
                     {
                         _simVelocity.x = 0f;
                         _knockbackDecelPerSec = 0f;
-                        EnterState(FighterState.Idle);
+                        if (_state == FighterState.Attack &&
+                            _currentAttack == AttackType.CrouchKick &&
+                            _inputsEnabled &&
+                            input.MoveY < -0.5f)
+                        {
+                            EnterState(FighterState.Crouch);
+                        }
+                        else
+                        {
+                            EnterState(FighterState.Idle);
+                        }
                     }
                 }
 
@@ -1094,7 +1114,6 @@ namespace UnDFight
             // Crouch & CrouchWalk (supports holding Down + Left/Right to advance/retreat crouched, or Down + Block to hold crouch guard)
             if (input.MoveY < -0.5f)
             {
-                _blockFromCrouch = false;
                 if (input.HoldBlock)
                 {
                     _simVelocity.x = 0f;
@@ -1121,6 +1140,7 @@ namespace UnDFight
                         EnterState(FighterState.Crouch);
                     }
                 }
+                _blockFromCrouch = false;
 
                 ApplyGravityAndIntegrate(dt);
                 UpdateHurtboxDimensions();
@@ -1381,9 +1401,18 @@ namespace UnDFight
 
         private void EnterState(FighterState newState, bool triggerAttack = false, bool forceResetTicks = false)
         {
+            bool prevWasCrouching = IsCrouching;
             if (_state == newState && newState != FighterState.Attack && !forceResetTicks)
             {
                 return;
+            }
+            if (newState == FighterState.Crouch)
+            {
+                _enteredCrouchFromCrouch = prevWasCrouching;
+            }
+            else
+            {
+                _enteredCrouchFromCrouch = false;
             }
             _state = newState;
             _stateTicks = 0;
@@ -1501,6 +1530,7 @@ namespace UnDFight
             fighterAnimator.SetInteger(AttackTypeParamHash, (int)_currentAttack);
             fighterAnimator.SetBool(IsGroundedParamHash, _isGrounded);
             fighterAnimator.SetBool(IsTurningParamHash, _isTurnAnimActive);
+            fighterAnimator.SetBool(AlreadyCrouchedParamHash, _enteredCrouchFromCrouch);
             fighterAnimator.Update(dt);
         }
 

@@ -37,6 +37,7 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 - [x] Fase 13.2 - Especiais unicos por arquetipo, golpes EX (50%) e Super Flash com zoom de camera (100%)
 - [x] Fase 13.3 - Polimento cinematografico e detalhamento das 22 animacoes 60 fps por lutador (`character_pipeline.py`)
 - [x] Fase 13.4 - Correcao de queda/derrota (`Defeat`, `KnockDown`, `GetUp`) e sistema de andar agachado (`CrouchWalkForward` / `CrouchWalkBackward`, 24 clipes)
+- [x] Fase 13.5 - Correcao da transicao `CrouchWalk` / `CrouchKick` / bloqueio agachado para `Crouch` sem levantar (`AlreadyCrouched`, `offset = 0.25f`)
 - [x] Fase 14.1 - Novos lutadores regulares: Isaac (1,73 m / 73 kg, AgileStriker), Enomoto (1,77 m / 80 kg, TechnicalStriker) e Gabubu (1,62 m / 67 kg, StreetScrappy) — elenco expandido de 4 para 7 lutadores
 
 - Decisao: animacoes em 60 fps (1 frame anim = 1 tick de simulacao)
