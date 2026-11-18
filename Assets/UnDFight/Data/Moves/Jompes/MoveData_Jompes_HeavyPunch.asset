@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: HeavyPunch
   attackType: 2
-  startupTicks: 5
+  startupTicks: 8
   activeTicks: 4
-  recoveryTicks: 12
+  recoveryTicks: 15
   damage: 92
   chipDamage: 0
-  hitstunTicks: 16
-  blockstunTicks: 11
-  hitstopTicks: 6
+  hitstunTicks: 19
+  blockstunTicks: 13
+  hitstopTicks: 8
   knockback: 2.2
   blockKnockbackFactor: 0.5
   hitHeight: 1

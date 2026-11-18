@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: Riff Destruidor
   attackType: 5
-  startupTicks: 6
-  activeTicks: 3
-  recoveryTicks: 15
+  startupTicks: 9
+  activeTicks: 4
+  recoveryTicks: 16
   damage: 95
   chipDamage: 28
-  hitstunTicks: 22
-  blockstunTicks: 15
-  hitstopTicks: 10
+  hitstunTicks: 25
+  blockstunTicks: 17
+  hitstopTicks: 12
   knockback: 4.4
   blockKnockbackFactor: 0.5
   hitHeight: 1
@@ -30,7 +30,7 @@ MonoBehaviour:
   airOnly: 0
   hitboxCenterOffset: {x: 0.86, y: 1.12}
   hitboxSize: {x: 1.14, y: 0.64}
-  lungeSpeed: 3.9
+  lungeSpeed: 3.6
   specialMechanic: 2
   superCost: 100
   isExMove: 0
@@ -39,8 +39,8 @@ MonoBehaviour:
   antiAirInvulnerable: 0
   antiAirStartTick: 0
   antiAirEndTick: 0
-  secondActiveStartTick: 11
-  secondActiveEndTick: 13
+  secondActiveStartTick: 15
+  secondActiveEndTick: 17
   secondHitDamage: 135
   spawnsProjectile: 0
   projectileSpeed: 9.5

@@ -338,7 +338,7 @@ ModelImporter:
       takeName: Enomoto_Armature|LightPunch
       internalID: 2356269301461152055
       firstFrame: 0
-      lastFrame: 16
+      lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -367,7 +367,7 @@ ModelImporter:
       takeName: Enomoto_Armature|HeavyPunch
       internalID: 8409186828185666261
       firstFrame: 0
-      lastFrame: 27
+      lastFrame: 33
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -396,7 +396,7 @@ ModelImporter:
       takeName: Enomoto_Armature|LightKick
       internalID: -4004701564322936929
       firstFrame: 0
-      lastFrame: 19
+      lastFrame: 24
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -425,7 +425,7 @@ ModelImporter:
       takeName: Enomoto_Armature|HeavyKick
       internalID: 7950962908098611445
       firstFrame: 0
-      lastFrame: 33
+      lastFrame: 39
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -454,7 +454,7 @@ ModelImporter:
       takeName: Enomoto_Armature|ComboPunchFinisher
       internalID: 871631622784719411
       firstFrame: 0
-      lastFrame: 27
+      lastFrame: 31
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -483,7 +483,7 @@ ModelImporter:
       takeName: Enomoto_Armature|ComboKickFinisher
       internalID: -7529376082364688145
       firstFrame: 0
-      lastFrame: 29
+      lastFrame: 35
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -512,7 +512,7 @@ ModelImporter:
       takeName: Enomoto_Armature|CrouchKick
       internalID: -2894802945329896734
       firstFrame: 0
-      lastFrame: 28
+      lastFrame: 33
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -541,7 +541,7 @@ ModelImporter:
       takeName: Enomoto_Armature|JumpAttack
       internalID: -4740706411456496400
       firstFrame: 0
-      lastFrame: 18
+      lastFrame: 21
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -570,7 +570,7 @@ ModelImporter:
       takeName: Enomoto_Armature|Throw
       internalID: 903966644019663329
       firstFrame: 0
-      lastFrame: 22
+      lastFrame: 25
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -599,7 +599,7 @@ ModelImporter:
       takeName: Enomoto_Armature|Special
       internalID: 2007489214347561372
       firstFrame: 0
-      lastFrame: 28
+      lastFrame: 33
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

@@ -20,46 +20,46 @@ PROJECT_ROOT = r"D:\Programas SSD\Unity\Unity Projects\UnDFight Remake"
 
 WEIGHT_CLASS_FRAMEDATA = {
     "light": {
-        "LightPunch":         (3, 3, 7),    # 13 frames
-        "HeavyPunch":         (5, 4, 12),   # 21 frames
-        "LightKick":          (4, 3, 9),    # 16 frames
-        "HeavyKick":          (7, 4, 16),   # 27 frames
-        "CrouchKick":         (6, 4, 15),   # 25 frames
-        "JumpAttack":         (4, 8, 6),    # 18 frames
-        "Throw":              (5, 3, 14),   # 22 frames
-        "Special":            (7, 4, 13),   # 24 frames (Jompes default light)
-        "ComboPunchFinisher": (6, 4, 14),   # 24 frames
-        "ComboKickFinisher":  (7, 4, 15),   # 26 frames
+        "LightPunch":         (5, 3, 9),    # 17 frames
+        "HeavyPunch":         (8, 4, 15),   # 27 frames
+        "LightKick":          (6, 3, 11),   # 20 frames
+        "HeavyKick":          (10, 4, 19),  # 33 frames
+        "CrouchKick":         (9, 4, 17),   # 30 frames
+        "JumpAttack":         (5, 9, 7),    # 21 frames
+        "Throw":              (6, 3, 16),   # 25 frames
+        "Special":            (9, 4, 16),   # 29 frames (Jompes / Gabubu default light)
+        "ComboPunchFinisher": (8, 4, 16),   # 28 frames
+        "ComboKickFinisher":  (9, 4, 18),   # 31 frames
     },
     "medium": {
-        "LightPunch":         (4, 3, 9),    # 16 frames
-        "HeavyPunch":         (7, 4, 16),   # 27 frames
-        "LightKick":          (5, 3, 11),   # 19 frames
-        "HeavyKick":          (9, 4, 20),   # 33 frames
-        "CrouchKick":         (7, 4, 17),   # 28 frames
-        "JumpAttack":         (4, 8, 6),    # 18 frames
-        "Throw":              (5, 3, 14),   # 22 frames
-        "Special":            (8, 5, 15),   # 28 frames (Tiago)
-        "ComboPunchFinisher": (7, 4, 16),   # 27 frames
-        "ComboKickFinisher":  (8, 4, 17),   # 29 frames
+        "LightPunch":         (6, 3, 11),   # 20 frames
+        "HeavyPunch":         (10, 4, 19),  # 33 frames
+        "LightKick":          (7, 4, 13),   # 24 frames
+        "HeavyKick":          (12, 5, 22),  # 39 frames
+        "CrouchKick":         (10, 4, 19),  # 33 frames
+        "JumpAttack":         (5, 9, 7),    # 21 frames
+        "Throw":              (6, 3, 16),   # 25 frames
+        "Special":            (10, 5, 18),  # 33 frames (Tiago / Enomoto)
+        "ComboPunchFinisher": (9, 4, 18),   # 31 frames
+        "ComboKickFinisher":  (11, 4, 20),  # 35 frames
     },
     "heavy": {
-        "LightPunch":         (5, 3, 11),   # 19 frames
-        "HeavyPunch":         (9, 5, 19),   # 33 frames
-        "LightKick":          (6, 4, 13),   # 23 frames
-        "HeavyKick":          (11, 5, 24),  # 40 frames
-        "CrouchKick":         (8, 5, 19),   # 32 frames
-        "JumpAttack":         (4, 8, 6),    # 18 frames
-        "Throw":              (5, 3, 14),   # 22 frames
-        "Special":            (10, 5, 17),  # 32 frames (Lucas)
-        "ComboPunchFinisher": (9, 5, 18),   # 32 frames
-        "ComboKickFinisher":  (10, 5, 20),  # 35 frames
+        "LightPunch":         (7, 4, 13),   # 24 frames
+        "HeavyPunch":         (12, 5, 22),  # 39 frames
+        "LightKick":          (8, 4, 15),   # 27 frames
+        "HeavyKick":          (14, 5, 26),  # 45 frames
+        "CrouchKick":         (11, 5, 21),  # 37 frames
+        "JumpAttack":         (5, 9, 7),    # 21 frames
+        "Throw":              (6, 3, 16),   # 25 frames
+        "Special":            (12, 5, 20),  # 37 frames (Lucas)
+        "ComboPunchFinisher": (11, 5, 21),  # 37 frames
+        "ComboKickFinisher":  (13, 5, 22),  # 40 frames
     },
 }
 
 STYLE_FRAMEDATA_OVERRIDES = {
     "agile_striker": {
-        "Special": (6, 4, 12),      # 22 frames (Rochard: Tornado Relâmpago)
+        "Special": (8, 4, 15),      # 27 frames (Rochard / Isaac)
     },
 }
 

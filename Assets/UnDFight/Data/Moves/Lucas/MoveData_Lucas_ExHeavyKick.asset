@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: EX Chute Forte
   attackType: 10
-  startupTicks: 9
+  startupTicks: 12
   activeTicks: 6
-  recoveryTicks: 22
+  recoveryTicks: 24
   damage: 214
   chipDamage: 20
-  hitstunTicks: 30
-  blockstunTicks: 20
-  hitstopTicks: 12
+  hitstunTicks: 33
+  blockstunTicks: 22
+  hitstopTicks: 14
   knockback: 5.5
   blockKnockbackFactor: 0.5
   hitHeight: 0

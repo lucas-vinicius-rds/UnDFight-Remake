@@ -333,7 +333,7 @@ ModelImporter:
       takeName: Tiago_Armature|LightPunch
       internalID: -4163266222889025693
       firstFrame: 0
-      lastFrame: 16
+      lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -362,7 +362,7 @@ ModelImporter:
       takeName: Tiago_Armature|HeavyPunch
       internalID: 6911676213262919457
       firstFrame: 0
-      lastFrame: 27
+      lastFrame: 33
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -391,7 +391,7 @@ ModelImporter:
       takeName: Tiago_Armature|LightKick
       internalID: -3738148286061232368
       firstFrame: 0
-      lastFrame: 19
+      lastFrame: 24
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -420,7 +420,7 @@ ModelImporter:
       takeName: Tiago_Armature|HeavyKick
       internalID: 5119575306370558044
       firstFrame: 0
-      lastFrame: 33
+      lastFrame: 39
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -449,7 +449,7 @@ ModelImporter:
       takeName: Tiago_Armature|ComboPunchFinisher
       internalID: 6274078670724936963
       firstFrame: 0
-      lastFrame: 27
+      lastFrame: 31
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -478,7 +478,7 @@ ModelImporter:
       takeName: Tiago_Armature|ComboKickFinisher
       internalID: 902196536786251459
       firstFrame: 0
-      lastFrame: 29
+      lastFrame: 35
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -507,7 +507,7 @@ ModelImporter:
       takeName: Tiago_Armature|CrouchKick
       internalID: -5966363135086930319
       firstFrame: 0
-      lastFrame: 28
+      lastFrame: 33
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -536,7 +536,7 @@ ModelImporter:
       takeName: Tiago_Armature|JumpAttack
       internalID: -4594244347984149829
       firstFrame: 0
-      lastFrame: 18
+      lastFrame: 21
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -565,7 +565,7 @@ ModelImporter:
       takeName: Tiago_Armature|Throw
       internalID: -8987020612403172422
       firstFrame: 0
-      lastFrame: 22
+      lastFrame: 25
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -594,7 +594,7 @@ ModelImporter:
       takeName: Tiago_Armature|Special
       internalID: 1815524261635851618
       firstFrame: 0
-      lastFrame: 28
+      lastFrame: 33
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

@@ -338,7 +338,7 @@ ModelImporter:
       takeName: Lucas_Armature|LightPunch
       internalID: -8299051990165738265
       firstFrame: 0
-      lastFrame: 19
+      lastFrame: 24
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -367,7 +367,7 @@ ModelImporter:
       takeName: Lucas_Armature|HeavyPunch
       internalID: 4412476939911982925
       firstFrame: 0
-      lastFrame: 33
+      lastFrame: 39
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -396,7 +396,7 @@ ModelImporter:
       takeName: Lucas_Armature|LightKick
       internalID: 1463212191033201786
       firstFrame: 0
-      lastFrame: 23
+      lastFrame: 27
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -425,7 +425,7 @@ ModelImporter:
       takeName: Lucas_Armature|HeavyKick
       internalID: 7079607927210600955
       firstFrame: 0
-      lastFrame: 40
+      lastFrame: 45
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -454,7 +454,7 @@ ModelImporter:
       takeName: Lucas_Armature|ComboPunchFinisher
       internalID: -8735901009577271094
       firstFrame: 0
-      lastFrame: 32
+      lastFrame: 37
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -483,7 +483,7 @@ ModelImporter:
       takeName: Lucas_Armature|ComboKickFinisher
       internalID: 4452394392969761763
       firstFrame: 0
-      lastFrame: 35
+      lastFrame: 40
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -512,7 +512,7 @@ ModelImporter:
       takeName: Lucas_Armature|CrouchKick
       internalID: -6985150342834822209
       firstFrame: 0
-      lastFrame: 32
+      lastFrame: 37
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -541,7 +541,7 @@ ModelImporter:
       takeName: Lucas_Armature|JumpAttack
       internalID: 5720200775998682102
       firstFrame: 0
-      lastFrame: 18
+      lastFrame: 21
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -570,7 +570,7 @@ ModelImporter:
       takeName: Lucas_Armature|Throw
       internalID: 3574297720884000060
       firstFrame: 0
-      lastFrame: 22
+      lastFrame: 25
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -599,7 +599,7 @@ ModelImporter:
       takeName: Lucas_Armature|Special
       internalID: -194820681963473219
       firstFrame: 0
-      lastFrame: 32
+      lastFrame: 37
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

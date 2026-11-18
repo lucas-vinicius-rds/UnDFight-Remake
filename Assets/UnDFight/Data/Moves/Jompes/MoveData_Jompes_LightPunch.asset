@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: LightPunch
   attackType: 1
-  startupTicks: 3
+  startupTicks: 5
   activeTicks: 3
-  recoveryTicks: 7
+  recoveryTicks: 9
   damage: 44
   chipDamage: 0
-  hitstunTicks: 11
-  blockstunTicks: 7
-  hitstopTicks: 4
+  hitstunTicks: 14
+  blockstunTicks: 9
+  hitstopTicks: 5
   knockback: 1.1
   blockKnockbackFactor: 0.5
   hitHeight: 1

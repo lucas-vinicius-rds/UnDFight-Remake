@@ -11,16 +11,16 @@
 
 | Golpe | Startup (frames) | Active (frames) | Recovery (frames) | Total (frames) | Duração (s) | Janela Ativa (frames 1-based) | Notas |
 |---|---:|---:|---:|---:|---:|---|---|
-| **LightPunch** | 5 | 3 | 11 | 19 | 0,317 s | 6–8 | Jab/direto pesado com forte rotação de ombro e tronco (`LeftHand`) |
-| **HeavyPunch** | 9 | 5 | 19 | 33 | 0,550 s | 10–14 | Cruzado/gancho potente com grande preparação de quadril e extensão total (`RightHand`) |
-| **LightKick** | 6 | 4 | 13 | 23 | 0,383 s | 7–10 | Pisão/chute baixo pesado na altura da canela/joelho (`LeftFoot`) |
-| **HeavyKick** | 11 | 5 | 24 | 40 | 0,667 s | 12–16 | Chutão frontal/lateral empurrando com o calcanhar e recuo sólido (`LeftFoot`) |
-| **ComboPunchFinisher** | 9 | 5 | 18 | 32 | 0,533 s | 10–14 | Finalizador de mão de combo string: gancho/uppercut duplo ascendente pesado com grande rotação de tronco e recuo firme (`RightHand`) |
-| **ComboKickFinisher** | 10 | 5 | 20 | 35 | 0,583 s | 11–15 | Finalizador de chute de combo string: joelhada/pisão frontal pesado com empurrão potente (`LeftFoot`) |
-| **CrouchKick** | 8 | 5 | 19 | 32 | 0,533 s | 9–13 | Rasteira agachada baixa varrendo o chão com a perna estendida à frente (`LeftFoot`, `HitHeight.Low`, derruba) |
-| **JumpAttack** | 4 | 8 | 6 | 18 | 0,300 s | 5–12 | Voadora aérea descendente em diagonal (`LeftFoot`, `HitHeight.Overhead`, quebra guarda agachada) |
-| **Throw** | 5 | 3 | 14 | 22 | 0,367 s | 6–8 | Agarrão de curto alcance com ambas as mãos (`relaxed_grip`) seguido de arremesso firme de ombro/tronco (`Unblockable`) |
-| **Special** | 10 | 5 | 17 | 32 | 0,533 s | 11–15 | Especial **Martelo do Asfalto**: preparação profunda com as duas mãos e martelada dupla esmagadora (`RightHand`/`LeftHand`) |
+| **LightPunch** | 7 | 4 | 13 | 24 | 0,400 s | 8–11 | Jab/direto pesado com forte rotação de ombro e tronco (`LeftHand`) |
+| **HeavyPunch** | 12 | 5 | 22 | 39 | 0,650 s | 13–17 | Cruzado/gancho potente com grande preparação de quadril e extensão total (`RightHand`) |
+| **LightKick** | 8 | 4 | 15 | 27 | 0,450 s | 9–12 | Pisão/chute baixo pesado na altura da canela/joelho (`LeftFoot`) |
+| **HeavyKick** | 14 | 5 | 26 | 45 | 0,750 s | 15–19 | Chutão frontal/lateral empurrando com o calcanhar e recuo sólido (`LeftFoot`) |
+| **ComboPunchFinisher** | 11 | 5 | 21 | 37 | 0,617 s | 12–16 | Finalizador de mão de combo string: gancho/uppercut duplo ascendente pesado com grande rotação de tronco e recuo firme (`RightHand`) |
+| **ComboKickFinisher** | 13 | 5 | 22 | 40 | 0,667 s | 14–18 | Finalizador de chute de combo string: joelhada/pisão frontal pesado com empurrão potente (`LeftFoot`) |
+| **CrouchKick** | 11 | 5 | 21 | 37 | 0,617 s | 12–16 | Rasteira agachada baixa varrendo o chão com a perna estendida à frente (`LeftFoot`, `HitHeight.Low`, derruba) |
+| **JumpAttack** | 5 | 9 | 7 | 21 | 0,350 s | 6–14 | Voadora aérea descendente em diagonal (`LeftFoot`, `HitHeight.Overhead`, quebra guarda agachada) |
+| **Throw** | 6 | 3 | 16 | 25 | 0,417 s | 7–9 | Agarrão de curto alcance com ambas as mãos (`relaxed_grip`) seguido de arremesso firme de ombro/tronco (`Unblockable`) |
+| **Special** | 12 | 5 | 20 | 37 | 0,617 s | 13–17 | Especial **Martelo do Asfalto**: preparação profunda com as duas mãos e martelada dupla esmagadora (`RightHand`/`LeftHand`) |
 
 ---
 

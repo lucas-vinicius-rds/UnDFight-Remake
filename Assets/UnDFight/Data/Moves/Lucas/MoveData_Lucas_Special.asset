@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: Martelo do Asfalto
   attackType: 5
-  startupTicks: 10
+  startupTicks: 12
   activeTicks: 5
-  recoveryTicks: 17
+  recoveryTicks: 20
   damage: 250
   chipDamage: 35
-  hitstunTicks: 24
-  blockstunTicks: 16
+  hitstunTicks: 27
+  blockstunTicks: 18
   hitstopTicks: 14
   knockback: 5.4
   blockKnockbackFactor: 0.5
@@ -35,7 +35,7 @@ MonoBehaviour:
   superCost: 100
   isExMove: 0
   armorStartTick: 2
-  armorEndTick: 14
+  armorEndTick: 16
   antiAirInvulnerable: 0
   antiAirStartTick: 0
   antiAirEndTick: 0

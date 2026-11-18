@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: JumpAttack
   attackType: 7
-  startupTicks: 4
-  activeTicks: 8
-  recoveryTicks: 6
+  startupTicks: 5
+  activeTicks: 9
+  recoveryTicks: 7
   damage: 85
   chipDamage: 0
-  hitstunTicks: 18
-  blockstunTicks: 12
-  hitstopTicks: 6
+  hitstunTicks: 21
+  blockstunTicks: 14
+  hitstopTicks: 8
   knockback: 1.9
   blockKnockbackFactor: 0.5
   hitHeight: 3

@@ -11,16 +11,16 @@
 
 | Golpe | Startup (frames) | Active (frames) | Recovery (frames) | Total (frames) | Duração (s) | Janela Ativa (frames 1-based) | Notas |
 |---|---:|---:|---:|---:|---:|---|---|
-| **LightPunch** | 3 | 3 | 7 | 13 | 0,217 s | 4–6 | Jab veloz com leve esquiva de tronco (`LeftHand`) |
-| **HeavyPunch** | 5 | 4 | 12 | 21 | 0,350 s | 6–9 | Cruzado rápido com passo firme para frente (`RightHand`) |
-| **LightKick** | 4 | 3 | 9 | 16 | 0,267 s | 5–7 | Chute baixo/médio veloz e elástico (`LeftFoot`) |
-| **HeavyKick** | 7 | 4 | 16 | 27 | 0,450 s | 8–11 | Chute alto dinâmico/explosivo com contrapeso do braço (`LeftFoot`) |
-| **ComboPunchFinisher** | 6 | 4 | 14 | 24 | 0,400 s | 7–10 | Finalizador de mão de combo string: uppercut veloz com passo curto para frente (`RightHand`) |
-| **ComboKickFinisher** | 7 | 4 | 15 | 26 | 0,433 s | 8–11 | Finalizador de chute de combo string: chute duplo/ascendente acrobático rápido (`LeftFoot`) |
-| **CrouchKick** | 6 | 4 | 15 | 25 | 0,417 s | 7–10 | Rasteira agachada baixa varrendo o chão com a perna estendida à frente (`LeftFoot`, `HitHeight.Low`, derruba) |
-| **JumpAttack** | 4 | 8 | 6 | 18 | 0,300 s | 5–12 | Voadora aérea descendente em diagonal (`LeftFoot`, `HitHeight.Overhead`, quebra guarda agachada) |
-| **Throw** | 5 | 3 | 14 | 22 | 0,367 s | 6–8 | Agarrão de curto alcance com ambas as mãos (`relaxed_grip`) seguido de arremesso firme de ombro/tronco (`Unblockable`) |
-| **Special** | 6 | 4 | 12 | 22 | 0,367 s | 7–10 | Especial **Tornado Relâmpago**: giro ágil com chute alto explosivo em arco (`LeftFoot`) |
+| **LightPunch** | 5 | 3 | 9 | 17 | 0,283 s | 6–8 | Jab veloz com leve esquiva de tronco (`LeftHand`) |
+| **HeavyPunch** | 8 | 4 | 15 | 27 | 0,450 s | 9–12 | Cruzado rápido com passo firme para frente (`RightHand`) |
+| **LightKick** | 6 | 3 | 11 | 20 | 0,333 s | 7–9 | Chute baixo/médio veloz e elástico (`LeftFoot`) |
+| **HeavyKick** | 10 | 4 | 19 | 33 | 0,550 s | 11–14 | Chute alto dinâmico/explosivo com contrapeso do braço (`LeftFoot`) |
+| **ComboPunchFinisher** | 8 | 4 | 16 | 28 | 0,467 s | 9–12 | Finalizador de mão de combo string: uppercut veloz com passo curto para frente (`RightHand`) |
+| **ComboKickFinisher** | 9 | 4 | 18 | 31 | 0,517 s | 10–13 | Finalizador de chute de combo string: chute duplo/ascendente acrobático rápido (`LeftFoot`) |
+| **CrouchKick** | 9 | 4 | 17 | 30 | 0,500 s | 10–13 | Rasteira agachada baixa varrendo o chão com a perna estendida à frente (`LeftFoot`, `HitHeight.Low`, derruba) |
+| **JumpAttack** | 5 | 9 | 7 | 21 | 0,350 s | 6–14 | Voadora aérea descendente em diagonal (`LeftFoot`, `HitHeight.Overhead`, quebra guarda agachada) |
+| **Throw** | 6 | 3 | 16 | 25 | 0,417 s | 7–9 | Agarrão de curto alcance com ambas as mãos (`relaxed_grip`) seguido de arremesso firme de ombro/tronco (`Unblockable`) |
+| **Special** | 8 | 4 | 15 | 27 | 0,450 s | 9–12 | Especial **Tornado Relâmpago**: giro ágil com chute alto explosivo em arco (`LeftFoot`) |
 
 ---
 

@@ -123,39 +123,39 @@ namespace UnDFight.Editor
             {
                 WeightClass.Light => new[]
                 {
-                    new MoveSpec { Type = AttackType.LightPunch,         Startup = 3, Active = 3, Recovery = 7,  Damage = 42,  Hitstun = 11, Blockstun = 7,  Hitstop = 4, Knockback = 1.1f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.66f, 1.15f), HitboxSize = new Vector2(0.76f, 0.40f) },
-                    new MoveSpec { Type = AttackType.HeavyPunch,         Startup = 5, Active = 4, Recovery = 12, Damage = 92,  Hitstun = 16, Blockstun = 11, Hitstop = 6, Knockback = 2.2f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 1.15f), HitboxSize = new Vector2(0.88f, 0.44f) },
-                    new MoveSpec { Type = AttackType.LightKick,          Startup = 4, Active = 3, Recovery = 9,  Damage = 52,  Hitstun = 12, Blockstun = 8,  Hitstop = 4, Knockback = 1.4f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.72f, 0.50f), HitboxSize = new Vector2(0.88f, 0.42f) },
-                    new MoveSpec { Type = AttackType.HeavyKick,          Startup = 7, Active = 4, Recovery = 16, Damage = 112, Hitstun = 20, Blockstun = 13, Hitstop = 7, Knockback = 2.9f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.84f, 1.20f), HitboxSize = new Vector2(1.04f, 0.54f) },
-                    new MoveSpec { Type = AttackType.ComboPunchFinisher, Startup = 6, Active = 4, Recovery = 14, Damage = 104, Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.6f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.78f, 1.16f), HitboxSize = new Vector2(0.96f, 0.50f), ChipDamage = 14, LungeSpeed = 2.8f },
-                    new MoveSpec { Type = AttackType.ComboKickFinisher,  Startup = 7, Active = 4, Recovery = 15, Damage = 118, Hitstun = 21, Blockstun = 13, Hitstop = 8, Knockback = 3.1f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 1.18f), HitboxSize = new Vector2(1.08f, 0.56f), ChipDamage = 16, LungeSpeed = 3.0f },
-                    new MoveSpec { Type = AttackType.CrouchKick,         Startup = 6, Active = 4, Recovery = 15, Damage = 85,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 2.4f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 0.34f), HitboxSize = new Vector2(1.10f, 0.42f) },
-                    new MoveSpec { Type = AttackType.JumpAttack,         Startup = 4, Active = 8, Recovery = 6,  Damage = 75,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 1.6f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.66f, 0.56f), HitboxSize = new Vector2(0.96f, 0.74f) },
-                    new MoveSpec { Type = AttackType.Throw,              Startup = 5, Active = 3, Recovery = 14, Damage = 110, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 3.2f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
+                    new MoveSpec { Type = AttackType.LightPunch,         Startup = 5,  Active = 3, Recovery = 9,  Damage = 42,  Hitstun = 14, Blockstun = 9,  Hitstop = 5,  Knockback = 1.1f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.66f, 1.15f), HitboxSize = new Vector2(0.76f, 0.40f) },
+                    new MoveSpec { Type = AttackType.HeavyPunch,         Startup = 8,  Active = 4, Recovery = 15, Damage = 92,  Hitstun = 19, Blockstun = 13, Hitstop = 8,  Knockback = 2.2f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 1.15f), HitboxSize = new Vector2(0.88f, 0.44f) },
+                    new MoveSpec { Type = AttackType.LightKick,          Startup = 6,  Active = 3, Recovery = 11, Damage = 52,  Hitstun = 15, Blockstun = 10, Hitstop = 5,  Knockback = 1.4f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.72f, 0.50f), HitboxSize = new Vector2(0.88f, 0.42f) },
+                    new MoveSpec { Type = AttackType.HeavyKick,          Startup = 10, Active = 4, Recovery = 19, Damage = 112, Hitstun = 23, Blockstun = 15, Hitstop = 9,  Knockback = 2.9f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.84f, 1.20f), HitboxSize = new Vector2(1.04f, 0.54f) },
+                    new MoveSpec { Type = AttackType.ComboPunchFinisher, Startup = 8,  Active = 4, Recovery = 16, Damage = 104, Hitstun = 21, Blockstun = 14, Hitstop = 9,  Knockback = 2.6f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.78f, 1.16f), HitboxSize = new Vector2(0.96f, 0.50f), ChipDamage = 14, LungeSpeed = 2.8f },
+                    new MoveSpec { Type = AttackType.ComboKickFinisher,  Startup = 9,  Active = 4, Recovery = 18, Damage = 118, Hitstun = 24, Blockstun = 15, Hitstop = 10, Knockback = 3.1f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 1.18f), HitboxSize = new Vector2(1.08f, 0.56f), ChipDamage = 16, LungeSpeed = 3.0f },
+                    new MoveSpec { Type = AttackType.CrouchKick,         Startup = 9,  Active = 4, Recovery = 17, Damage = 85,  Hitstun = 21, Blockstun = 14, Hitstop = 8,  Knockback = 2.4f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 0.34f), HitboxSize = new Vector2(1.10f, 0.42f) },
+                    new MoveSpec { Type = AttackType.JumpAttack,         Startup = 5,  Active = 9, Recovery = 7,  Damage = 75,  Hitstun = 21, Blockstun = 14, Hitstop = 8,  Knockback = 1.6f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.66f, 0.56f), HitboxSize = new Vector2(0.96f, 0.74f) },
+                    new MoveSpec { Type = AttackType.Throw,              Startup = 6,  Active = 3, Recovery = 16, Damage = 110, Hitstun = 23, Blockstun = 12, Hitstop = 10, Knockback = 3.2f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
                 },
                 WeightClass.Medium => new[]
                 {
-                    new MoveSpec { Type = AttackType.LightPunch,         Startup = 4, Active = 3, Recovery = 9,  Damage = 48,  Hitstun = 12, Blockstun = 8,  Hitstop = 4, Knockback = 1.3f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
-                    new MoveSpec { Type = AttackType.HeavyPunch,         Startup = 7, Active = 4, Recovery = 16, Damage = 108, Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.7f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.76f, 1.18f), HitboxSize = new Vector2(0.92f, 0.46f) },
-                    new MoveSpec { Type = AttackType.LightKick,          Startup = 5, Active = 3, Recovery = 11, Damage = 62,  Hitstun = 14, Blockstun = 9,  Hitstop = 5, Knockback = 1.7f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
-                    new MoveSpec { Type = AttackType.HeavyKick,          Startup = 9, Active = 4, Recovery = 20, Damage = 130, Hitstun = 22, Blockstun = 14, Hitstop = 8, Knockback = 3.5f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 1.24f), HitboxSize = new Vector2(1.10f, 0.56f) },
-                    new MoveSpec { Type = AttackType.ComboPunchFinisher, Startup = 7, Active = 4, Recovery = 16, Damage = 120, Hitstun = 20, Blockstun = 13, Hitstop = 8, Knockback = 3.0f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.80f, 1.18f), HitboxSize = new Vector2(1.00f, 0.52f), ChipDamage = 16, LungeSpeed = 2.6f },
-                    new MoveSpec { Type = AttackType.ComboKickFinisher,  Startup = 8, Active = 4, Recovery = 17, Damage = 138, Hitstun = 23, Blockstun = 14, Hitstop = 8, Knockback = 3.6f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 1.20f), HitboxSize = new Vector2(1.12f, 0.58f), ChipDamage = 18, LungeSpeed = 2.8f },
-                    new MoveSpec { Type = AttackType.CrouchKick,         Startup = 7, Active = 4, Recovery = 17, Damage = 95,  Hitstun = 20, Blockstun = 13, Hitstop = 7, Knockback = 2.8f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 0.36f), HitboxSize = new Vector2(1.14f, 0.44f) },
-                    new MoveSpec { Type = AttackType.JumpAttack,         Startup = 4, Active = 8, Recovery = 6,  Damage = 85,  Hitstun = 18, Blockstun = 12, Hitstop = 6, Knockback = 1.9f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.68f, 0.58f), HitboxSize = new Vector2(0.98f, 0.76f) },
-                    new MoveSpec { Type = AttackType.Throw,              Startup = 5, Active = 3, Recovery = 14, Damage = 115, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 3.5f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
+                    new MoveSpec { Type = AttackType.LightPunch,         Startup = 6,  Active = 3, Recovery = 11, Damage = 48,  Hitstun = 15, Blockstun = 10, Hitstop = 5,  Knockback = 1.3f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
+                    new MoveSpec { Type = AttackType.HeavyPunch,         Startup = 10, Active = 4, Recovery = 19, Damage = 108, Hitstun = 21, Blockstun = 14, Hitstop = 9,  Knockback = 2.7f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.76f, 1.18f), HitboxSize = new Vector2(0.92f, 0.46f) },
+                    new MoveSpec { Type = AttackType.LightKick,          Startup = 7,  Active = 4, Recovery = 13, Damage = 62,  Hitstun = 17, Blockstun = 11, Hitstop = 6,  Knockback = 1.7f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
+                    new MoveSpec { Type = AttackType.HeavyKick,          Startup = 12, Active = 5, Recovery = 22, Damage = 130, Hitstun = 25, Blockstun = 16, Hitstop = 10, Knockback = 3.5f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.86f, 1.24f), HitboxSize = new Vector2(1.10f, 0.56f) },
+                    new MoveSpec { Type = AttackType.ComboPunchFinisher, Startup = 9,  Active = 4, Recovery = 18, Damage = 120, Hitstun = 23, Blockstun = 15, Hitstop = 10, Knockback = 3.0f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.80f, 1.18f), HitboxSize = new Vector2(1.00f, 0.52f), ChipDamage = 16, LungeSpeed = 2.6f },
+                    new MoveSpec { Type = AttackType.ComboKickFinisher,  Startup = 11, Active = 4, Recovery = 20, Damage = 138, Hitstun = 26, Blockstun = 16, Hitstop = 10, Knockback = 3.6f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 1.20f), HitboxSize = new Vector2(1.12f, 0.58f), ChipDamage = 18, LungeSpeed = 2.8f },
+                    new MoveSpec { Type = AttackType.CrouchKick,         Startup = 10, Active = 4, Recovery = 19, Damage = 95,  Hitstun = 23, Blockstun = 15, Hitstop = 9,  Knockback = 2.8f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 0.36f), HitboxSize = new Vector2(1.14f, 0.44f) },
+                    new MoveSpec { Type = AttackType.JumpAttack,         Startup = 5,  Active = 9, Recovery = 7,  Damage = 85,  Hitstun = 21, Blockstun = 14, Hitstop = 8,  Knockback = 1.9f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.68f, 0.58f), HitboxSize = new Vector2(0.98f, 0.76f) },
+                    new MoveSpec { Type = AttackType.Throw,              Startup = 6,  Active = 3, Recovery = 16, Damage = 115, Hitstun = 23, Blockstun = 12, Hitstop = 10, Knockback = 3.5f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
                 },
                 _ => new[]
                 {
-                    new MoveSpec { Type = AttackType.LightPunch,         Startup = 5, Active = 3, Recovery = 11, Damage = 62,  Hitstun = 14, Blockstun = 10, Hitstop = 5, Knockback = 1.9f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
-                    new MoveSpec { Type = AttackType.HeavyPunch,         Startup = 9, Active = 5, Recovery = 19, Damage = 140, Hitstun = 22, Blockstun = 15, Hitstop = 9, Knockback = 3.7f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.78f, 1.18f), HitboxSize = new Vector2(0.94f, 0.48f) },
-                    new MoveSpec { Type = AttackType.LightKick,          Startup = 6, Active = 4, Recovery = 13, Damage = 78,  Hitstun = 16, Blockstun = 11, Hitstop = 6, Knockback = 2.3f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
-                    new MoveSpec { Type = AttackType.HeavyKick,          Startup = 11, Active = 5, Recovery = 24, Damage = 165, Hitstun = 26, Blockstun = 17, Hitstop = 10, Knockback = 4.6f, Height = HitHeight.High,       CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 1.24f), HitboxSize = new Vector2(1.12f, 0.56f) },
-                    new MoveSpec { Type = AttackType.ComboPunchFinisher, Startup = 9, Active = 5, Recovery = 18, Damage = 152, Hitstun = 23, Blockstun = 15, Hitstop = 9, Knockback = 3.9f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.82f, 1.20f), HitboxSize = new Vector2(1.04f, 0.54f), ChipDamage = 20, LungeSpeed = 2.5f },
-                    new MoveSpec { Type = AttackType.ComboKickFinisher,  Startup = 10, Active = 5, Recovery = 20, Damage = 172, Hitstun = 26, Blockstun = 17, Hitstop = 10, Knockback = 4.6f, Height = HitHeight.Mid,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.90f, 1.18f), HitboxSize = new Vector2(1.14f, 0.58f), ChipDamage = 22, LungeSpeed = 2.6f },
-                    new MoveSpec { Type = AttackType.CrouchKick,         Startup = 8, Active = 5, Recovery = 19, Damage = 110, Hitstun = 22, Blockstun = 14, Hitstop = 8, Knockback = 3.4f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.90f, 0.36f), HitboxSize = new Vector2(1.18f, 0.44f) },
-                    new MoveSpec { Type = AttackType.JumpAttack,         Startup = 4, Active = 8, Recovery = 6,  Damage = 98,  Hitstun = 18, Blockstun = 12, Hitstop = 7, Knockback = 2.2f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.70f, 0.60f), HitboxSize = new Vector2(1.02f, 0.78f) },
-                    new MoveSpec { Type = AttackType.Throw,              Startup = 5, Active = 3, Recovery = 14, Damage = 125, Hitstun = 20, Blockstun = 10, Hitstop = 8, Knockback = 4.0f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
+                    new MoveSpec { Type = AttackType.LightPunch,         Startup = 7,  Active = 4, Recovery = 13, Damage = 62,  Hitstun = 17, Blockstun = 12, Hitstop = 6,  Knockback = 1.9f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.68f, 1.18f), HitboxSize = new Vector2(0.78f, 0.42f) },
+                    new MoveSpec { Type = AttackType.HeavyPunch,         Startup = 12, Active = 5, Recovery = 22, Damage = 140, Hitstun = 25, Blockstun = 17, Hitstop = 11, Knockback = 3.7f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.78f, 1.18f), HitboxSize = new Vector2(0.94f, 0.48f) },
+                    new MoveSpec { Type = AttackType.LightKick,          Startup = 8,  Active = 4, Recovery = 15, Damage = 78,  Hitstun = 19, Blockstun = 13, Hitstop = 7,  Knockback = 2.3f, Height = HitHeight.Low,         CausesKnockdown = false, HitboxOffset = new Vector2(0.74f, 0.52f), HitboxSize = new Vector2(0.92f, 0.44f) },
+                    new MoveSpec { Type = AttackType.HeavyKick,          Startup = 14, Active = 5, Recovery = 26, Damage = 165, Hitstun = 29, Blockstun = 19, Hitstop = 12, Knockback = 4.6f, Height = HitHeight.High,        CausesKnockdown = true,  HitboxOffset = new Vector2(0.88f, 1.24f), HitboxSize = new Vector2(1.12f, 0.56f) },
+                    new MoveSpec { Type = AttackType.ComboPunchFinisher, Startup = 11, Active = 5, Recovery = 21, Damage = 152, Hitstun = 26, Blockstun = 17, Hitstop = 11, Knockback = 3.9f, Height = HitHeight.Mid,         CausesKnockdown = false, HitboxOffset = new Vector2(0.82f, 1.20f), HitboxSize = new Vector2(1.04f, 0.54f), ChipDamage = 20, LungeSpeed = 2.5f },
+                    new MoveSpec { Type = AttackType.ComboKickFinisher,  Startup = 13, Active = 5, Recovery = 22, Damage = 172, Hitstun = 29, Blockstun = 19, Hitstop = 12, Knockback = 4.6f, Height = HitHeight.Mid,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.90f, 1.18f), HitboxSize = new Vector2(1.14f, 0.58f), ChipDamage = 22, LungeSpeed = 2.6f },
+                    new MoveSpec { Type = AttackType.CrouchKick,         Startup = 11, Active = 5, Recovery = 21, Damage = 110, Hitstun = 25, Blockstun = 16, Hitstop = 10, Knockback = 3.4f, Height = HitHeight.Low,         CausesKnockdown = true,  HitboxOffset = new Vector2(0.90f, 0.36f), HitboxSize = new Vector2(1.18f, 0.44f) },
+                    new MoveSpec { Type = AttackType.JumpAttack,         Startup = 5,  Active = 9, Recovery = 7,  Damage = 98,  Hitstun = 21, Blockstun = 14, Hitstop = 9,  Knockback = 2.2f, Height = HitHeight.Overhead,    CausesKnockdown = false, AirOnly = true, HitboxOffset = new Vector2(0.70f, 0.60f), HitboxSize = new Vector2(1.02f, 0.78f) },
+                    new MoveSpec { Type = AttackType.Throw,              Startup = 6,  Active = 3, Recovery = 16, Damage = 125, Hitstun = 23, Blockstun = 12, Hitstop = 10, Knockback = 4.0f, Height = HitHeight.Unblockable, CausesKnockdown = true,  IsThrow = true, HitboxOffset = new Vector2(0.58f, 1.02f), HitboxSize = new Vector2(0.64f, 0.56f) },
                 }
             };
         }
@@ -185,8 +185,27 @@ namespace UnDFight.Editor
             AssignAnimatorControllerToPrefab(TiagoPrefabPath, aocTiago);
 
             // 5. Generate fighter-specific MoveData assets using archetype + Special moveset
-            MoveSpec[] lucasSpecs = BuildArchetypeMoveSpecs(WeightClass.Heavy, FightingArchetype.HeavyBrawler);
-            MoveSpec[] tiagoSpecs = BuildArchetypeMoveSpecs(WeightClass.Medium, FightingArchetype.StreetScrappy);
+            CreateOrUpdateFighterData(
+                LucasDataPath,
+                "Lucas",
+                FightingArchetype.HeavyBrawler,
+                1.81f,
+                92.0f,
+                walkForwardSpeed: 3.7f,
+                walkBackwardSpeed: 2.8f,
+                jumpForce: 11.8f);
+            CreateOrUpdateFighterData(
+                TiagoDataPath,
+                "Tiago",
+                FightingArchetype.StreetScrappy,
+                1.79f,
+                87.0f,
+                walkForwardSpeed: 3.7f,
+                walkBackwardSpeed: 2.8f,
+                jumpForce: 11.8f);
+
+            MoveSpec[] lucasSpecs = BuildArchetypeMoveSpecs(WeightClass.Heavy, FightingArchetype.HeavyBrawler, "Lucas");
+            MoveSpec[] tiagoSpecs = BuildArchetypeMoveSpecs(WeightClass.Medium, FightingArchetype.StreetScrappy, "Tiago");
 
             CreateOrUpdateFighterMoveset("Lucas", FightingArchetype.HeavyBrawler, LucasDataPath, lucasSpecs);
             CreateOrUpdateFighterMoveset("Tiago", FightingArchetype.StreetScrappy, TiagoDataPath, tiagoSpecs);
@@ -251,9 +270,9 @@ namespace UnDFight.Editor
                 archetype: FightingArchetype.TechnicalStriker,
                 heightMeters: 1.65f,
                 weightKg: 70.0f,
-                walkForwardSpeed: 4.35f,
-                walkBackwardSpeed: 3.35f,
-                jumpForce: 12.6f,
+                walkForwardSpeed: 3.85f,
+                walkBackwardSpeed: 2.95f,
+                jumpForce: 11.9f,
                 fbxPath: JompesFbxPath,
                 expectedTakePrefix: "Jompes_Armature|",
                 overridePath: JompesOverridePath,
@@ -267,9 +286,9 @@ namespace UnDFight.Editor
                 archetype: FightingArchetype.AgileStriker,
                 heightMeters: 1.75f,
                 weightKg: 67.0f,
-                walkForwardSpeed: 4.55f,
-                walkBackwardSpeed: 3.55f,
-                jumpForce: 13.0f,
+                walkForwardSpeed: 4.00f,
+                walkBackwardSpeed: 3.10f,
+                jumpForce: 12.25f,
                 fbxPath: RochardFbxPath,
                 expectedTakePrefix: "Rochard_Armature|",
                 overridePath: RochardOverridePath,
@@ -283,9 +302,9 @@ namespace UnDFight.Editor
                 archetype: FightingArchetype.AgileStriker,
                 heightMeters: 1.73f,
                 weightKg: 73.0f,
-                walkForwardSpeed: 4.50f,
-                walkBackwardSpeed: 3.50f,
-                jumpForce: 12.9f,
+                walkForwardSpeed: 3.95f,
+                walkBackwardSpeed: 3.05f,
+                jumpForce: 12.15f,
                 fbxPath: IsaacFbxPath,
                 expectedTakePrefix: "Isaac_Armature|",
                 overridePath: IsaacOverridePath,
@@ -299,9 +318,9 @@ namespace UnDFight.Editor
                 archetype: FightingArchetype.TechnicalStriker,
                 heightMeters: 1.77f,
                 weightKg: 80.0f,
-                walkForwardSpeed: 4.30f,
-                walkBackwardSpeed: 3.30f,
-                jumpForce: 12.55f,
+                walkForwardSpeed: 3.80f,
+                walkBackwardSpeed: 2.90f,
+                jumpForce: 11.85f,
                 fbxPath: EnomotoFbxPath,
                 expectedTakePrefix: "Enomoto_Armature|",
                 overridePath: EnomotoOverridePath,
@@ -315,9 +334,9 @@ namespace UnDFight.Editor
                 archetype: FightingArchetype.StreetScrappy,
                 heightMeters: 1.62f,
                 weightKg: 67.0f,
-                walkForwardSpeed: 4.40f,
-                walkBackwardSpeed: 3.35f,
-                jumpForce: 12.75f,
+                walkForwardSpeed: 3.90f,
+                walkBackwardSpeed: 2.95f,
+                jumpForce: 12.05f,
                 fbxPath: GabubuFbxPath,
                 expectedTakePrefix: "Gabubu_Armature|",
                 overridePath: GabubuOverridePath,
@@ -1460,13 +1479,13 @@ namespace UnDFight.Editor
                     {
                         MoveName = "Martelo do Asfalto",
                         Type = AttackType.Special,
-                        Startup = 10,
+                        Startup = 12,
                         Active = 5,
-                        Recovery = 17,
+                        Recovery = 20,
                         Damage = 250,
                         ChipDamage = 35,
-                        Hitstun = 24,
-                        Blockstun = 16,
+                        Hitstun = 27,
+                        Blockstun = 18,
                         Hitstop = 14,
                         Knockback = 5.4f,
                         Height = HitHeight.Mid,
@@ -1477,7 +1496,7 @@ namespace UnDFight.Editor
                         SpecialMechanic = SpecialMechanicType.ArmoredSmash,
                         SuperCost = FighterData.SpecialSuperCost,
                         ArmorStartTick = 2,
-                        ArmorEndTick = 14,
+                        ArmorEndTick = 16,
                         SuperFreezeTicks = 14,
                     };
                     break;
@@ -1493,28 +1512,28 @@ namespace UnDFight.Editor
                     }
                     if (string.Equals(fighterName, "Gabubu", StringComparison.Ordinal))
                     {
-                        // Light StreetScrappy (24-frame Special clip: Hit 1 ticks 7..9, Hit 2 ticks 11..13)
+                        // Light StreetScrappy (29-frame Special clip: 9 + 4 + 16; Hit 1 ticks 10..13, Hit 2 ticks 15..17)
                         specialSpec = new MoveSpec
                         {
                             MoveName = "Riff Destruidor",
                             Type = AttackType.Special,
-                            Startup = 6,
-                            Active = 3,
-                            Recovery = 15,
+                            Startup = 9,
+                            Active = 4,
+                            Recovery = 16,
                             Damage = 95,
                             SecondHitDamage = 135,
-                            SecondActiveStartTick = 11,
-                            SecondActiveEndTick = 13,
+                            SecondActiveStartTick = 15,
+                            SecondActiveEndTick = 17,
                             ChipDamage = 28,
-                            Hitstun = 22,
-                            Blockstun = 15,
-                            Hitstop = 10,
+                            Hitstun = 25,
+                            Blockstun = 17,
+                            Hitstop = 12,
                             Knockback = 4.4f,
                             Height = HitHeight.Mid,
                             CausesKnockdown = true,
                             HitboxOffset = new Vector2(0.86f, 1.12f),
                             HitboxSize = new Vector2(1.14f, 0.64f),
-                            LungeSpeed = 3.9f,
+                            LungeSpeed = 3.6f,
                             SpecialMechanic = SpecialMechanicType.MultiHitRush,
                             SuperCost = FighterData.SpecialSuperCost,
                             SuperFreezeTicks = 14,
@@ -1522,27 +1541,28 @@ namespace UnDFight.Editor
                     }
                     else
                     {
+                        // Medium StreetScrappy (33-frame Special clip: 10 + 5 + 18; Hit 1 ticks 11..15, Hit 2 ticks 17..19)
                         specialSpec = new MoveSpec
                         {
                             MoveName = "Sequência de Rua",
                             Type = AttackType.Special,
-                            Startup = 7,
-                            Active = 3,
+                            Startup = 10,
+                            Active = 5,
                             Recovery = 18,
                             Damage = 105,
                             SecondHitDamage = 145,
-                            SecondActiveStartTick = 12,
-                            SecondActiveEndTick = 14,
+                            SecondActiveStartTick = 17,
+                            SecondActiveEndTick = 19,
                             ChipDamage = 30,
-                            Hitstun = 22,
-                            Blockstun = 15,
-                            Hitstop = 10,
+                            Hitstun = 25,
+                            Blockstun = 17,
+                            Hitstop = 12,
                             Knockback = 4.6f,
                             Height = HitHeight.Mid,
                             CausesKnockdown = true,
                             HitboxOffset = new Vector2(0.88f, 1.18f),
                             HitboxSize = new Vector2(1.16f, 0.66f),
-                            LungeSpeed = 3.8f,
+                            LungeSpeed = 3.5f,
                             SpecialMechanic = SpecialMechanicType.MultiHitRush,
                             SuperCost = FighterData.SpecialSuperCost,
                             SuperFreezeTicks = 14,
@@ -1566,30 +1586,30 @@ namespace UnDFight.Editor
                     }
                     if (string.Equals(fighterName, "Enomoto", StringComparison.Ordinal))
                     {
-                        // Medium TechnicalStriker (28-frame Special clip: 8 + 5 + 15)
+                        // Medium TechnicalStriker (33-frame Special clip: 10 + 5 + 18)
                         specialSpec = new MoveSpec
                         {
                             MoveName = "Estocada do Cavalheiro",
                             Type = AttackType.Special,
-                            Startup = 8,
+                            Startup = 10,
                             Active = 5,
-                            Recovery = 15,
+                            Recovery = 18,
                             Damage = 220,
                             ChipDamage = 30,
-                            Hitstun = 23,
-                            Blockstun = 15,
-                            Hitstop = 10,
+                            Hitstun = 26,
+                            Blockstun = 17,
+                            Hitstop = 12,
                             Knockback = 4.5f,
                             Height = HitHeight.Mid,
                             CausesKnockdown = true,
                             HitboxOffset = new Vector2(0.92f, 1.18f),
                             HitboxSize = new Vector2(1.16f, 0.58f),
-                            LungeSpeed = 1.8f,
+                            LungeSpeed = 1.6f,
                             SpecialMechanic = SpecialMechanicType.ProjectileShot,
                             SuperCost = FighterData.SpecialSuperCost,
                             SpawnsProjectile = true,
-                            ProjectileSpeed = 10.2f,
-                            ProjectileLifetimeTicks = 45,
+                            ProjectileSpeed = 8.5f,
+                            ProjectileLifetimeTicks = 55,
                             ProjectileSpawnOffset = new Vector2(0.72f, 1.20f),
                             ProjectileHitboxSize = new Vector2(0.60f, 0.50f),
                             SuperFreezeTicks = 14,
@@ -1597,29 +1617,30 @@ namespace UnDFight.Editor
                     }
                     else
                     {
+                        // Light TechnicalStriker (29-frame Special clip: 9 + 4 + 16)
                         specialSpec = new MoveSpec
                         {
                             MoveName = "Golpe Sombrio",
                             Type = AttackType.Special,
-                            Startup = 7,
+                            Startup = 9,
                             Active = 4,
-                            Recovery = 13,
+                            Recovery = 16,
                             Damage = 210,
                             ChipDamage = 28,
-                            Hitstun = 22,
-                            Blockstun = 14,
-                            Hitstop = 10,
+                            Hitstun = 25,
+                            Blockstun = 16,
+                            Hitstop = 12,
                             Knockback = 4.4f,
                             Height = HitHeight.Mid,
                             CausesKnockdown = true,
                             HitboxOffset = new Vector2(0.90f, 1.14f),
                             HitboxSize = new Vector2(1.14f, 0.58f),
-                            LungeSpeed = 1.6f,
+                            LungeSpeed = 1.5f,
                             SpecialMechanic = SpecialMechanicType.ProjectileShot,
                             SuperCost = FighterData.SpecialSuperCost,
                             SpawnsProjectile = true,
-                            ProjectileSpeed = 10.5f,
-                            ProjectileLifetimeTicks = 45,
+                            ProjectileSpeed = 8.5f,
+                            ProjectileLifetimeTicks = 55,
                             ProjectileSpawnOffset = new Vector2(0.70f, 1.15f),
                             ProjectileHitboxSize = new Vector2(0.58f, 0.48f),
                             SuperFreezeTicks = 14,
@@ -1644,57 +1665,59 @@ namespace UnDFight.Editor
                     }
                     if (string.Equals(fighterName, "Isaac", StringComparison.Ordinal))
                     {
+                        // Light AgileStriker (27-frame Special clip: 8 + 4 + 15)
                         specialSpec = new MoveSpec
                         {
                             MoveName = "Punho Esmeralda",
                             Type = AttackType.Special,
-                            Startup = 6,
+                            Startup = 8,
                             Active = 4,
-                            Recovery = 12,
+                            Recovery = 15,
                             Damage = 225,
                             ChipDamage = 28,
-                            Hitstun = 22,
-                            Blockstun = 14,
-                            Hitstop = 11,
+                            Hitstun = 25,
+                            Blockstun = 16,
+                            Hitstop = 12,
                             Knockback = 4.3f,
                             Height = HitHeight.High,
                             CausesKnockdown = true,
                             HitboxOffset = new Vector2(0.84f, 1.30f),
                             HitboxSize = new Vector2(1.22f, 1.08f),
-                            LungeSpeed = 4.4f,
+                            LungeSpeed = 4.0f,
                             SpecialMechanic = SpecialMechanicType.AntiAirSpin,
                             SuperCost = FighterData.SpecialSuperCost,
                             AntiAirInvulnerable = true,
                             AntiAirStartTick = 1,
-                            AntiAirEndTick = 12,
+                            AntiAirEndTick = 14,
                             SuperFreezeTicks = 14,
                         };
                     }
                     else
                     {
+                        // Light AgileStriker (27-frame Special clip: 8 + 4 + 15)
                         specialSpec = new MoveSpec
                         {
                             MoveName = "Tornado Relâmpago",
                             Type = AttackType.Special,
-                            Startup = 6,
+                            Startup = 8,
                             Active = 4,
-                            Recovery = 12,
+                            Recovery = 15,
                             Damage = 225,
                             ChipDamage = 26,
-                            Hitstun = 22,
-                            Blockstun = 14,
-                            Hitstop = 10,
+                            Hitstun = 25,
+                            Blockstun = 16,
+                            Hitstop = 12,
                             Knockback = 4.4f,
                             Height = HitHeight.High,
                             CausesKnockdown = true,
                             HitboxOffset = new Vector2(0.86f, 1.32f),
                             HitboxSize = new Vector2(1.26f, 1.05f),
-                            LungeSpeed = 4.6f,
+                            LungeSpeed = 4.2f,
                             SpecialMechanic = SpecialMechanicType.AntiAirSpin,
                             SuperCost = FighterData.SpecialSuperCost,
                             AntiAirInvulnerable = true,
                             AntiAirStartTick = 1,
-                            AntiAirEndTick = 12,
+                            AntiAirEndTick = 14,
                             SuperFreezeTicks = 14,
                         };
                     }
@@ -1807,8 +1830,15 @@ namespace UnDFight.Editor
             data.maxHealth = 1000;
             data.walkForwardSpeed = walkForwardSpeed;
             data.walkBackwardSpeed = walkBackwardSpeed;
+            data.crouchWalkForwardSpeed = 2.0f;
+            data.crouchWalkBackwardSpeed = 1.55f;
+            data.dashForwardSpeed = 7.2f;
+            data.dashForwardTicks = 14;
+            data.dashBackwardSpeed = 6.2f;
+            data.dashBackwardTicks = 16;
+            data.backdashInvulnerableTicks = 5;
             data.jumpForce = jumpForce;
-            data.baseGravity = 34.0f;
+            data.baseGravity = 30.0f;
             data.crouchHeightRatio = 0.62f;
             data.pushboxRadius = 0.36f;
             EditorUtility.SetDirty(data);

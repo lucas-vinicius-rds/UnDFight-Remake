@@ -22,17 +22,17 @@ namespace UnDFight
 
         [Header("Combat & Movement Base Stats (at Reference Weight)")]
         [Min(100)] public int maxHealth = 1000;
-        [Min(0.5f)] public float walkForwardSpeed = 4.2f;
-        [Min(0.5f)] public float walkBackwardSpeed = 3.2f;
-        [Min(0.5f)] public float crouchWalkForwardSpeed = 2.3f;
-        [Min(0.5f)] public float crouchWalkBackwardSpeed = 1.8f;
-        [Min(1f)] public float dashForwardSpeed = 8.2f;
+        [Min(0.5f)] public float walkForwardSpeed = 3.7f;
+        [Min(0.5f)] public float walkBackwardSpeed = 2.8f;
+        [Min(0.5f)] public float crouchWalkForwardSpeed = 2.0f;
+        [Min(0.5f)] public float crouchWalkBackwardSpeed = 1.55f;
+        [Min(1f)] public float dashForwardSpeed = 7.2f;
         [Min(1)] public int dashForwardTicks = 14;
-        [Min(1f)] public float dashBackwardSpeed = 7.0f;
+        [Min(1f)] public float dashBackwardSpeed = 6.2f;
         [Min(1)] public int dashBackwardTicks = 16;
         [Min(0)] public int backdashInvulnerableTicks = 5;
-        [Min(1f)] public float jumpForce = 12.5f;
-        [Min(1f)] public float baseGravity = 34.0f;
+        [Min(1f)] public float jumpForce = 11.8f;
+        [Min(1f)] public float baseGravity = 30.0f;
 
         [Header("Collision / Hurtbox")]
         [Range(0.3f, 0.9f)] public float crouchHeightRatio = 0.62f;

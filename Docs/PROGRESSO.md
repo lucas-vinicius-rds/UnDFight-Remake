@@ -40,5 +40,6 @@ Regra para TODO agente: ao terminar uma fase, marcar aqui, adicionar entrada em 
 - [x] Fase 13.5 - Correcao da transicao `CrouchWalk` / `CrouchKick` / bloqueio agachado para `Crouch` sem levantar (`AlreadyCrouched`, `offset = 0.25f`)
 - [x] Fase 14.1 - Novos lutadores regulares: Isaac (1,73 m / 73 kg, AgileStriker), Enomoto (1,77 m / 80 kg, TechnicalStriker) e Gabubu (1,62 m / 67 kg, StreetScrappy) — elenco expandido de 4 para 7 lutadores
 - [x] Fase 14.1.1 - Sistema de Combo Strings estilo Mortal Kombat (Dial-a-Combo queue, blockstrings, mix-ups Overhead/Low, finalizadores `ComboPunchFinisher` / `ComboKickFinisher`, 26 clipes a 60 fps nos 7 lutadores, nome da string na HUD e suporte na IA)
+- [x] Fase 14.1.2 - Desaceleracao calibrada e peso do combate em 60 Hz (nova tabela de frame data +25%–35% em startup/recovery, reexportacao dos 26 clipes a 60 fps nos 7 lutadores com `MoveData.TotalTicks == clipFrames`, hitstop/hitstun/blockstun ampliados, velocidades de locomocao/pulo/gravidade/projeteis recalibradas e janela Dial-a-Combo de 22 ticks)
 
 - Decisao: animacoes em 60 fps (1 frame anim = 1 tick de simulacao)

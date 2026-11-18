@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: Martelada de Rua
   attackType: 11
-  startupTicks: 6
+  startupTicks: 8
   activeTicks: 4
-  recoveryTicks: 14
+  recoveryTicks: 16
   damage: 112
   chipDamage: 18
-  hitstunTicks: 20
-  blockstunTicks: 13
-  hitstopTicks: 7
+  hitstunTicks: 23
+  blockstunTicks: 15
+  hitstopTicks: 9
   knockback: 2.8999999
   blockKnockbackFactor: 0.5
   hitHeight: 3

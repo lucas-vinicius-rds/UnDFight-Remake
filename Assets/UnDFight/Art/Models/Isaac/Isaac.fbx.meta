@@ -326,7 +326,7 @@ ModelImporter:
       takeName: Isaac_Armature|LightPunch
       internalID: -111938931085818142
       firstFrame: 0
-      lastFrame: 13
+      lastFrame: 17
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -355,7 +355,7 @@ ModelImporter:
       takeName: Isaac_Armature|HeavyPunch
       internalID: 8071897846313179435
       firstFrame: 0
-      lastFrame: 21
+      lastFrame: 27
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -384,7 +384,7 @@ ModelImporter:
       takeName: Isaac_Armature|LightKick
       internalID: -1646047516130865670
       firstFrame: 0
-      lastFrame: 16
+      lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -413,7 +413,7 @@ ModelImporter:
       takeName: Isaac_Armature|HeavyKick
       internalID: 6989775925412386335
       firstFrame: 0
-      lastFrame: 27
+      lastFrame: 33
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -442,7 +442,7 @@ ModelImporter:
       takeName: Isaac_Armature|ComboPunchFinisher
       internalID: -3072574230735662702
       firstFrame: 0
-      lastFrame: 24
+      lastFrame: 28
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -471,7 +471,7 @@ ModelImporter:
       takeName: Isaac_Armature|ComboKickFinisher
       internalID: -6169769375215163217
       firstFrame: 0
-      lastFrame: 26
+      lastFrame: 31
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -500,7 +500,7 @@ ModelImporter:
       takeName: Isaac_Armature|CrouchKick
       internalID: -4692456878742607722
       firstFrame: 0
-      lastFrame: 25
+      lastFrame: 30
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -529,7 +529,7 @@ ModelImporter:
       takeName: Isaac_Armature|JumpAttack
       internalID: 4134710425877089023
       firstFrame: 0
-      lastFrame: 18
+      lastFrame: 21
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -558,7 +558,7 @@ ModelImporter:
       takeName: Isaac_Armature|Throw
       internalID: -3517528909921580038
       firstFrame: 0
-      lastFrame: 22
+      lastFrame: 25
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -587,7 +587,7 @@ ModelImporter:
       takeName: Isaac_Armature|Special
       internalID: 6161693699923079229
       firstFrame: 0
-      lastFrame: 22
+      lastFrame: 27
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

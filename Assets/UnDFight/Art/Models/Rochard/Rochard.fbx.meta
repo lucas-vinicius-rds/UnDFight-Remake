@@ -372,7 +372,7 @@ ModelImporter:
       takeName: Rochard_Armature|LightPunch
       internalID: 579294421642595527
       firstFrame: 0
-      lastFrame: 13
+      lastFrame: 17
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -401,7 +401,7 @@ ModelImporter:
       takeName: Rochard_Armature|HeavyPunch
       internalID: 5881871424059380448
       firstFrame: 0
-      lastFrame: 21
+      lastFrame: 27
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -430,7 +430,7 @@ ModelImporter:
       takeName: Rochard_Armature|LightKick
       internalID: 3627406728062586247
       firstFrame: 0
-      lastFrame: 16
+      lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -459,7 +459,7 @@ ModelImporter:
       takeName: Rochard_Armature|HeavyKick
       internalID: -98019129138290851
       firstFrame: 0
-      lastFrame: 27
+      lastFrame: 33
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -488,7 +488,7 @@ ModelImporter:
       takeName: Rochard_Armature|ComboPunchFinisher
       internalID: 8354054870017730394
       firstFrame: 0
-      lastFrame: 24
+      lastFrame: 28
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -517,7 +517,7 @@ ModelImporter:
       takeName: Rochard_Armature|ComboKickFinisher
       internalID: -8955515018201339039
       firstFrame: 0
-      lastFrame: 26
+      lastFrame: 31
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -546,7 +546,7 @@ ModelImporter:
       takeName: Rochard_Armature|CrouchKick
       internalID: 3863468711598253313
       firstFrame: 0
-      lastFrame: 25
+      lastFrame: 30
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -575,7 +575,7 @@ ModelImporter:
       takeName: Rochard_Armature|JumpAttack
       internalID: -7617756103760432770
       firstFrame: 0
-      lastFrame: 18
+      lastFrame: 21
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -604,7 +604,7 @@ ModelImporter:
       takeName: Rochard_Armature|Throw
       internalID: -6673377593089833171
       firstFrame: 0
-      lastFrame: 22
+      lastFrame: 25
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -633,7 +633,7 @@ ModelImporter:
       takeName: Rochard_Armature|Special
       internalID: -8677607086116509334
       firstFrame: 0
-      lastFrame: 22
+      lastFrame: 27
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

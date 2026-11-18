@@ -20,17 +20,17 @@ MonoBehaviour:
   weightKg: 80
   fbxHeightPrebaked: 1
   maxHealth: 1000
-  walkForwardSpeed: 4.3
-  walkBackwardSpeed: 3.3
-  crouchWalkForwardSpeed: 2.3
-  crouchWalkBackwardSpeed: 1.8
-  dashForwardSpeed: 8.2
+  walkForwardSpeed: 3.8
+  walkBackwardSpeed: 2.9
+  crouchWalkForwardSpeed: 2
+  crouchWalkBackwardSpeed: 1.55
+  dashForwardSpeed: 7.2
   dashForwardTicks: 14
-  dashBackwardSpeed: 7
+  dashBackwardSpeed: 6.2
   dashBackwardTicks: 16
   backdashInvulnerableTicks: 5
-  jumpForce: 12.55
-  baseGravity: 34
+  jumpForce: 11.85
+  baseGravity: 30
   crouchHeightRatio: 0.62
   pushboxRadius: 0.36
   lightPunch: {fileID: 11400000, guid: 68bc136b543e13947a185596ea905438, type: 2}

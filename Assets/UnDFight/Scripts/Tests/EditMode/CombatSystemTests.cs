@@ -737,8 +737,8 @@ namespace UnDFight.Tests
             rigVsCrouch.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 1f }, true);
             rigVsCrouch.P2.InputHandler.SetSimulatedInput(new FighterInputState { MoveY = -1f, HoldBlock = true }, true);
 
-            // Jump across toward P2 and press JumpAttack on descent (tick 29 of 44-tick jump arc)
-            rigVsCrouch.Sim.StepSimulationTicks(29);
+            // Jump across toward P2 and press JumpAttack on descent (tick 28 of jump arc)
+            rigVsCrouch.Sim.StepSimulationTicks(28);
             Assert.IsFalse(rigVsCrouch.P1.IsGrounded);
             rigVsCrouch.P1.InputHandler.SetSimulatedInput(default, true);
             rigVsCrouch.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
@@ -748,7 +748,7 @@ namespace UnDFight.Tests
             Assert.Greater(rigVsCrouch.P1.SimVelocity.x, 0.5f, "JumpAttack must preserve horizontal jump velocity.");
 
             // Wait through descent until JumpAttack connects overhead against crouching defender
-            for (int t = 0; t < 20 && rigVsCrouch.P2.CurrentHealth == 1000; t++)
+            for (int t = 0; t < 24 && rigVsCrouch.P2.CurrentHealth == 1000; t++)
             {
                 rigVsCrouch.Sim.StepSimulationTicks(1);
             }
@@ -763,11 +763,11 @@ namespace UnDFight.Tests
             rigVsStand.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 1f }, true);
             rigVsStand.P2.InputHandler.SetSimulatedInput(new FighterInputState { HoldBlock = true }, true);
 
-            rigVsStand.Sim.StepSimulationTicks(29);
+            rigVsStand.Sim.StepSimulationTicks(28);
             rigVsStand.P1.InputHandler.SetSimulatedInput(default, true);
             rigVsStand.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
 
-            for (int t = 0; t < 20 && rigVsStand.P2.State != FighterState.Block; t++)
+            for (int t = 0; t < 24 && rigVsStand.P2.State != FighterState.Block; t++)
             {
                 rigVsStand.Sim.StepSimulationTicks(1);
             }
@@ -1046,7 +1046,7 @@ namespace UnDFight.Tests
             rig.Special.antiAirEndTick = 12;
             rig.Special.superFreezeTicks = 0;
 
-            rig.P1.SetSimPositionX(-2.6f);
+            rig.P1.SetSimPositionX(-2.3f);
             rig.P2.SetSimPositionX(0.55f);
             rig.Sim.ForceUpdateFacing();
             rig.P1.InputHandler.SetSimulatedInput(new FighterInputState { MoveX = 1f, MoveY = 1f }, true);
@@ -1054,7 +1054,7 @@ namespace UnDFight.Tests
             rig.P2.SetSuperGauge(100);
 
             // P1 jumps in and starts JumpAttack on descent
-            rig.Sim.StepSimulationTicks(25);
+            rig.Sim.StepSimulationTicks(27);
             rig.P1.InputHandler.SetSimulatedInput(default, true);
             rig.P1.InputHandler.BufferButton(FighterInputButton.HeavyKick);
             rig.Sim.StepSimulationTicks(4);

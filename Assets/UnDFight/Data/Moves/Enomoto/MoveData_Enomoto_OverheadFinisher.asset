@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: Golpe Celeste
   attackType: 11
-  startupTicks: 7
+  startupTicks: 9
   activeTicks: 4
-  recoveryTicks: 16
+  recoveryTicks: 18
   damage: 128
   chipDamage: 20
-  hitstunTicks: 22
-  blockstunTicks: 14
-  hitstopTicks: 8
+  hitstunTicks: 25
+  blockstunTicks: 16
+  hitstopTicks: 10
   knockback: 3.3
   blockKnockbackFactor: 0.5
   hitHeight: 3

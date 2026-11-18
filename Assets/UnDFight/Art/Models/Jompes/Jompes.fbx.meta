@@ -338,7 +338,7 @@ ModelImporter:
       takeName: Jompes_Armature|LightPunch
       internalID: -1929099419038290198
       firstFrame: 0
-      lastFrame: 13
+      lastFrame: 17
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -367,7 +367,7 @@ ModelImporter:
       takeName: Jompes_Armature|HeavyPunch
       internalID: 6243324254538465722
       firstFrame: 0
-      lastFrame: 21
+      lastFrame: 27
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -396,7 +396,7 @@ ModelImporter:
       takeName: Jompes_Armature|LightKick
       internalID: 6569667262457260695
       firstFrame: 0
-      lastFrame: 16
+      lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -425,7 +425,7 @@ ModelImporter:
       takeName: Jompes_Armature|HeavyKick
       internalID: 4588629879463120286
       firstFrame: 0
-      lastFrame: 27
+      lastFrame: 33
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -454,7 +454,7 @@ ModelImporter:
       takeName: Jompes_Armature|ComboPunchFinisher
       internalID: 1261749704985911174
       firstFrame: 0
-      lastFrame: 24
+      lastFrame: 28
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -483,7 +483,7 @@ ModelImporter:
       takeName: Jompes_Armature|ComboKickFinisher
       internalID: 7809278727935798106
       firstFrame: 0
-      lastFrame: 26
+      lastFrame: 31
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -512,7 +512,7 @@ ModelImporter:
       takeName: Jompes_Armature|CrouchKick
       internalID: -3058910859322489850
       firstFrame: 0
-      lastFrame: 25
+      lastFrame: 30
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -541,7 +541,7 @@ ModelImporter:
       takeName: Jompes_Armature|JumpAttack
       internalID: 5638829561365242969
       firstFrame: 0
-      lastFrame: 18
+      lastFrame: 21
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -570,7 +570,7 @@ ModelImporter:
       takeName: Jompes_Armature|Throw
       internalID: 606320399333318719
       firstFrame: 0
-      lastFrame: 22
+      lastFrame: 25
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -599,7 +599,7 @@ ModelImporter:
       takeName: Jompes_Armature|Special
       internalID: 4582057466406432197
       firstFrame: 0
-      lastFrame: 24
+      lastFrame: 29
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

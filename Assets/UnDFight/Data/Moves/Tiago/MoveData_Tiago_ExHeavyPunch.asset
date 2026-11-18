@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: EX Soco Forte
   attackType: 9
-  startupTicks: 5
+  startupTicks: 8
   activeTicks: 5
-  recoveryTicks: 14
+  recoveryTicks: 17
   damage: 140
   chipDamage: 18
-  hitstunTicks: 22
-  blockstunTicks: 15
-  hitstopTicks: 9
+  hitstunTicks: 25
+  blockstunTicks: 17
+  hitstopTicks: 11
   knockback: 3.5
   blockKnockbackFactor: 0.5
   hitHeight: 1
@@ -35,7 +35,7 @@ MonoBehaviour:
   superCost: 50
   isExMove: 1
   armorStartTick: 2
-  armorEndTick: 10
+  armorEndTick: 13
   antiAirInvulnerable: 0
   antiAirStartTick: 0
   antiAirEndTick: 0

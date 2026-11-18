@@ -12,7 +12,7 @@ namespace UnDFight
     {
         public const int DefaultBufferWindowTicks = 6;
         public const int DashDoubleTapWindowTicks = 12;
-        public const int DialComboBufferWindowTicks = 18;
+        public const int DialComboBufferWindowTicks = 22;
         public const int MaxDialComboQueueSize = 3;
 
         public struct DialComboInputEntry

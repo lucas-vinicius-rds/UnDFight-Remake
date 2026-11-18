@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: "Tornado Rel\xE2mpago"
   attackType: 5
-  startupTicks: 6
+  startupTicks: 8
   activeTicks: 4
-  recoveryTicks: 12
+  recoveryTicks: 15
   damage: 225
   chipDamage: 26
-  hitstunTicks: 22
-  blockstunTicks: 14
-  hitstopTicks: 10
+  hitstunTicks: 25
+  blockstunTicks: 16
+  hitstopTicks: 12
   knockback: 4.4
   blockKnockbackFactor: 0.5
   hitHeight: 0
@@ -30,7 +30,7 @@ MonoBehaviour:
   airOnly: 0
   hitboxCenterOffset: {x: 0.86, y: 1.32}
   hitboxSize: {x: 1.26, y: 1.05}
-  lungeSpeed: 4.6
+  lungeSpeed: 4.2
   specialMechanic: 4
   superCost: 100
   isExMove: 0
@@ -38,7 +38,7 @@ MonoBehaviour:
   armorEndTick: 0
   antiAirInvulnerable: 1
   antiAirStartTick: 1
-  antiAirEndTick: 12
+  antiAirEndTick: 14
   secondActiveStartTick: 0
   secondActiveEndTick: 0
   secondHitDamage: 0

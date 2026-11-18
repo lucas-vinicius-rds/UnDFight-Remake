@@ -86,9 +86,9 @@ namespace UnDFight.Tests
             Assert.AreEqual("Punho Esmeralda", isaac.specialMove.moveName);
             Assert.AreEqual(SpecialMechanicType.AntiAirSpin, isaac.specialMove.specialMechanic);
             Assert.IsTrue(isaac.specialMove.antiAirInvulnerable);
-            Assert.AreEqual(4.4f, isaac.specialMove.lungeSpeed, 0.01f);
+            Assert.AreEqual(4.0f, isaac.specialMove.lungeSpeed, 0.01f);
             Assert.AreEqual(14, isaac.specialMove.superFreezeTicks);
-            Assert.AreEqual(22, isaac.specialMove.TotalTicks);
+            Assert.AreEqual(27, isaac.specialMove.TotalTicks);
 
             // Enomoto: 1.77 m / 80 kg / Medium / TechnicalStriker — Estocada do Cavalheiro
             Assert.AreEqual(1.77f, enomoto.heightMeters, 0.001f);
@@ -101,9 +101,9 @@ namespace UnDFight.Tests
             Assert.AreEqual("Estocada do Cavalheiro", enomoto.specialMove.moveName);
             Assert.AreEqual(SpecialMechanicType.ProjectileShot, enomoto.specialMove.specialMechanic);
             Assert.IsTrue(enomoto.specialMove.spawnsProjectile);
-            Assert.AreEqual(10.2f, enomoto.specialMove.projectileSpeed, 0.01f);
+            Assert.AreEqual(8.5f, enomoto.specialMove.projectileSpeed, 0.01f);
             Assert.AreEqual(14, enomoto.specialMove.superFreezeTicks);
-            Assert.AreEqual(28, enomoto.specialMove.TotalTicks);
+            Assert.AreEqual(33, enomoto.specialMove.TotalTicks);
 
             // Gabubu: 1.62 m / 67 kg / Light / StreetScrappy — Riff Destruidor
             Assert.AreEqual(1.62f, gabubu.heightMeters, 0.001f);
@@ -118,9 +118,9 @@ namespace UnDFight.Tests
             Assert.Greater(gabubu.specialMove.secondActiveStartTick, gabubu.specialMove.LastActiveTick);
             Assert.GreaterOrEqual(gabubu.specialMove.secondActiveEndTick, gabubu.specialMove.secondActiveStartTick);
             Assert.Greater(gabubu.specialMove.secondHitDamage, 0);
-            Assert.AreEqual(3.9f, gabubu.specialMove.lungeSpeed, 0.01f);
+            Assert.AreEqual(3.6f, gabubu.specialMove.lungeSpeed, 0.01f);
             Assert.AreEqual(14, gabubu.specialMove.superFreezeTicks);
-            Assert.AreEqual(24, gabubu.specialMove.TotalTicks);
+            Assert.AreEqual(29, gabubu.specialMove.TotalTicks);
 
             // Verify 52 Humanoid bones, 24 60fps clips (heightFromFeet=false), AOC_*, and PhysX FighterHurtbox setup
             string isaacFbx = "Assets/UnDFight/Art/Models/Isaac/Isaac.fbx";
@@ -142,15 +142,15 @@ namespace UnDFight.Tests
 
         private static void AssertMediumTicks(FighterData data)
         {
-            Assert.AreEqual(16, data.lightPunch.TotalTicks);
-            Assert.AreEqual(27, data.heavyPunch.TotalTicks);
-            Assert.AreEqual(19, data.lightKick.TotalTicks);
-            Assert.AreEqual(33, data.heavyKick.TotalTicks);
-            Assert.AreEqual(27, data.comboPunchFinisher.TotalTicks);
-            Assert.AreEqual(29, data.comboKickFinisher.TotalTicks);
-            Assert.AreEqual(28, data.crouchKick.TotalTicks);
-            Assert.AreEqual(18, data.jumpAttack.TotalTicks);
-            Assert.AreEqual(22, data.throwMove.TotalTicks);
+            Assert.AreEqual(20, data.lightPunch.TotalTicks);
+            Assert.AreEqual(33, data.heavyPunch.TotalTicks);
+            Assert.AreEqual(24, data.lightKick.TotalTicks);
+            Assert.AreEqual(39, data.heavyKick.TotalTicks);
+            Assert.AreEqual(31, data.comboPunchFinisher.TotalTicks);
+            Assert.AreEqual(35, data.comboKickFinisher.TotalTicks);
+            Assert.AreEqual(33, data.crouchKick.TotalTicks);
+            Assert.AreEqual(21, data.jumpAttack.TotalTicks);
+            Assert.AreEqual(25, data.throwMove.TotalTicks);
         }
 
         private static void AssertPrefabHurtboxPhysics(GameObject prefab)
@@ -206,6 +206,7 @@ namespace UnDFight.Tests
 
             Assert.AreEqual(SpecialMechanicType.ProjectileShot, jompes.specialMove.specialMechanic);
             Assert.IsTrue(jompes.specialMove.spawnsProjectile);
+            Assert.AreEqual(8.5f, jompes.specialMove.projectileSpeed, 0.01f);
             Assert.AreEqual(14, jompes.specialMove.superFreezeTicks);
 
             Assert.AreEqual(SpecialMechanicType.AntiAirSpin, rochard.specialMove.specialMechanic);
@@ -214,8 +215,8 @@ namespace UnDFight.Tests
 
             AssertLightTicks(jompes);
             AssertLightTicks(rochard);
-            Assert.AreEqual(24, jompes.specialMove.TotalTicks);
-            Assert.AreEqual(22, rochard.specialMove.TotalTicks);
+            Assert.AreEqual(29, jompes.specialMove.TotalTicks);
+            Assert.AreEqual(27, rochard.specialMove.TotalTicks);
 
             string jompesFbx = "Assets/UnDFight/Art/Models/Jompes/Jompes.fbx";
             string rochardFbx = "Assets/UnDFight/Art/Models/Rochard/Rochard.fbx";
@@ -228,15 +229,15 @@ namespace UnDFight.Tests
 
         private static void AssertLightTicks(FighterData data)
         {
-            Assert.AreEqual(13, data.lightPunch.TotalTicks);
-            Assert.AreEqual(21, data.heavyPunch.TotalTicks);
-            Assert.AreEqual(16, data.lightKick.TotalTicks);
-            Assert.AreEqual(27, data.heavyKick.TotalTicks);
-            Assert.AreEqual(24, data.comboPunchFinisher.TotalTicks);
-            Assert.AreEqual(26, data.comboKickFinisher.TotalTicks);
-            Assert.AreEqual(25, data.crouchKick.TotalTicks);
-            Assert.AreEqual(18, data.jumpAttack.TotalTicks);
-            Assert.AreEqual(22, data.throwMove.TotalTicks);
+            Assert.AreEqual(17, data.lightPunch.TotalTicks);
+            Assert.AreEqual(27, data.heavyPunch.TotalTicks);
+            Assert.AreEqual(20, data.lightKick.TotalTicks);
+            Assert.AreEqual(33, data.heavyKick.TotalTicks);
+            Assert.AreEqual(28, data.comboPunchFinisher.TotalTicks);
+            Assert.AreEqual(31, data.comboKickFinisher.TotalTicks);
+            Assert.AreEqual(30, data.crouchKick.TotalTicks);
+            Assert.AreEqual(21, data.jumpAttack.TotalTicks);
+            Assert.AreEqual(25, data.throwMove.TotalTicks);
         }
 
         [Test]
@@ -271,10 +272,30 @@ namespace UnDFight.Tests
             Assert.AreEqual(SpecialMechanicType.ArmoredSmash, lucas.specialMove.specialMechanic);
             Assert.Greater(lucas.specialMove.armorStartTick, 0);
             Assert.AreEqual(14, lucas.specialMove.superFreezeTicks);
+            Assert.AreEqual(37, lucas.specialMove.TotalTicks);
+            Assert.AreEqual(24, lucas.lightPunch.TotalTicks);
+            Assert.AreEqual(39, lucas.heavyPunch.TotalTicks);
+            Assert.AreEqual(27, lucas.lightKick.TotalTicks);
+            Assert.AreEqual(45, lucas.heavyKick.TotalTicks);
+            Assert.AreEqual(37, lucas.comboPunchFinisher.TotalTicks);
+            Assert.AreEqual(40, lucas.comboKickFinisher.TotalTicks);
+            Assert.AreEqual(37, lucas.crouchKick.TotalTicks);
+            Assert.AreEqual(21, lucas.jumpAttack.TotalTicks);
+            Assert.AreEqual(25, lucas.throwMove.TotalTicks);
+            Assert.AreEqual(3.7f, lucas.walkForwardSpeed, 0.01f);
+            Assert.AreEqual(2.8f, lucas.walkBackwardSpeed, 0.01f);
+            Assert.AreEqual(2.0f, lucas.crouchWalkForwardSpeed, 0.01f);
+            Assert.AreEqual(1.55f, lucas.crouchWalkBackwardSpeed, 0.01f);
+            Assert.AreEqual(7.2f, lucas.dashForwardSpeed, 0.01f);
+            Assert.AreEqual(6.2f, lucas.dashBackwardSpeed, 0.01f);
+            Assert.AreEqual(11.8f, lucas.jumpForce, 0.01f);
+            Assert.AreEqual(30.0f, lucas.baseGravity, 0.01f);
 
             Assert.AreEqual(SpecialMechanicType.MultiHitRush, tiago.specialMove.specialMechanic);
-            Assert.AreEqual(12, tiago.specialMove.secondActiveStartTick);
+            Assert.AreEqual(17, tiago.specialMove.secondActiveStartTick);
             Assert.AreEqual(14, tiago.specialMove.superFreezeTicks);
+            Assert.AreEqual(33, tiago.specialMove.TotalTicks);
+            AssertMediumTicks(tiago);
 
             AssertMovesetMatchesFbx(lucas, "Assets/UnDFight/Art/Models/Lucas/Lucas.fbx", "AOC_Lucas");
             AssertMovesetMatchesFbx(tiago, "Assets/UnDFight/Art/Models/Tiago/Tiago.fbx", "AOC_Tiago");
@@ -658,14 +679,14 @@ namespace UnDFight.Tests
                 sim.OnCombatHit += e => hits.Add(e);
 
                 p1.InputHandler.BufferButton(FighterInputButton.Special);
-                sim.StepSimulationTicks(1 + 14 + 28); // 1 start + 14 superFreeze + hit1/hitstop/hit2
+                sim.StepSimulationTicks(1 + 14 + 34); // 1 start + 14 superFreeze + hit1/hitstop/hit2
 
                 Assert.AreEqual(2, hits.Count, "Gabubu's Riff Destruidor must register 2 distinct hits");
                 Assert.AreEqual(2, hits[1].ComboCount);
                 Assert.AreEqual(FighterState.KnockDown, p2.State);
             }
 
-            // 3. Enomoto's Estocada do Cavalheiro (ProjectileShot): spawns projectile at 10.2 m/s and hits from afar
+            // 3. Enomoto's Estocada do Cavalheiro (ProjectileShot): spawns projectile at 8.5 m/s and hits from afar
             {
                 var simGo = Track(new GameObject("Sim_Enomoto"));
                 var sim = simGo.AddComponent<FightSimulation>();
@@ -690,7 +711,7 @@ namespace UnDFight.Tests
                 sim.OnCombatHit += e => hits.Add(e);
 
                 p1.InputHandler.BufferButton(FighterInputButton.Special);
-                sim.StepSimulationTicks(1 + 14 + 35); // start + freeze + startup(8) + projectile flight
+                sim.StepSimulationTicks(1 + 14 + 42); // start + freeze + startup(10) + projectile flight
 
                 Assert.AreEqual(1, hits.Count, "Enomoto's projectile must hit distant opponent");
                 Assert.Less(p2.CurrentHealth, p2.MaxHealth);
@@ -723,9 +744,59 @@ namespace UnDFight.Tests
                 p2.InputHandler.BufferButton(FighterInputButton.HeavyKick); // JumpAttack!
                 p1.InputHandler.BufferButton(FighterInputButton.Special);   // Punho Esmeralda!
 
-                sim.StepSimulationTicks(1 + 14 + 14);
+                sim.StepSimulationTicks(1 + 14 + 16);
                 Assert.AreEqual(p1.MaxHealth, p1.CurrentHealth, "Isaac must evade aerial JumpAttack during Punho Esmeralda");
                 Assert.Less(p2.CurrentHealth, p2.MaxHealth, "Isaac's Punho Esmeralda must punish jumping attacker");
+            }
+        }
+
+        [Test]
+        public void AllSevenFighterAssets_ComboStringsChainThreeHitsWithRecalibratedFrameDataAndHitstop()
+        {
+            var roster = AssetDatabase.LoadAssetAtPath<FighterRoster>("Assets/UnDFight/Data/FighterRoster.asset");
+            Assert.IsNotNull(roster);
+            Assert.AreEqual(7, roster.Count);
+
+            for (int i = 0; i < roster.Count; i++)
+            {
+                FighterData attackerData = roster.GetFighter(i);
+                FighterData defenderData = roster.GetFighter((i + 1) % roster.Count);
+                Assert.IsNotNull(attackerData);
+                Assert.IsNotNull(defenderData);
+
+                var simGo = Track(new GameObject($"Sim_String_{attackerData.fighterName}"));
+                var sim = simGo.AddComponent<FightSimulation>();
+                var p1Go = Track(new GameObject($"Attacker_{attackerData.fighterName}"));
+                p1Go.transform.position = new Vector3(-0.55f, 0f, 0f);
+                p1Go.AddComponent<PlayerInputHandler>();
+                var p1 = p1Go.AddComponent<FighterController>();
+                p1.SetFighterData(attackerData);
+
+                var p2Go = Track(new GameObject($"Defender_{defenderData.fighterName}"));
+                p2Go.transform.position = new Vector3(0.55f, 0f, 0f);
+                p2Go.AddComponent<PlayerInputHandler>();
+                var p2 = p2Go.AddComponent<FighterController>();
+                p2.SetFighterData(defenderData);
+
+                sim.SetParticipants(p1, p2);
+                p1.InputHandler.SetSimulatedInput(default, true);
+                p2.InputHandler.SetSimulatedInput(default, true);
+
+                var hits = new List<CombatHitEvent>();
+                sim.OnCombatHit += e => hits.Add(e);
+
+                // Dial 3-hit string LP -> LK -> HK (ComboKickFinisher)
+                p1.InputHandler.BufferDialComboSequence(
+                    FighterInputButton.LightPunch,
+                    FighterInputButton.LightKick,
+                    FighterInputButton.HeavyKick);
+
+                sim.StepSimulationTicks(65);
+
+                Assert.AreEqual(3, hits.Count, $"{attackerData.fighterName} LP->LK->HK combo string must connect all 3 hits with recalibrated frame data");
+                Assert.AreEqual(3, hits[2].ComboCount, $"{attackerData.fighterName} 3rd hit must remain a true 3-hit combo (hitstun > startup)");
+                Assert.AreEqual(AttackType.ComboKickFinisher, hits[2].Move.attackType);
+                Assert.AreEqual(FighterState.KnockDown, p2.State);
             }
         }
     }

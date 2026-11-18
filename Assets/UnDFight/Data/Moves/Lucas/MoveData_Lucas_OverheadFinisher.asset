@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: Quebra-Guarda Pesado
   attackType: 11
-  startupTicks: 9
+  startupTicks: 11
   activeTicks: 5
-  recoveryTicks: 18
+  recoveryTicks: 21
   damage: 160
   chipDamage: 24
-  hitstunTicks: 25
-  blockstunTicks: 16
-  hitstopTicks: 9
+  hitstunTicks: 28
+  blockstunTicks: 18
+  hitstopTicks: 11
   knockback: 4.2000003
   blockKnockbackFactor: 0.5
   hitHeight: 3

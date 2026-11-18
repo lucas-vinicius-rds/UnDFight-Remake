@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.MoveData
   moveName: ComboKickFinisher
   attackType: 12
-  startupTicks: 10
+  startupTicks: 13
   activeTicks: 5
-  recoveryTicks: 20
+  recoveryTicks: 22
   damage: 172
   chipDamage: 22
-  hitstunTicks: 26
-  blockstunTicks: 17
-  hitstopTicks: 10
+  hitstunTicks: 29
+  blockstunTicks: 19
+  hitstopTicks: 12
   knockback: 4.6
   blockKnockbackFactor: 0.5
   hitHeight: 1
