@@ -1303,5 +1303,187 @@ namespace UnDFight.Tests
                 }
             }
         }
+
+        [Test]
+        public void Phase15_3_ArenaUnDF_MetadataBuildSettingsFramingPhysicsAndThreeWeathers_AreValid()
+        {
+            // 1. Original concept art must still exist intact (never moved/deleted)
+            Assert.IsTrue(System.IO.File.Exists(ArenaUnDFBuilderEditor.ConceptSourcePath), "Original concept art in Docs/Referencias must remain untouched.");
+
+            // 2. StageData_UnDF metadata, preview Sprite, StageRoster & EditorBuildSettings
+            var undfData = AssetDatabase.LoadAssetAtPath<StageData>(ArenaUnDFBuilderEditor.UnDFStageDataPath);
+            Assert.IsNotNull(undfData, "StageData_UnDF.asset must exist.");
+            Assert.AreEqual("undf_campus", undfData.stageId);
+            Assert.AreEqual("FRENTE DA UnDF", undfData.displayName);
+            Assert.AreEqual("Arena_UnDF", undfData.sceneName);
+            Assert.IsTrue(undfData.supportsWeatherVariants);
+            Assert.AreEqual("DIA", undfData.dayVariantLabel);
+            Assert.AreEqual(StageWeatherVariant.Day, undfData.defaultWeather);
+            Assert.IsNotNull(undfData.previewImage, "StageData_UnDF must reference Stage_UnDF_Preview Sprite.");
+
+            var stageRoster = AssetDatabase.LoadAssetAtPath<StageRoster>(ArenaUnDFBuilderEditor.StageRosterPath);
+            Assert.IsNotNull(stageRoster);
+            Assert.GreaterOrEqual(stageRoster.Count, 3, "StageRoster must list at least Favela, UnDF, and Training.");
+            bool inRoster = false;
+            for (int i = 0; i < stageRoster.Count; i++)
+            {
+                if (stageRoster.GetStage(i) == undfData) inRoster = true;
+            }
+            Assert.IsTrue(inRoster, "StageData_UnDF must be registered in StageRoster.asset.");
+
+            bool inBuildSettings = false;
+            foreach (EditorBuildSettingsScene bs in EditorBuildSettings.scenes)
+            {
+                if (bs.enabled && bs.path == ArenaUnDFBuilderEditor.ArenaUnDFScenePath)
+                {
+                    inBuildSettings = true;
+                    break;
+                }
+            }
+            Assert.IsTrue(inBuildSettings, "Arena_UnDF.unity must be enabled in EditorBuildSettings.");
+
+            // 3. Weather label check across Favela ("PÔR DO SOL"), UnDF ("DIA"), and Training ("CLIMA FIXO")
+            var favelaData = AssetDatabase.LoadAssetAtPath<StageData>(StagePhysicsSetupEditor.FavelaStageDataPath);
+            var trainingData = AssetDatabase.LoadAssetAtPath<StageData>(StagePhysicsSetupEditor.TrainingStageDataPath);
+            Assert.AreEqual("PÔR DO SOL", GameSessionState.GetWeatherLabel(StageWeatherVariant.Day, favelaData));
+            Assert.AreEqual("DIA", GameSessionState.GetWeatherLabel(StageWeatherVariant.Day, undfData));
+            Assert.AreEqual("NOITE", GameSessionState.GetWeatherLabel(StageWeatherVariant.Night, undfData));
+            Assert.AreEqual("NOITE CHUVOSA", GameSessionState.GetWeatherLabel(StageWeatherVariant.RainyNight, undfData));
+            Assert.IsFalse(trainingData.supportsWeatherVariants);
+
+            // 4. Validate Arena_UnDF.unity framing, Physics v2 props, and 3 weather presets
+            Scene prevActive = SceneManager.GetActiveScene();
+            Scene undfScene = EditorSceneManager.OpenScene(ArenaUnDFBuilderEditor.ArenaUnDFScenePath, OpenSceneMode.Additive);
+            try
+            {
+                Camera mainCam = null;
+                FightCameraController camCtrl = null;
+                StageWeatherController weather = null;
+                StageWindController wind = null;
+                StageInteractableManager stageMgr = null;
+                GameObject asphaltMain = null;
+                GameObject asphaltFront = null;
+                GameObject sidewalk = null;
+
+                var hangingProps = new List<StageHangingProp>();
+                var breakableProps = new List<StageBreakableProp>();
+                var throwableProps = new List<StageThrowableProp>();
+                var dynamicProps = new List<StageDynamicProp>();
+
+                foreach (GameObject rootGo in undfScene.GetRootGameObjects())
+                {
+                    foreach (Transform t in rootGo.GetComponentsInChildren<Transform>(true))
+                    {
+                        if (t.name == "Main Camera") mainCam = t.GetComponent<Camera>();
+                        if (t.name == "ParkingAsphalt_Main") asphaltMain = t.gameObject;
+                        if (t.name == "ParkingAsphalt_Front") asphaltFront = t.gameObject;
+                        if (t.name == "Sidewalk_Campus") sidewalk = t.gameObject;
+                    }
+                    if (camCtrl == null) camCtrl = rootGo.GetComponentInChildren<FightCameraController>(true);
+                    if (weather == null) weather = rootGo.GetComponentInChildren<StageWeatherController>(true);
+                    if (wind == null) wind = rootGo.GetComponentInChildren<StageWindController>(true);
+                    if (stageMgr == null) stageMgr = rootGo.GetComponentInChildren<StageInteractableManager>(true);
+                    hangingProps.AddRange(rootGo.GetComponentsInChildren<StageHangingProp>(true));
+                    breakableProps.AddRange(rootGo.GetComponentsInChildren<StageBreakableProp>(true));
+                    throwableProps.AddRange(rootGo.GetComponentsInChildren<StageThrowableProp>(true));
+                    dynamicProps.AddRange(rootGo.GetComponentsInChildren<StageDynamicProp>(true));
+                }
+
+                Assert.IsNotNull(mainCam, "Arena_UnDF must have Main Camera.");
+                Assert.IsNotNull(camCtrl, "Arena_UnDF must have FightCameraController.");
+                Assert.IsNotNull(weather, "Arena_UnDF must have StageWeatherController.");
+                Assert.IsNotNull(wind, "Arena_UnDF must have StageWindController.");
+                Assert.IsNotNull(stageMgr, "Arena_UnDF must have StageInteractableManager.");
+                Assert.IsNotNull(asphaltMain, "Arena_UnDF must have ParkingAsphalt_Main.");
+                Assert.IsNotNull(asphaltFront, "Arena_UnDF must have ParkingAsphalt_Front.");
+
+                // Floor coverage validation (zero black bar at 12m max zoom-out across 16:9 & 21:9)
+                Renderer frontR = asphaltFront.GetComponent<Renderer>();
+                Renderer mainR = asphaltMain.GetComponent<Renderer>();
+                Assert.LessOrEqual(frontR.bounds.min.z, StageFramingStandards.MinForegroundFloorZ, "ParkingAsphalt_Front must reach z <= -22.0m.");
+                Assert.AreEqual(-2.60f, frontR.bounds.max.z, 0.01f, "ParkingAsphalt_Front seam must match ParkingAsphalt_Main (-2.60) with zero Z-fighting.");
+
+                Bounds combinedFloor = frontR.bounds;
+                combinedFloor.Encapsulate(mainR.bounds);
+                if (sidewalk != null && sidewalk.GetComponent<Renderer>() != null) combinedFloor.Encapsulate(sidewalk.GetComponent<Renderer>().bounds);
+
+                bool covered = StageFramingStandards.ValidateCameraBottomFloorCoverage(mainCam, camCtrl, combinedFloor, out string reason);
+                Assert.IsTrue(covered, $"Arena_UnDF failed bottom floor coverage validation: {reason}");
+
+                // Physics v2 props check: 3 flags + 1 hanging banner, >= 2 breakables, >= 2 throwables, >= 4 dynamic props
+                int flagCount = 0;
+                bool hasBanner = false;
+                foreach (StageHangingProp hp in hangingProps)
+                {
+                    Assert.IsNotNull(hp.GetComponentInChildren<HingeJoint>(true), $"Hanging prop '{hp.name}' must have HingeJoint.");
+                    Assert.IsNotNull(hp.GetComponentInChildren<StageWindAffectable>(true), $"Hanging prop '{hp.name}' must have StageWindAffectable.");
+                    if (hp.name.StartsWith("Hanging_Flag_")) flagCount++;
+                    if (hp.name == "Hanging_AcademicBanner") hasBanner = true;
+                }
+                Assert.AreEqual(3, flagCount, "Arena_UnDF must have 3 physical HingeJoint flags (DF, Brazil, UnDF).");
+                Assert.IsTrue(hasBanner, "Arena_UnDF must have Hanging_AcademicBanner.");
+                Assert.GreaterOrEqual(breakableProps.Count, 2, "Arena_UnDF must have at least 2 StageBreakableProp instances.");
+                Assert.GreaterOrEqual(throwableProps.Count, 2, "Arena_UnDF must have at least 2 StageThrowableProp instances.");
+                Assert.GreaterOrEqual(dynamicProps.Count, 4, "Arena_UnDF must have at least 4 loose StageDynamicProp instances.");
+
+                // Weather arrays, night lights LightShadows.None, >= 20 lit windows, >= 6 puddles, wetSurfaceRenderers
+                Assert.GreaterOrEqual(weather.DayOnlyObjects.Length, 2, "Arena_UnDF DayOnlyObjects must include Sun & DayClouds.");
+                Assert.GreaterOrEqual(weather.ClearNightOnlyObjects.Length, 2, "Arena_UnDF ClearNightOnlyObjects must include Moon/Stars & NightClouds.");
+                Assert.GreaterOrEqual(weather.NightOnlyObjects.Length, 1, "Arena_UnDF NightOnlyObjects must include NightLightsAndWindows.");
+                Assert.GreaterOrEqual(weather.RainOnlyObjects.Length, 2, "Arena_UnDF RainOnlyObjects must include RainPuddles & StormClouds.");
+                Assert.GreaterOrEqual(weather.WetSurfaceRenderers.Length, 4, "Arena_UnDF WetSurfaceRenderers must cover asphalt, curb, and sidewalk.");
+
+                GameObject nightGroup = weather.NightOnlyObjects[0];
+                foreach (Light l in nightGroup.GetComponentsInChildren<Light>(true))
+                {
+                    Assert.AreEqual(LightShadows.None, l.shadows, $"Night light '{l.name}' in Arena_UnDF must use LightShadows.None.");
+                }
+                Transform litWindows = nightGroup.transform.Find("UnDF_LitClassroomWindows");
+                Assert.IsNotNull(litWindows);
+                Assert.GreaterOrEqual(litWindows.childCount, 20, "Arena_UnDF must have at least 20 lit classroom windows at night.");
+
+                GameObject puddlesObj = null;
+                foreach (GameObject ro in weather.RainOnlyObjects)
+                {
+                    if (ro != null && ro.name == ArenaUnDFBuilderEditor.RainPuddlesName) puddlesObj = ro;
+                }
+                Assert.IsNotNull(puddlesObj);
+                Assert.GreaterOrEqual(puddlesObj.transform.childCount, 6, "Arena_UnDF must have at least 6 reflective rain puddles.");
+
+                // Switch cleanly through Day -> Night -> RainyNight and back to Day
+                weather.ApplyWeather(StageWeatherVariant.Day);
+                Assert.IsTrue(weather.DayOnlyObjects[0].activeSelf);
+                Assert.IsFalse(weather.NightOnlyObjects[0].activeSelf);
+                Assert.IsFalse(weather.ClearNightOnlyObjects[0].activeSelf);
+                Assert.IsFalse(weather.RainOnlyObjects[0].activeSelf);
+                Assert.LessOrEqual(wind.BaseWindSpeed + wind.GustAmplitude, 1.05f);
+
+                weather.ApplyWeather(StageWeatherVariant.Night);
+                Assert.IsFalse(weather.DayOnlyObjects[0].activeSelf);
+                Assert.IsTrue(weather.NightOnlyObjects[0].activeSelf);
+                Assert.IsTrue(weather.ClearNightOnlyObjects[0].activeSelf);
+                Assert.IsFalse(weather.RainOnlyObjects[0].activeSelf);
+                Assert.LessOrEqual(wind.BaseWindSpeed + wind.GustAmplitude, 1.85f);
+
+                weather.ApplyWeather(StageWeatherVariant.RainyNight);
+                Assert.IsFalse(weather.DayOnlyObjects[0].activeSelf);
+                Assert.IsTrue(weather.NightOnlyObjects[0].activeSelf);
+                Assert.IsFalse(weather.ClearNightOnlyObjects[0].activeSelf);
+                Assert.IsTrue(weather.RainOnlyObjects[0].activeSelf);
+                Assert.Greater(wind.BaseWindSpeed, 5.0f);
+                Assert.IsTrue(weather.IsWetSurfaceActive);
+            }
+            finally
+            {
+                if (undfScene.IsValid() && undfScene.isLoaded)
+                {
+                    EditorSceneManager.CloseScene(undfScene, removeScene: true);
+                }
+                if (prevActive.IsValid())
+                {
+                    SceneManager.SetActiveScene(prevActive);
+                }
+            }
+        }
     }
 }

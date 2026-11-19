@@ -15,6 +15,9 @@ EditorBuildSettings:
     path: Assets/UnDFight/Scenes/Arena_Favela.unity
     guid: abe57e51c7195e145b8b572091629a32
   - enabled: 1
+    path: Assets/UnDFight/Scenes/Arena_UnDF.unity
+    guid: e420962421823b749a42825273f95851
+  - enabled: 1
     path: Assets/UnDFight/Scenes/Training.unity
     guid: 36ba48b699443c64da931fe49c3b065c
   m_configObjects:
