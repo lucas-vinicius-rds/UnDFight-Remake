@@ -18,6 +18,9 @@ EditorBuildSettings:
     path: Assets/UnDFight/Scenes/Arena_UnDF.unity
     guid: e420962421823b749a42825273f95851
   - enabled: 1
+    path: Assets/UnDFight/Scenes/Arena_Cadeia.unity
+    guid: 185613e3e1000c247a6f1b77f57ffb5b
+  - enabled: 1
     path: Assets/UnDFight/Scenes/Training.unity
     guid: 36ba48b699443c64da931fe49c3b065c
   m_configObjects:

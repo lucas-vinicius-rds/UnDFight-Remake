@@ -1493,5 +1493,148 @@ namespace UnDFight.Tests
                 }
             }
         }
+
+        [Test]
+        public void Phase15_4_ArenaCadeia_MetadataFixedWeatherFramingAndPhysicsV2_AreValid()
+        {
+            // 1. Original concept art must remain untouched
+            Assert.IsTrue(System.IO.File.Exists(ArenaCadeiaBuilderEditor.ConceptSourcePath), "Original prison concept art must remain untouched.");
+
+            // 2. StageData_Cadeia metadata, preview Sprite, 4-stage StageRoster & EditorBuildSettings
+            var cadeiaData = AssetDatabase.LoadAssetAtPath<StageData>(ArenaCadeiaBuilderEditor.CadeiaStageDataPath);
+            Assert.IsNotNull(cadeiaData, "StageData_Cadeia.asset must exist.");
+            Assert.AreEqual("bloco_cadeia", cadeiaData.stageId);
+            Assert.AreEqual("BLOCO DE CELAS", cadeiaData.displayName);
+            Assert.AreEqual("Arena_Cadeia", cadeiaData.sceneName);
+            Assert.IsFalse(cadeiaData.supportsWeatherVariants, "Arena_Cadeia is an indoor stage with fixed lighting.");
+            Assert.AreEqual("INTERIOR", cadeiaData.dayVariantLabel);
+            Assert.AreEqual(StageWeatherVariant.Day, cadeiaData.defaultWeather);
+            Assert.IsNotNull(cadeiaData.previewImage, "StageData_Cadeia must reference Stage_Cadeia_Preview Sprite.");
+
+            var stageRoster = AssetDatabase.LoadAssetAtPath<StageRoster>(ArenaCadeiaBuilderEditor.StageRosterPath);
+            Assert.IsNotNull(stageRoster);
+            Assert.GreaterOrEqual(stageRoster.Count, 4, "StageRoster must list all 4 stages (Favela, UnDF, Cadeia, Training).");
+            bool inRoster = false;
+            for (int i = 0; i < stageRoster.Count; i++)
+            {
+                if (stageRoster.GetStage(i) == cadeiaData) inRoster = true;
+            }
+            Assert.IsTrue(inRoster, "StageData_Cadeia must be registered in StageRoster.asset.");
+
+            bool inBuildSettings = false;
+            foreach (EditorBuildSettingsScene bs in EditorBuildSettings.scenes)
+            {
+                if (bs.enabled && bs.path == ArenaCadeiaBuilderEditor.ArenaCadeiaScenePath)
+                {
+                    inBuildSettings = true;
+                    break;
+                }
+            }
+            Assert.IsTrue(inBuildSettings, "Arena_Cadeia.unity must be enabled in EditorBuildSettings.");
+
+            // 3. Validate Arena_Cadeia.unity floor coverage, Physics v2 props, lighting & fixed weather behavior
+            Scene prevActive = SceneManager.GetActiveScene();
+            Scene cadeiaScene = EditorSceneManager.OpenScene(ArenaCadeiaBuilderEditor.ArenaCadeiaScenePath, OpenSceneMode.Additive);
+            try
+            {
+                Camera mainCam = null;
+                FightCameraController camCtrl = null;
+                StageWeatherController weather = null;
+                StageWindController wind = null;
+                StageInteractableManager stageMgr = null;
+                GameObject floorMain = null;
+                GameObject floorFront = null;
+
+                var hangingProps = new List<StageHangingProp>();
+                var breakableProps = new List<StageBreakableProp>();
+                var throwableProps = new List<StageThrowableProp>();
+                var dynamicProps = new List<StageDynamicProp>();
+                var allLights = new List<Light>();
+
+                foreach (GameObject rootGo in cadeiaScene.GetRootGameObjects())
+                {
+                    foreach (Transform t in rootGo.GetComponentsInChildren<Transform>(true))
+                    {
+                        if (t.name == "Main Camera") mainCam = t.GetComponent<Camera>();
+                        if (t.name == "PrisonFloor_Main") floorMain = t.gameObject;
+                        if (t.name == "PrisonFloor_Front") floorFront = t.gameObject;
+                    }
+                    if (camCtrl == null) camCtrl = rootGo.GetComponentInChildren<FightCameraController>(true);
+                    if (weather == null) weather = rootGo.GetComponentInChildren<StageWeatherController>(true);
+                    if (wind == null) wind = rootGo.GetComponentInChildren<StageWindController>(true);
+                    if (stageMgr == null) stageMgr = rootGo.GetComponentInChildren<StageInteractableManager>(true);
+                    hangingProps.AddRange(rootGo.GetComponentsInChildren<StageHangingProp>(true));
+                    breakableProps.AddRange(rootGo.GetComponentsInChildren<StageBreakableProp>(true));
+                    throwableProps.AddRange(rootGo.GetComponentsInChildren<StageThrowableProp>(true));
+                    dynamicProps.AddRange(rootGo.GetComponentsInChildren<StageDynamicProp>(true));
+                    allLights.AddRange(rootGo.GetComponentsInChildren<Light>(true));
+                }
+
+                Assert.IsNotNull(mainCam, "Arena_Cadeia must have Main Camera.");
+                Assert.IsNotNull(camCtrl, "Arena_Cadeia must have FightCameraController.");
+                Assert.IsNotNull(weather, "Arena_Cadeia must have StageWeatherController.");
+                Assert.IsNotNull(wind, "Arena_Cadeia must have StageWindController.");
+                Assert.IsNotNull(stageMgr, "Arena_Cadeia must have StageInteractableManager.");
+                Assert.IsNotNull(floorMain, "Arena_Cadeia must have PrisonFloor_Main.");
+                Assert.IsNotNull(floorFront, "Arena_Cadeia must have PrisonFloor_Front.");
+
+                // Floor coverage validation (zero black bar at 12m max zoom-out across 16:9 & 21:9)
+                Renderer frontR = floorFront.GetComponent<Renderer>();
+                Renderer mainR = floorMain.GetComponent<Renderer>();
+                Assert.LessOrEqual(frontR.bounds.min.z, StageFramingStandards.MinForegroundFloorZ, "PrisonFloor_Front must extend past z <= -22.0m.");
+                Assert.AreEqual(-2.60f, frontR.bounds.max.z, 0.01f, "PrisonFloor_Front seam must match PrisonFloor_Main (-2.60) with zero Z-fighting.");
+
+                Bounds combinedFloor = frontR.bounds;
+                combinedFloor.Encapsulate(mainR.bounds);
+                bool covered = StageFramingStandards.ValidateCameraBottomFloorCoverage(mainCam, camCtrl, combinedFloor, out string reason);
+                Assert.IsTrue(covered, $"Arena_Cadeia failed bottom floor coverage validation: {reason}");
+
+                // Physics v2 props check: >= 3 HingeJoint hanging lamps, >= 2 breakables, >= 2 throwables, >= 3 dynamic props
+                int lampCount = 0;
+                foreach (StageHangingProp hp in hangingProps)
+                {
+                    Assert.IsNotNull(hp.GetComponentInChildren<HingeJoint>(true), $"Hanging lamp '{hp.name}' must have HingeJoint.");
+                    Assert.IsNotNull(hp.GetComponentInChildren<StageWindAffectable>(true), $"Hanging lamp '{hp.name}' must have StageWindAffectable.");
+                    if (hp.name.StartsWith("Hanging_FluorescentLamp_")) lampCount++;
+                }
+                Assert.GreaterOrEqual(lampCount, 3, "Arena_Cadeia must have at least 3 HingeJoint hanging fluorescent lamps.");
+                Assert.GreaterOrEqual(breakableProps.Count, 2, "Arena_Cadeia must have at least 2 StageBreakableProp instances.");
+                Assert.GreaterOrEqual(throwableProps.Count, 2, "Arena_Cadeia must have at least 2 StageThrowableProp instances.");
+                Assert.GreaterOrEqual(dynamicProps.Count, 3, "Arena_Cadeia must have at least 3 loose StageDynamicProp instances.");
+
+                // All Point/Spot lights strictly LightShadows.None for 60 FPS
+                foreach (Light l in allLights)
+                {
+                    if (l.type != LightType.Directional)
+                    {
+                        Assert.AreEqual(LightShadows.None, l.shadows, $"Indoor point/spot light '{l.name}' must use LightShadows.None.");
+                    }
+                }
+
+                // Fixed indoor weather enforcement: attempting RainyNight forces Day, keeps 3D rain off & no rain audio
+                weather.ApplyWeather(StageWeatherVariant.RainyNight);
+                Assert.AreEqual(StageWeatherVariant.Day, weather.CurrentWeather, "Fixed-weather Arena_Cadeia must force defaultWeather (Day) when RainyNight is requested.");
+                Assert.IsFalse(weather.IsWetSurfaceActive, "Fixed-weather Arena_Cadeia must not enable RainyNight wet override.");
+                Assert.IsTrue(weather.RainParticleSystem == null || !weather.RainParticleSystem.gameObject.activeSelf, "3D rain must stay disabled inside Arena_Cadeia.");
+                Assert.LessOrEqual(wind.BaseWindSpeed + wind.GustAmplitude, 0.70f, "Indoor prison draft must stay gentle so resting floor props do not slide.");
+
+                var audioGo = Track(new GameObject("Test_CadeiaAudioCheck"));
+                var audioMgr = audioGo.AddComponent<FightAudioManager>();
+                audioMgr.EnsureAudioReady();
+                audioMgr.SetWeatherAmbience(weather.CurrentWeather, enabled: true);
+                Assert.IsNull(audioMgr.WeatherAmbientSource.clip, "Fixed indoor Arena_Cadeia must NEVER trigger rain ambience audio.");
+            }
+            finally
+            {
+                if (cadeiaScene.IsValid() && cadeiaScene.isLoaded)
+                {
+                    EditorSceneManager.CloseScene(cadeiaScene, removeScene: true);
+                }
+                if (prevActive.IsValid())
+                {
+                    SceneManager.SetActiveScene(prevActive);
+                }
+            }
+        }
     }
 }

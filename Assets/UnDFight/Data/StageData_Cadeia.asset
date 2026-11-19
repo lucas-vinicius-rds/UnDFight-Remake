@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b6a5be70058d024c924c60387cc6a35, type: 3}
+  m_Name: StageData_Cadeia
+  m_EditorClassIdentifier: UnDFight.Runtime::UnDFight.StageData
+  stageId: bloco_cadeia
+  displayName: BLOCO DE CELAS
+  subtitle: "Penitenci\xE1ria \u2022 Pavilh\xE3o de Seguran\xE7a M\xE1xima"
+  sceneName: Arena_Cadeia
+  previewColor: {r: 0.18, g: 0.24, b: 0.3, a: 1}
+  accentColor: {r: 0.56, g: 0.78, b: 0.92, a: 1}
+  previewImage: {fileID: 21300000, guid: 0bef8417c116ce8489359a47bdb9c4fd, type: 3}
+  supportsWeatherVariants: 0
+  dayVariantLabel: INTERIOR
+  defaultWeather: 0
