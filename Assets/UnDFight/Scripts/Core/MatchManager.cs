@@ -75,6 +75,11 @@ namespace UnDFight
                 return;
             }
 
+            if (GameSessionState.CurrentMode == GameMode.ArcadeTower)
+            {
+                return;
+            }
+
             Keyboard kb = Keyboard.current;
             if (kb != null && kb.rKey.wasPressedThisFrame)
             {
@@ -100,41 +105,47 @@ namespace UnDFight
             if (Application.isPlaying)
             {
                 SpawnSessionFightersIfNeeded();
-                ConfigureCpuAiForCurrentMode();
                 SettingsManager.ApplySettings(SettingsManager.Current, applyResolution: false);
             }
+
+            ConfigureCpuAiForCurrentMode();
 
             _initialized = true;
             RestartMatch();
         }
 
-        private void ConfigureCpuAiForCurrentMode()
+        public void ConfigureCpuAiForCurrentMode()
         {
             if (simulation == null)
             {
                 return;
             }
 
+            bool shouldEnableCpu =
+                GameSessionState.CurrentMode == GameMode.VersusCpu ||
+                GameSessionState.CurrentMode == GameMode.ArcadeTower;
+
             if (cpuAiController == null)
             {
                 cpuAiController = simulation.CpuAi != null
                     ? simulation.CpuAi
-                    : (simulation.GetComponent<CpuAiController>() ?? simulation.gameObject.AddComponent<CpuAiController>());
+                    : simulation.GetComponent<CpuAiController>();
+
+                if (cpuAiController == null && (shouldEnableCpu || Application.isPlaying))
+                {
+                    cpuAiController = simulation.gameObject.AddComponent<CpuAiController>();
+                }
+            }
+
+            if (cpuAiController == null)
+            {
+                return;
             }
 
             simulation.SetCpuAiController(cpuAiController);
             cpuAiController.Configure(simulation, simulation.Fighter2, simulation.Fighter1, this);
             cpuAiController.SetDifficulty(GameSessionState.SelectedCpuDifficulty);
-
-            if (GameSessionState.CurrentMode == GameMode.VersusCpu)
-            {
-                cpuAiController.SetEnabled(true);
-            }
-            else
-            {
-                // LocalVersus & Training start with CPU disabled (F2 can toggle CPU in Training)
-                cpuAiController.SetEnabled(false);
-            }
+            cpuAiController.SetEnabled(shouldEnableCpu);
         }
 
         public void RestartMatch()
@@ -231,8 +242,39 @@ namespace UnDFight
         public void GoToMainMenu()
         {
             GameSessionState.OpenStageSelectOnCharacterSelect = false;
+            GameSessionState.ClearTowerRun();
             simulation?.SetPaused(false);
             SceneManager.LoadScene("MainMenu");
+        }
+
+        public bool TryRecordTowerBossVictoryIfNeeded(string customProgressPath = null)
+        {
+            if (GameSessionState.CurrentMode != GameMode.ArcadeTower ||
+                Phase != MatchPhase.MatchOver ||
+                WinnerPlayerIndex != 0)
+            {
+                return false;
+            }
+
+            ArcadeTowerRun run = GameSessionState.ActiveTowerRun;
+            if (run == null || !run.IsCurrentMatchBoss || run.VictoryRecorded)
+            {
+                return false;
+            }
+
+            FighterData playerFighter = run.PlayerFighter != null ? run.PlayerFighter : simulation?.Fighter1?.Data;
+            FighterData bossFighter = run.CurrentMatch != null && run.CurrentMatch.opponent != null
+                ? run.CurrentMatch.opponent
+                : simulation?.Fighter2?.Data;
+
+            bool unlockedFirstTime = ProgressionManager.RecordTowerVictory(
+                playerFighter,
+                run.BaseDifficulty,
+                bossFighter,
+                customProgressPath);
+
+            run.MarkCompleted(unlockedFirstTime);
+            return unlockedFirstTime;
         }
 
         public void StepTick(int simulationTick)
@@ -366,6 +408,7 @@ namespace UnDFight
                     string winnerName = GetFighterDisplayName(championIndex).ToUpperInvariant();
                     BannerText = $"{winnerName} WINS!";
                     SubtitleText = string.Empty;
+                    TryRecordTowerBossVictoryIfNeeded();
                     OnMatchStateChanged?.Invoke(this);
                 }
                 else

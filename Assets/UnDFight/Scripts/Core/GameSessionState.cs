@@ -4,7 +4,8 @@ namespace UnDFight
     {
         VersusCpu = 0,
         LocalVersus = 1,
-        Training = 2
+        Training = 2,
+        ArcadeTower = 3
     }
 
     public enum CpuDifficulty
@@ -28,9 +29,16 @@ namespace UnDFight
         public static string SelectedStageSceneName { get; set; } = DefaultStageSceneName;
         public static StageWeatherVariant SelectedWeather { get; set; } = StageWeatherVariant.Day;
         public static bool OpenStageSelectOnCharacterSelect { get; set; }
+        public static ArcadeTowerRun ActiveTowerRun { get; set; }
 
         public static bool IsTrainingMode => CurrentMode == GameMode.Training;
+        public static bool IsArcadeTowerMode => CurrentMode == GameMode.ArcadeTower;
         public static bool P1SelectsBothFighters => CurrentMode == GameMode.VersusCpu || CurrentMode == GameMode.Training;
+
+        public static void ClearTowerRun()
+        {
+            ActiveTowerRun = null;
+        }
 
         public static void SelectMode(GameMode mode)
         {
@@ -133,6 +141,7 @@ namespace UnDFight
             SelectedStageSceneName = DefaultStageSceneName;
             SelectedWeather = StageWeatherVariant.Day;
             OpenStageSelectOnCharacterSelect = false;
+            ActiveTowerRun = null;
         }
 
         /// <summary>

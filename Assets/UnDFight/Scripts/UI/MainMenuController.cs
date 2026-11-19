@@ -6,13 +6,22 @@ namespace UnDFight
 {
     /// <summary>
     /// MKX-inspired Main Menu controller:
-    /// Root column has 3 primary entries (LUTAR, CONFIGURAÇÕES, SAIR DO JOGO);
-    /// LUTAR transitions in-place to Fight Modes (PLAYER VS PLAYER, PLAYER VS CPU, TREINO, VOLTAR);
-    /// CONFIGURAÇÕES opens the dark/amber Options modal.
+    /// Root column highlights MODO TORRE (Arcade Tower) alongside VERSUS LOCAL, VS CPU, TREINO, OPÇÕES, and SAIR;
+    /// OPÇÕES opens the dark/amber Options modal.
     /// </summary>
     public class MainMenuController : MonoBehaviour
     {
         public const string CharacterSelectSceneName = "CharacterSelect";
+
+        private static readonly string[] RootMenuLabels =
+        {
+            "MODO TORRE",
+            "VERSUS LOCAL",
+            "VS CPU",
+            "TREINO",
+            "OPÇÕES",
+            "SAIR"
+        };
 
         [SerializeField] private MenuNavigationGroup rootNavigation;
         [SerializeField] private MenuNavigationGroup fightSubmenuNavigation;
@@ -68,17 +77,75 @@ namespace UnDFight
                 Transform panel = transform.Find("MainMenuPanel");
                 if (panel != null)
                 {
+                    if (whiteSprite == null)
+                    {
+                        var panelImg = panel.GetComponent<UnityEngine.UI.Image>();
+                        if (panelImg != null) whiteSprite = panelImg.sprite;
+                    }
+
                     if (rootMenuContainer == null) rootMenuContainer = panel.Find("RootMenuGroup")?.gameObject;
                     if (fightSubmenuContainer == null) fightSubmenuContainer = panel.Find("FightSubmenuGroup")?.gameObject;
                     if (rootNavigation == null && rootMenuContainer != null) rootNavigation = rootMenuContainer.GetComponent<MenuNavigationGroup>();
                     if (fightSubmenuNavigation == null && fightSubmenuContainer != null) fightSubmenuNavigation = fightSubmenuContainer.GetComponent<MenuNavigationGroup>();
                     if (sectionHeadingText == null) sectionHeadingText = panel.Find("SectionHeading")?.GetComponent<TextMeshProUGUI>();
+
+                    EnsureRootButtonsUpToDate();
                 }
+
                 if (optionsPanel == null) optionsPanel = GetComponentInChildren<OptionsPanelController>(true);
                 BindAllMenus();
             }
 
             _built = true;
+        }
+
+        public void EnsureRootButtonsUpToDate()
+        {
+            if (rootMenuContainer == null || rootNavigation == null)
+            {
+                return;
+            }
+
+            var existingButtons = rootMenuContainer.GetComponentsInChildren<UnityEngine.UI.Button>(true);
+            bool matchesExpected = existingButtons.Length == RootMenuLabels.Length;
+            if (matchesExpected)
+            {
+                for (int i = 0; i < existingButtons.Length; i++)
+                {
+                    var lbl = existingButtons[i].transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
+                    if (lbl == null || lbl.text != RootMenuLabels[i])
+                    {
+                        matchesExpected = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!matchesExpected)
+            {
+                for (int i = rootMenuContainer.transform.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = rootMenuContainer.transform.GetChild(i);
+                    if (Application.isPlaying) Destroy(child.gameObject);
+                    else DestroyImmediate(child.gameObject);
+                }
+
+                CreateColumnButtons(
+                    rootMenuContainer.transform,
+                    rootNavigation,
+                    "RootBtn",
+                    RootMenuLabels,
+                    startY: -224f,
+                    buttonHeight: 62f,
+                    stepY: 72f,
+                    fontSize: 25f,
+                    highlightFirstAsTower: true);
+            }
+
+            if (fightSubmenuContainer != null)
+            {
+                fightSubmenuContainer.SetActive(false);
+            }
         }
 
         public void BuildUI(Transform canvasRoot, Sprite sprite)
@@ -142,7 +209,7 @@ namespace UnDFight
             divider.anchorMin = new Vector2(0f, 1f);
             divider.anchorMax = new Vector2(1f, 1f);
             divider.pivot = new Vector2(0.5f, 1f);
-            divider.anchoredPosition = new Vector2(0f, -162f);
+            divider.anchoredPosition = new Vector2(0f, -160f);
             divider.sizeDelta = new Vector2(-68f, 2f);
 
             sectionHeadingText = MenuUiFactory.CreateText(
@@ -157,39 +224,33 @@ namespace UnDFight
             sectionHeadingText.rectTransform.anchorMin = new Vector2(0f, 1f);
             sectionHeadingText.rectTransform.anchorMax = new Vector2(1f, 1f);
             sectionHeadingText.rectTransform.pivot = new Vector2(0.5f, 1f);
-            sectionHeadingText.rectTransform.anchoredPosition = new Vector2(0f, -182f);
+            sectionHeadingText.rectTransform.anchoredPosition = new Vector2(0f, -178f);
             sectionHeadingText.rectTransform.sizeDelta = new Vector2(-68f, 28f);
 
-            // Root Menu Container (3 items)
+            // Root Menu Container (6 items, with MODO TORRE featured first)
             var rootGroupGo = new GameObject("RootMenuGroup", typeof(RectTransform));
             rootGroupGo.transform.SetParent(menuBox, false);
             MenuUiFactory.StretchFull(rootGroupGo.GetComponent<RectTransform>(), 0f, 0f, 0f, 0f);
             rootMenuContainer = rootGroupGo;
             rootNavigation = rootGroupGo.AddComponent<MenuNavigationGroup>();
 
-            string[] rootLabels =
-            {
-                "LUTAR",
-                "CONFIGURAÇÕES",
-                "SAIR DO JOGO"
-            };
-            CreateColumnButtons(rootGroupGo.transform, rootNavigation, "RootBtn", rootLabels, -234f, 82f, 98f, 28f);
+            CreateColumnButtons(
+                rootGroupGo.transform,
+                rootNavigation,
+                "RootBtn",
+                RootMenuLabels,
+                startY: -224f,
+                buttonHeight: 62f,
+                stepY: 72f,
+                fontSize: 25f,
+                highlightFirstAsTower: true);
 
-            // Fight Modes Submenu Container (4 items)
+            // Legacy FightSubmenuGroup kept inactive for backward compatibility
             var fightGroupGo = new GameObject("FightSubmenuGroup", typeof(RectTransform));
             fightGroupGo.transform.SetParent(menuBox, false);
             MenuUiFactory.StretchFull(fightGroupGo.GetComponent<RectTransform>(), 0f, 0f, 0f, 0f);
             fightSubmenuContainer = fightGroupGo;
             fightSubmenuNavigation = fightGroupGo.AddComponent<MenuNavigationGroup>();
-
-            string[] fightLabels =
-            {
-                "PLAYER VS PLAYER",
-                "PLAYER VS CPU",
-                "TREINO",
-                "VOLTAR"
-            };
-            CreateColumnButtons(fightGroupGo.transform, fightSubmenuNavigation, "FightBtn", fightLabels, -234f, 74f, 88f, 25f);
             fightGroupGo.SetActive(false);
 
             // Bottom subtle MKX bar
@@ -238,12 +299,26 @@ namespace UnDFight
             float startY,
             float buttonHeight,
             float stepY,
-            float fontSize)
+            float fontSize,
+            bool highlightFirstAsTower = false)
         {
             nav.ClearItems();
             for (int i = 0; i < labels.Length; i++)
             {
-                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"{prefix}_{i}", parent, labels[i], whiteSprite, fontSize, TextAlignmentOptions.MidlineLeft, characterSpacing: 6f);
+                MenuItemEntry entry = MenuUiFactory.CreateMenuButton(
+                    $"{prefix}_{i}",
+                    parent,
+                    labels[i],
+                    whiteSprite,
+                    fontSize,
+                    TextAlignmentOptions.MidlineLeft,
+                    characterSpacing: 6f);
+
+                if (highlightFirstAsTower && i == 0)
+                {
+                    ApplyTowerHighlight(entry);
+                }
+
                 RectTransform rt = entry.Button.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0f, 1f);
                 rt.anchorMax = new Vector2(1f, 1f);
@@ -263,7 +338,12 @@ namespace UnDFight
                 for (int i = 0; i < btns.Length; i++)
                 {
                     int idx = i;
-                    rootNavigation.AddItem(BuildEntryFromButton(btns[i], () => ExecuteRootAction(idx)));
+                    MenuItemEntry entry = BuildEntryFromButton(btns[i], () => ExecuteRootAction(idx));
+                    if (idx == 0 && btns.Length == RootMenuLabels.Length)
+                    {
+                        ApplyTowerHighlight(entry);
+                    }
+                    rootNavigation.AddItem(entry);
                 }
             }
 
@@ -286,6 +366,15 @@ namespace UnDFight
             }
         }
 
+        private static void ApplyTowerHighlight(MenuItemEntry entry)
+        {
+            if (entry == null) return;
+            entry.NormalBg = new Color(0.16f, 0.085f, 0.065f, 0.94f);
+            entry.SelectedBg = new Color(0.28f, 0.145f, 0.075f, 0.98f);
+            entry.NormalAccent = new Color(0.86f, 0.42f, 0.14f, 0.95f);
+            entry.SelectedAccent = MenuUiFactory.AccentGold;
+        }
+
         private static MenuItemEntry BuildEntryFromButton(UnityEngine.UI.Button btn, System.Action onSubmit)
         {
             return new MenuItemEntry
@@ -299,17 +388,26 @@ namespace UnDFight
             };
         }
 
-        private void ExecuteRootAction(int index)
+        public void ExecuteRootAction(int index)
         {
             switch (index)
             {
                 case 0:
-                    OpenFightSubmenu();
+                    StartMode(GameMode.ArcadeTower);
                     break;
                 case 1:
-                    OpenOptions();
+                    StartMode(GameMode.LocalVersus);
                     break;
                 case 2:
+                    StartMode(GameMode.VersusCpu);
+                    break;
+                case 3:
+                    StartMode(GameMode.Training);
+                    break;
+                case 4:
+                    OpenOptions();
+                    break;
+                case 5:
                     QuitGame();
                     break;
             }
@@ -358,6 +456,7 @@ namespace UnDFight
 
         public void StartMode(GameMode mode)
         {
+            GameSessionState.ClearTowerRun();
             GameSessionState.SelectMode(mode);
             GameSessionState.OpenStageSelectOnCharacterSelect = false;
             if (fighterRoster != null)

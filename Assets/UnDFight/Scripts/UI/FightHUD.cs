@@ -78,8 +78,15 @@ namespace UnDFight
         private Sprite _fallbackWhiteSprite;
         private StagePromptWidget _p1StagePrompt;
         private StagePromptWidget _p2StagePrompt;
+        private RectTransform _towerBadgeRoot;
+        private UnityEngine.UI.Image _towerBadgeBorder;
+        private UnityEngine.UI.Image _towerBadgeBg;
+        private TextMeshProUGUI _towerBadgeLabel;
         private readonly Color _p1PromptColor = new Color(1.0f, 0.78f, 0.16f, 1f);
         private readonly Color _p2PromptColor = new Color(1.0f, 0.36f, 0.24f, 1f);
+
+        public bool IsTowerBadgeVisible => _towerBadgeRoot != null && _towerBadgeRoot.gameObject.activeSelf;
+        public string TowerBadgeText => _towerBadgeLabel != null ? _towerBadgeLabel.text : string.Empty;
 
         public void Configure(FightSimulation sim, MatchManager manager = null)
         {
@@ -97,6 +104,7 @@ namespace UnDFight
             }
             EnsureSuperAndComboWidgets();
             EnsureStagePromptWidgets();
+            EnsureTowerBadgeWidget();
             RefreshImmediate();
         }
 
@@ -157,6 +165,7 @@ namespace UnDFight
             if (stageInteractableManager == null) stageInteractableManager = FindAnyObjectByType<StageInteractableManager>();
             EnsureSuperAndComboWidgets();
             EnsureStagePromptWidgets();
+            EnsureTowerBadgeWidget();
         }
 
         private void OnEnable()
@@ -170,6 +179,7 @@ namespace UnDFight
             }
             EnsureSuperAndComboWidgets();
             EnsureStagePromptWidgets();
+            EnsureTowerBadgeWidget();
             RefreshImmediate();
         }
 
@@ -232,6 +242,7 @@ namespace UnDFight
             _p1ComboTimer = 0f;
             _p2ComboTimer = 0f;
             UpdateStageInteractionPrompts();
+            UpdateTowerBadgeUI();
         }
 
         private void HandleSuperFlashTriggered(FighterController caster, int freezeTicks)
@@ -460,6 +471,8 @@ namespace UnDFight
                 subtitleText.gameObject.SetActive(!string.IsNullOrEmpty(matchManager.SubtitleText));
                 subtitleText.text = matchManager.SubtitleText;
             }
+
+            UpdateTowerBadgeUI();
         }
 
         private void UpdatePips(UnityEngine.UI.Image[] pips, int roundsWon)
@@ -986,6 +999,130 @@ namespace UnDFight
             if (widget != null && widget.Root != null && widget.Root.gameObject.activeSelf != visible)
             {
                 widget.Root.gameObject.SetActive(visible);
+            }
+        }
+
+        private void EnsureTowerBadgeWidget()
+        {
+            if (_towerBadgeRoot != null)
+            {
+                return;
+            }
+
+            Transform existing = transform.Find("TowerProgressBadge");
+            if (existing != null)
+            {
+                _towerBadgeRoot = (RectTransform)existing;
+                _towerBadgeBorder = existing.GetComponent<UnityEngine.UI.Image>();
+                Transform bgTr = existing.Find("Bg");
+                _towerBadgeBg = bgTr != null ? bgTr.GetComponent<UnityEngine.UI.Image>() : null;
+                Transform labelTr = bgTr != null ? bgTr.Find("Label") : existing.Find("Label");
+                _towerBadgeLabel = labelTr != null ? labelTr.GetComponent<TextMeshProUGUI>() : null;
+                return;
+            }
+
+            Sprite barSprite = GetHudSprite();
+            TMP_FontAsset fontAsset = p1NameText != null ? p1NameText.font : (p2NameText != null ? p2NameText.font : null);
+
+            var rootGo = new GameObject("TowerProgressBadge", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            rootGo.transform.SetParent(transform, false);
+            _towerBadgeRoot = (RectTransform)rootGo.transform;
+            _towerBadgeRoot.anchorMin = new Vector2(0.5f, 1f);
+            _towerBadgeRoot.anchorMax = new Vector2(0.5f, 1f);
+            _towerBadgeRoot.pivot = new Vector2(0.5f, 1f);
+            _towerBadgeRoot.anchoredPosition = new Vector2(0f, -112f);
+            _towerBadgeRoot.sizeDelta = new Vector2(216f, 28f);
+
+            _towerBadgeBorder = rootGo.GetComponent<UnityEngine.UI.Image>();
+            _towerBadgeBorder.sprite = barSprite;
+            _towerBadgeBorder.color = new Color(0.85f, 0.64f, 0.18f, 0.92f);
+            _towerBadgeBorder.raycastTarget = false;
+
+            var bgGo = new GameObject("Bg", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            bgGo.transform.SetParent(rootGo.transform, false);
+            var bgRt = (RectTransform)bgGo.transform;
+            bgRt.anchorMin = Vector2.zero;
+            bgRt.anchorMax = Vector2.one;
+            bgRt.offsetMin = new Vector2(1.5f, 1.5f);
+            bgRt.offsetMax = new Vector2(-1.5f, -1.5f);
+
+            _towerBadgeBg = bgGo.GetComponent<UnityEngine.UI.Image>();
+            _towerBadgeBg.sprite = barSprite;
+            _towerBadgeBg.color = new Color(0.055f, 0.062f, 0.085f, 0.92f);
+            _towerBadgeBg.raycastTarget = false;
+
+            var labelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            labelGo.transform.SetParent(bgGo.transform, false);
+            var labelRt = (RectTransform)labelGo.transform;
+            labelRt.anchorMin = Vector2.zero;
+            labelRt.anchorMax = Vector2.one;
+            labelRt.offsetMin = new Vector2(8f, 1f);
+            labelRt.offsetMax = new Vector2(-8f, -1f);
+
+            _towerBadgeLabel = labelGo.GetComponent<TextMeshProUGUI>();
+            if (fontAsset != null) _towerBadgeLabel.font = fontAsset;
+            _towerBadgeLabel.fontSize = 14f;
+            _towerBadgeLabel.fontStyle = FontStyles.Bold;
+            _towerBadgeLabel.alignment = TextAlignmentOptions.Center;
+            _towerBadgeLabel.characterSpacing = 2.8f;
+            _towerBadgeLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            _towerBadgeLabel.color = new Color(1.0f, 0.86f, 0.42f, 1f);
+            _towerBadgeLabel.raycastTarget = false;
+
+            rootGo.SetActive(false);
+        }
+
+        private void UpdateTowerBadgeUI()
+        {
+            if (_towerBadgeRoot == null)
+            {
+                EnsureTowerBadgeWidget();
+            }
+            if (_towerBadgeRoot == null)
+            {
+                return;
+            }
+
+            ArcadeTowerRun run = GameSessionState.ActiveTowerRun;
+            bool show = GameSessionState.CurrentMode == GameMode.ArcadeTower &&
+                        run != null &&
+                        run.CurrentMatch != null;
+
+            if (_towerBadgeRoot.gameObject.activeSelf != show)
+            {
+                _towerBadgeRoot.gameObject.SetActive(show);
+            }
+
+            if (!show)
+            {
+                return;
+            }
+
+            int step = run.CurrentMatchIndex + 1;
+            int total = Mathf.Max(1, run.TotalMatches);
+            bool isBoss = run.IsCurrentMatchBoss;
+
+            if (isBoss)
+            {
+                _towerBadgeRoot.sizeDelta = new Vector2(336f, 30f);
+                if (_towerBadgeBorder != null) _towerBadgeBorder.color = new Color(0.92f, 0.24f, 0.16f, 0.98f);
+                if (_towerBadgeBg != null) _towerBadgeBg.color = new Color(0.18f, 0.045f, 0.045f, 0.94f);
+                if (_towerBadgeLabel != null)
+                {
+                    _towerBadgeLabel.text = $"CHEFE FINAL \u2022 TORRE {step}/{total}";
+                    _towerBadgeLabel.color = new Color(1.0f, 0.88f, 0.30f, 1f);
+                }
+            }
+            else
+            {
+                _towerBadgeRoot.sizeDelta = new Vector2(216f, 28f);
+                if (_towerBadgeBorder != null) _towerBadgeBorder.color = new Color(0.85f, 0.64f, 0.18f, 0.92f);
+                if (_towerBadgeBg != null) _towerBadgeBg.color = new Color(0.055f, 0.062f, 0.085f, 0.92f);
+                if (_towerBadgeLabel != null)
+                {
+                    _towerBadgeLabel.text = $"TORRE {step}/{total}";
+                    _towerBadgeLabel.color = new Color(1.0f, 0.86f, 0.42f, 1f);
+                }
             }
         }
     }

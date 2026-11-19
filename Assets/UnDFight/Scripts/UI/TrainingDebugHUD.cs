@@ -70,6 +70,12 @@ namespace UnDFight
             {
                 cpuTag = $" | CPU: <color=#FFB800>{GameSessionState.GetCpuDifficultyLabel(GameSessionState.SelectedCpuDifficulty)}</color>";
             }
+            else if (GameSessionState.CurrentMode == GameMode.ArcadeTower)
+            {
+                ArcadeTowerRun run = GameSessionState.ActiveTowerRun;
+                string step = run != null ? $"{run.CurrentMatchIndex + 1}/{run.TotalMatches}" : "?/7";
+                cpuTag = $" | TORRE {step} | CPU: <color=#FFB800>{GameSessionState.GetCpuDifficultyLabel(GameSessionState.SelectedCpuDifficulty)}</color>";
+            }
 
             debugText.text =
                 $"<b>Sim 60Hz</b> #{simulation.CurrentTick} | FPS {_currentFps:F0} | {matchLabel} | Hitstop={simulation.HitstopTicksRemaining} | [F1] Boxes: {boxes}{cpuTag}\n" +

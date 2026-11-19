@@ -80,7 +80,7 @@ namespace UnDFight.Tests
             Assert.AreEqual(WeightClass.Heavy, ibaneis.WeightCategory);
             Assert.AreEqual(FightingArchetype.BossExecutive, ibaneis.archetype);
             Assert.IsTrue(ibaneis.isSecretBoss);
-            Assert.IsTrue(ibaneis.unlockedByDefault);
+            Assert.IsFalse(ibaneis.unlockedByDefault);
             Assert.IsTrue(ibaneis.fbxHeightPrebaked);
             Assert.AreEqual(1.0f, ibaneis.VisualScale, 1e-5f);
             Assert.AreEqual(1.70f / 1.81f, ibaneis.HurtboxScale, 1e-5f);
@@ -727,29 +727,46 @@ namespace UnDFight.Tests
             var gabubuData = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Gabubu.asset");
             var roster = AssetDatabase.LoadAssetAtPath<FighterRoster>("Assets/UnDFight/Data/FighterRoster.asset");
 
-            // 1. CharacterSelectController 4x2 grid card auto-sizing (13..24, NoWrap) for all 7 fighters
-            var canvasGo = Track(new GameObject("TestSelectCanvas", typeof(RectTransform), typeof(Canvas)));
-            var selectCtrl = canvasGo.AddComponent<CharacterSelectController>();
-            var tex = Track(new Texture2D(2, 2));
-            var sprite = Track(Sprite.Create(tex, new Rect(0, 0, 2, 2), new Vector2(0.5f, 0.5f)));
-            selectCtrl.ConfigureReferences(roster, null, sprite, null, null);
-            selectCtrl.BuildUI(canvasGo.transform, sprite);
-
-            Transform grid = canvasGo.transform.Find("RosterGridPanel/Grid");
-            Assert.IsNotNull(grid);
-            Assert.AreEqual(8, grid.childCount);
-            for (int i = 0; i < grid.childCount; i++)
+            // 1. CharacterSelectController 4x2 grid card auto-sizing (13..24, NoWrap) for all 8 fighters
+            string tempProgress = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "UnDFight_WeightTest_" + System.IO.Path.GetRandomFileName() + ".json");
+            try
             {
-                var nameTmp = grid.GetChild(i).Find("Name")?.GetComponent<TMPro.TextMeshProUGUI>();
-                Assert.IsNotNull(nameTmp);
-                Assert.IsTrue(nameTmp.enableAutoSizing, $"Card {i} Name must enable auto-sizing");
-                Assert.AreEqual(13f, nameTmp.fontSizeMin, 0.01f);
-                Assert.AreEqual(24f, nameTmp.fontSizeMax, 0.01f);
-                Assert.AreEqual(TMPro.TextWrappingModes.NoWrap, nameTmp.textWrappingMode);
+                ProgressionManager.SetCustomFilePathForTesting(tempProgress);
+                ProgressionManager.ResetProgress(tempProgress, save: true);
+
+                var canvasGo = Track(new GameObject("TestSelectCanvas", typeof(RectTransform), typeof(Canvas)));
+                var selectCtrl = canvasGo.AddComponent<CharacterSelectController>();
+                var tex = Track(new Texture2D(2, 2));
+                var sprite = Track(Sprite.Create(tex, new Rect(0, 0, 2, 2), new Vector2(0.5f, 0.5f)));
+                selectCtrl.ConfigureReferences(roster, null, sprite, null, null);
+                selectCtrl.BuildUI(canvasGo.transform, sprite);
+
+                Transform grid = canvasGo.transform.Find("RosterGridPanel/Grid");
+                Assert.IsNotNull(grid);
+                Assert.AreEqual(8, grid.childCount);
+                for (int i = 0; i < grid.childCount; i++)
+                {
+                    var nameTmp = grid.GetChild(i).Find("Name")?.GetComponent<TMPro.TextMeshProUGUI>();
+                    Assert.IsNotNull(nameTmp);
+                    Assert.IsTrue(nameTmp.enableAutoSizing, $"Card {i} Name must enable auto-sizing");
+                    Assert.AreEqual(13f, nameTmp.fontSizeMin, 0.01f);
+                    Assert.AreEqual(24f, nameTmp.fontSizeMax, 0.01f);
+                    Assert.AreEqual(TMPro.TextWrappingModes.NoWrap, nameTmp.textWrappingMode);
+                }
+                var ibaneisBadge = grid.GetChild(7).Find("Badge")?.GetComponent<TMPro.TextMeshProUGUI>();
+                Assert.IsNotNull(ibaneisBadge);
+                Assert.AreEqual("BLOQUEADO", ibaneisBadge.text);
+
+                // After unlocking Ibaneis, card displays CHEFE badge
+                ProgressionManager.UnlockFighter(roster.GetFighter(7), tempProgress);
+                selectCtrl.RefreshAll();
+                StringAssert.Contains("CHEFE", ibaneisBadge.text);
             }
-            var ibaneisBadge = grid.GetChild(7).Find("Badge")?.GetComponent<TMPro.TextMeshProUGUI>();
-            Assert.IsNotNull(ibaneisBadge);
-            StringAssert.Contains("CHEFE", ibaneisBadge.text);
+            finally
+            {
+                ProgressionManager.SetCustomFilePathForTesting(null);
+                if (System.IO.File.Exists(tempProgress)) System.IO.File.Delete(tempProgress);
+            }
 
             // 2. Gabubu's Riff Destruidor (MultiHitRush): 2 distinct active hits + knockdown
             {

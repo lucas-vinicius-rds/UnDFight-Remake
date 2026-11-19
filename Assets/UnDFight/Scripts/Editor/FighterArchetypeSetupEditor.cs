@@ -368,7 +368,7 @@ namespace UnDFight.Editor
                 fighterDataPath: IbaneisDataPath,
                 maxHealth: 1100,
                 isSecretBoss: true,
-                unlockedByDefault: true);
+                unlockedByDefault: false);
 
             UpdateFighterRoster(
                 LucasDataPath,
