@@ -240,6 +240,7 @@ namespace UnDFight.Editor
             BuildThrowableBottlePrefab(ThrowableBottlePrefabPath, amberBottle, greenBottle, yellowPlastic);
             BuildDynamicCanPrefab(DynamicCanPrefabPath, redPlastic, yellowPlastic);
             BuildHangingSignPrefab(HangingSignPrefabPath, woodSign, metalPole);
+            ArenaFavelaUpgradeEditor.CreateOrUpdatePhase15_2PropPrefabs();
         }
 
         public static void SetupArenaFavelaPropsAndManager()
@@ -312,6 +313,7 @@ namespace UnDFight.Editor
             InstantiateProp(signPrefab, "Hanging_BarSign", propsGroup.transform, new Vector3(-2.95f, 3.35f, 2.15f), 0f);
 
             ConfigureArenaFavelaWindAndWeather(managerGo);
+            ArenaFavelaUpgradeEditor.ApplyPhase15_2DetailsToOpenArenaFavela(scene);
             manager.RefreshDiscoveredProps();
 
             EditorSceneManager.MarkSceneDirty(scene);

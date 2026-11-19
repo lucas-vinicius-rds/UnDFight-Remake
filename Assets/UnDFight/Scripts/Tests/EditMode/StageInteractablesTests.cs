@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace UnDFight.Tests
 {
@@ -984,6 +986,208 @@ namespace UnDFight.Tests
                 Physics.Simulate(FightSimulation.TickDeltaTime);
             }
             Assert.Greater(canInst.transform.position.x - restingPos.x, 0.15f, "RainyNight storm gusts must exceed wakeThreshold and move ground props.");
+        }
+
+        [Test]
+        public void StageWeatherController_TogglesDayNightClearNightAndRainOnlyObjects_AcrossAllThreeWeathers()
+        {
+            var favelaData = AssetDatabase.LoadAssetAtPath<StageData>("Assets/UnDFight/Data/StageData_FavelaCarioca.asset");
+            Assert.IsNotNull(favelaData);
+
+            var root = Track(new GameObject("Test_WeatherGroupsRig"));
+            var dirLightGo = Track(new GameObject("Test_WeatherGroupsDirLight"));
+            var dirLight = dirLightGo.AddComponent<Light>();
+            dirLight.type = LightType.Directional;
+
+            var dayObj = Track(new GameObject("Test_DayOnlySun"));
+            var nightObj = Track(new GameObject("Test_NightLightsAndWindows"));
+            var clearNightObj = Track(new GameObject("Test_ClearNightMoonAndStars"));
+            var rainObj = Track(new GameObject("Test_RainOnlyPuddles"));
+
+            var wind = root.AddComponent<StageWindController>();
+            var weather = root.AddComponent<StageWeatherController>();
+            weather.ConfigureReferences(
+                favelaData,
+                dirLight,
+                wind,
+                nightObjs: new[] { nightObj },
+                wetRenderers: null,
+                dayObjs: new[] { dayObj },
+                clearNightObjs: new[] { clearNightObj },
+                rainObjs: new[] { rainObj });
+
+            Assert.AreEqual(1, weather.DayOnlyObjects.Length);
+            Assert.AreEqual(1, weather.NightOnlyObjects.Length);
+            Assert.AreEqual(1, weather.ClearNightOnlyObjects.Length);
+            Assert.AreEqual(1, weather.RainOnlyObjects.Length);
+
+            // Day (Sunset): only dayObj active
+            weather.ApplyWeather(StageWeatherVariant.Day);
+            Assert.IsTrue(dayObj.activeSelf, "DayOnlyObjects must be active in Day.");
+            Assert.IsFalse(nightObj.activeSelf, "NightOnlyObjects must be inactive in Day.");
+            Assert.IsFalse(clearNightObj.activeSelf, "ClearNightOnlyObjects must be inactive in Day.");
+            Assert.IsFalse(rainObj.activeSelf, "RainOnlyObjects must be inactive in Day.");
+
+            // Clean Night: nightObj + clearNightObj active; dayObj + rainObj inactive
+            weather.ApplyWeather(StageWeatherVariant.Night);
+            Assert.IsFalse(dayObj.activeSelf, "DayOnlyObjects must be inactive in Night.");
+            Assert.IsTrue(nightObj.activeSelf, "NightOnlyObjects must be active in Night.");
+            Assert.IsTrue(clearNightObj.activeSelf, "ClearNightOnlyObjects must be active in clean Night.");
+            Assert.IsFalse(rainObj.activeSelf, "RainOnlyObjects must be inactive in clean Night.");
+
+            // Rainy Night: nightObj + rainObj active; dayObj + clearNightObj inactive
+            weather.ApplyWeather(StageWeatherVariant.RainyNight);
+            Assert.IsFalse(dayObj.activeSelf, "DayOnlyObjects must be inactive in RainyNight.");
+            Assert.IsTrue(nightObj.activeSelf, "NightOnlyObjects must remain active in RainyNight.");
+            Assert.IsFalse(clearNightObj.activeSelf, "ClearNightOnlyObjects must be inactive in RainyNight.");
+            Assert.IsTrue(rainObj.activeSelf, "RainOnlyObjects must be active in RainyNight.");
+        }
+
+        [Test]
+        public void Phase15_2_NewPrefabsAndArenaFavelaDetails_AreConfiguredCorrectly()
+        {
+            // 1. Validate StageData_FavelaCarioca weather metadata
+            var favelaData = AssetDatabase.LoadAssetAtPath<StageData>("Assets/UnDFight/Data/StageData_FavelaCarioca.asset");
+            Assert.IsNotNull(favelaData);
+            Assert.IsTrue(favelaData.supportsWeatherVariants);
+            Assert.AreEqual("PÔR DO SOL", favelaData.dayVariantLabel);
+
+            // 2. Validate new Phase 15.2 reusable prefabs
+            GameObject clothPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnDFight/Prefabs/StageProps/Prop_HangingCloth.prefab");
+            Assert.IsNotNull(clothPrefab, "Missing Prop_HangingCloth.prefab");
+            var clothHang = clothPrefab.GetComponent<StageHangingProp>();
+            var clothHinge = clothPrefab.GetComponentInChildren<HingeJoint>(true);
+            var clothWind = clothPrefab.GetComponentInChildren<StageWindAffectable>(true);
+            Assert.IsNotNull(clothHang);
+            Assert.IsNotNull(clothHinge);
+            Assert.AreEqual(Vector3.right, clothHinge.axis, "Prop_HangingCloth HingeJoint must swing around horizontal Vector3.right axis.");
+            Assert.IsNotNull(clothWind);
+            Assert.AreEqual(0.65f, clothWind.WakeGustThreshold, 0.02f);
+            Assert.AreEqual(1.35f, clothWind.WindSensitivity, 0.02f);
+            Assert.AreEqual(StagePhysicsLayers.StageDebrisLayer, clothHinge.gameObject.layer);
+
+            GameObject lanternPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnDFight/Prefabs/StageProps/Prop_HangingLantern.prefab");
+            Assert.IsNotNull(lanternPrefab, "Missing Prop_HangingLantern.prefab");
+            Assert.IsNotNull(lanternPrefab.GetComponent<StageHangingProp>());
+            var lanternHinge = lanternPrefab.GetComponentInChildren<HingeJoint>(true);
+            Assert.IsNotNull(lanternHinge);
+            Assert.AreEqual(StagePhysicsLayers.StageDebrisLayer, lanternHinge.gameObject.layer);
+            Assert.IsNotNull(lanternPrefab.GetComponentInChildren<StageWindAffectable>(true));
+
+            GameObject conePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnDFight/Prefabs/StageProps/Prop_DynamicCone.prefab");
+            Assert.IsNotNull(conePrefab, "Missing Prop_DynamicCone.prefab");
+            Assert.AreEqual(StagePhysicsLayers.StageDebrisLayer, conePrefab.layer);
+            Assert.IsNotNull(conePrefab.GetComponent<StageDynamicProp>());
+            var coneRb = conePrefab.GetComponent<Rigidbody>();
+            Assert.IsNotNull(coneRb);
+            Assert.AreEqual(0.45f, coneRb.mass, 0.02f);
+            var coneWind = conePrefab.GetComponent<StageWindAffectable>();
+            Assert.IsNotNull(coneWind);
+            Assert.AreEqual(4.4f, coneWind.WakeGustThreshold, 0.05f, "Dynamic cone must stay still in Day/Night breeze until kicked or storm hits.");
+
+            // 3. Validate Arena_Favela.unity scene wiring (open additively and close cleanly)
+            Scene prevActive = SceneManager.GetActiveScene();
+            Scene favelaScene = EditorSceneManager.OpenScene("Assets/UnDFight/Scenes/Arena_Favela.unity", OpenSceneMode.Additive);
+            try
+            {
+                StageWeatherController weather = null;
+                StageInteractableManager stageMgr = null;
+                var hangingProps = new List<StageHangingProp>();
+                var dynamicProps = new List<StageDynamicProp>();
+
+                foreach (GameObject rootGo in favelaScene.GetRootGameObjects())
+                {
+                    if (weather == null) weather = rootGo.GetComponentInChildren<StageWeatherController>(true);
+                    if (stageMgr == null) stageMgr = rootGo.GetComponentInChildren<StageInteractableManager>(true);
+                    hangingProps.AddRange(rootGo.GetComponentsInChildren<StageHangingProp>(true));
+                    dynamicProps.AddRange(rootGo.GetComponentsInChildren<StageDynamicProp>(true));
+                }
+
+                Assert.IsNotNull(weather, "Arena_Favela must have StageWeatherController.");
+                Assert.IsNotNull(stageMgr, "Arena_Favela must have StageInteractableManager.");
+
+                // DayOnlyObjects must contain Sunset_SunDisc
+                Assert.IsNotNull(weather.DayOnlyObjects);
+                bool hasSunDisc = false;
+                foreach (GameObject go in weather.DayOnlyObjects)
+                {
+                    if (go != null && go.name == "Sunset_SunDisc") hasSunDisc = true;
+                }
+                Assert.IsTrue(hasSunDisc, "Sunset_SunDisc must be assigned to StageWeatherController.DayOnlyObjects.");
+
+                // ClearNightOnlyObjects must contain FavelaClearNightSky
+                Assert.IsNotNull(weather.ClearNightOnlyObjects);
+                bool hasClearNightSky = false;
+                foreach (GameObject go in weather.ClearNightOnlyObjects)
+                {
+                    if (go != null && go.name == "FavelaClearNightSky") hasClearNightSky = true;
+                }
+                Assert.IsTrue(hasClearNightSky, "FavelaClearNightSky must be assigned to StageWeatherController.ClearNightOnlyObjects.");
+
+                // NightOnlyObjects must contain FavelaNightLightsAndWindows (all point lights LightShadows.None) & FavelaNightWindows_Hillside (>= 14 lit windows)
+                Assert.IsNotNull(weather.NightOnlyObjects);
+                GameObject nightLightsGo = null;
+                GameObject hillsideWinGo = null;
+                foreach (GameObject go in weather.NightOnlyObjects)
+                {
+                    if (go == null) continue;
+                    if (go.name == "FavelaNightLightsAndWindows") nightLightsGo = go;
+                    if (go.name == "FavelaNightWindows_Hillside") hillsideWinGo = go;
+                }
+                Assert.IsNotNull(nightLightsGo, "FavelaNightLightsAndWindows must be in NightOnlyObjects.");
+                Assert.IsNotNull(hillsideWinGo, "FavelaNightWindows_Hillside must be in NightOnlyObjects.");
+                Assert.GreaterOrEqual(hillsideWinGo.transform.childCount, 14, "Hillside favela must have at least 14 warm lit night window panels.");
+
+                Light[] nightLights = nightLightsGo.GetComponentsInChildren<Light>(true);
+                Assert.GreaterOrEqual(nightLights.Length, 5);
+                foreach (Light nl in nightLights)
+                {
+                    Assert.AreEqual(LightShadows.None, nl.shadows, $"Night point light '{nl.name}' must use LightShadows.None for 60 FPS.");
+                }
+
+                // RainOnlyObjects must contain FavelaRainPuddles (>= 5 puddles)
+                Assert.IsNotNull(weather.RainOnlyObjects);
+                GameObject puddlesGo = null;
+                foreach (GameObject go in weather.RainOnlyObjects)
+                {
+                    if (go != null && go.name == "FavelaRainPuddles") puddlesGo = go;
+                }
+                Assert.IsNotNull(puddlesGo, "FavelaRainPuddles must be in RainOnlyObjects.");
+                Assert.GreaterOrEqual(puddlesGo.transform.childCount, 5, "Arena_Favela must have at least 5 rain puddles.");
+
+                // Hanging props: 1 bar sign + 3 clothesline clothes + 1 right lantern = >= 5 HingeJoint hanging props
+                Assert.GreaterOrEqual(hangingProps.Count, 5, "Arena_Favela must contain Hanging_BarSign, 3 clothesline HingeJoints, and Hanging_RightLantern.");
+                int clothCount = 0;
+                bool hasRightLantern = false;
+                foreach (StageHangingProp hp in hangingProps)
+                {
+                    Assert.IsNotNull(hp.GetComponentInChildren<HingeJoint>(true), $"Hanging prop '{hp.name}' must have a HingeJoint.");
+                    if (hp.name.StartsWith("Hanging_Cloth_")) clothCount++;
+                    if (hp.name == "Hanging_RightLantern") hasRightLantern = true;
+                }
+                Assert.AreEqual(3, clothCount, "Arena_Favela must have 3 physical clothesline HingeJoint garments.");
+                Assert.IsTrue(hasRightLantern, "Arena_Favela must have Hanging_RightLantern.");
+
+                // Dynamic props: 3 cans + 2 cones = >= 5 StageDynamicProps
+                Assert.GreaterOrEqual(dynamicProps.Count, 5, "Arena_Favela must contain dynamic cans and dynamic cones.");
+                int coneCount = 0;
+                foreach (StageDynamicProp dp in dynamicProps)
+                {
+                    if (dp.name.StartsWith("Dynamic_Cone_")) coneCount++;
+                }
+                Assert.GreaterOrEqual(coneCount, 2, "Arena_Favela must contain at least 2 Dynamic_Cone props.");
+            }
+            finally
+            {
+                if (favelaScene.IsValid() && favelaScene.isLoaded)
+                {
+                    EditorSceneManager.CloseScene(favelaScene, removeScene: true);
+                }
+                if (prevActive.IsValid())
+                {
+                    SceneManager.SetActiveScene(prevActive);
+                }
+            }
         }
     }
 }

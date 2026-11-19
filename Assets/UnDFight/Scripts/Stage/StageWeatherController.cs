@@ -123,7 +123,10 @@ namespace UnDFight
         [SerializeField] private Light[] secondaryFillLights = Array.Empty<Light>();
         [SerializeField] private float[] secondaryFillBaseIntensities = Array.Empty<float>();
         [SerializeField] private StageWindController windController;
+        [SerializeField] private GameObject[] dayOnlyObjects = Array.Empty<GameObject>();
         [SerializeField] private GameObject[] nightOnlyObjects = Array.Empty<GameObject>();
+        [SerializeField] private GameObject[] clearNightOnlyObjects = Array.Empty<GameObject>();
+        [SerializeField] private GameObject[] rainOnlyObjects = Array.Empty<GameObject>();
         [SerializeField] private Renderer[] wetSurfaceRenderers = Array.Empty<Renderer>();
 
         [Header("Weather Profiles")]
@@ -170,7 +173,10 @@ namespace UnDFight
         public StageWindController WindController => windController;
         public ParticleSystem RainParticleSystem => rainParticleSystem;
         public ParticleSystem RainSplashSubEmitter => rainSplashSubEmitter;
+        public GameObject[] DayOnlyObjects => dayOnlyObjects;
         public GameObject[] NightOnlyObjects => nightOnlyObjects;
+        public GameObject[] ClearNightOnlyObjects => clearNightOnlyObjects;
+        public GameObject[] RainOnlyObjects => rainOnlyObjects;
         public Renderer[] WetSurfaceRenderers => wetSurfaceRenderers;
         public bool IsWetSurfaceActive => _currentWeather == StageWeatherVariant.RainyNight;
 
@@ -231,12 +237,18 @@ namespace UnDFight
             Light dirLight,
             StageWindController wind,
             GameObject[] nightObjs = null,
-            Renderer[] wetRenderers = null)
+            Renderer[] wetRenderers = null,
+            GameObject[] dayObjs = null,
+            GameObject[] clearNightObjs = null,
+            GameObject[] rainObjs = null)
         {
             stageData = data;
             if (dirLight != null) mainDirectionalLight = dirLight;
             if (wind != null) windController = wind;
+            if (dayObjs != null) dayOnlyObjects = dayObjs;
             if (nightObjs != null) nightOnlyObjects = nightObjs;
+            if (clearNightObjs != null) clearNightOnlyObjects = clearNightObjs;
+            if (rainObjs != null) rainOnlyObjects = rainObjs;
             if (wetRenderers != null) wetSurfaceRenderers = wetRenderers;
         }
 
@@ -306,8 +318,15 @@ namespace UnDFight
 
             ApplyRuntimeSkyboxProfile(profile);
 
-            bool nightActive = effective == StageWeatherVariant.Night || effective == StageWeatherVariant.RainyNight;
-            SetNightObjectsActive(nightActive);
+            bool isDay = effective == StageWeatherVariant.Day;
+            bool isClearNight = effective == StageWeatherVariant.Night;
+            bool isRain = effective == StageWeatherVariant.RainyNight;
+            bool nightActive = isClearNight || isRain;
+
+            SetObjectsActive(dayOnlyObjects, isDay);
+            SetObjectsActive(nightOnlyObjects, nightActive);
+            SetObjectsActive(clearNightOnlyObjects, isClearNight);
+            SetObjectsActive(rainOnlyObjects, isRain);
 
             if (windController != null)
             {
@@ -316,7 +335,6 @@ namespace UnDFight
                 windController.GustFrequency = profile.windGustFrequency;
             }
 
-            bool isRain = effective == StageWeatherVariant.RainyNight;
             if (isRain)
             {
                 EnsureRainSystem();
@@ -680,18 +698,18 @@ namespace UnDFight
             }
         }
 
-        private void SetNightObjectsActive(bool active)
+        private static void SetObjectsActive(GameObject[] objects, bool active)
         {
-            if (nightOnlyObjects == null)
+            if (objects == null)
             {
                 return;
             }
 
-            for (int i = 0; i < nightOnlyObjects.Length; i++)
+            for (int i = 0; i < objects.Length; i++)
             {
-                if (nightOnlyObjects[i] != null)
+                if (objects[i] != null)
                 {
-                    nightOnlyObjects[i].SetActive(active);
+                    objects[i].SetActive(active);
                 }
             }
         }
