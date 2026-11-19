@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
+using TMPro;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -249,6 +251,206 @@ namespace UnDFight.Tests
             GameSessionState.Reset();
             Assert.IsFalse(GameSessionState.OpenStageSelectOnCharacterSelect);
             Assert.AreEqual(GameSessionState.DefaultStageSceneName, GameSessionState.SelectedStageSceneName);
+        }
+
+        [Test]
+        public void MainMenu_RootMenuLabels_UseStandardizedMkxUnDFLabelsWithoutVersusLocal()
+        {
+            string[] expectedLabels = { "MODO TORRE", "VS JOGADOR", "VS CPU", "TREINO", "OPÇÕES", "SAIR" };
+            Assert.AreEqual(expectedLabels.Length, MainMenuController.RootMenuLabels.Length);
+            for (int i = 0; i < expectedLabels.Length; i++)
+            {
+                Assert.AreEqual(expectedLabels[i], MainMenuController.RootMenuLabels[i]);
+                Assert.AreNotEqual("VERSUS LOCAL", MainMenuController.RootMenuLabels[i]);
+            }
+
+            var canvasGo = Track(new GameObject("Test_MainMenuCanvas", typeof(RectTransform), typeof(Canvas)));
+            var ctrl = canvasGo.AddComponent<MainMenuController>();
+            var tex = Track(new Texture2D(2, 2));
+            var spr = Track(Sprite.Create(tex, new Rect(0, 0, 2, 2), new Vector2(0.5f, 0.5f)));
+
+            ctrl.BuildUI(canvasGo.transform, spr);
+
+            Transform rootGroup = canvasGo.transform.Find("MainMenuPanel/RootMenuGroup");
+            Assert.IsNotNull(rootGroup);
+            var buttons = rootGroup.GetComponentsInChildren<UnityEngine.UI.Button>(true);
+            Assert.AreEqual(expectedLabels.Length, buttons.Length);
+
+            for (int i = 0; i < expectedLabels.Length; i++)
+            {
+                var lbl = buttons[i].transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
+                Assert.IsNotNull(lbl);
+                Assert.AreEqual(expectedLabels[i], lbl.text);
+                Assert.IsNotNull(buttons[i].transform.Find("DiamondLeft"), "MKX clean menu button must have left diamond");
+                Assert.IsNotNull(buttons[i].transform.Find("DiamondRight"), "MKX clean menu button must have right diamond");
+                Assert.IsNotNull(buttons[i].transform.Find("SelectionSweep"), "MKX clean menu button must have soft sweep");
+            }
+
+            // Feature cards check (TORRE ARCADE, COMBATE RÁPIDO, ARENAS without "2.5D")
+            var arenasTitle = canvasGo.transform.Find("TopFeatureCards/FeatureCard_Arenas/CardTitle")?.GetComponent<TextMeshProUGUI>();
+            Assert.IsNotNull(arenasTitle);
+            Assert.AreEqual("ARENAS", arenasTitle.text);
+            StringAssert.DoesNotContain("2.5D", arenasTitle.text);
+
+            // Top-right must stay clean (no "REMAKE 2.5D • 60HZ" badge anywhere)
+            foreach (TextMeshProUGUI tmp in canvasGo.GetComponentsInChildren<TextMeshProUGUI>(true))
+            {
+                StringAssert.DoesNotContain("60HZ", tmp.text.ToUpperInvariant());
+                StringAssert.DoesNotContain("VERSUS LOCAL", tmp.text.ToUpperInvariant());
+            }
+
+            // Dynamic footer description updates on selection move
+            Assert.IsNotNull(ctrl.ModeDescriptionText);
+            string desc0 = ctrl.ModeDescriptionText.text;
+            ctrl.RootNavigation.SetSelectedIndex(1, notifyAudio: false);
+            string desc1 = ctrl.ModeDescriptionText.text;
+            Assert.AreNotEqual(desc0, desc1);
+            StringAssert.Contains("2 JOGADORES", desc1);
+        }
+
+        [Test]
+        public void UiThemeAssets_OfficialUnDFLogoAndMkxSprites_ExistAsSpritesInArtUI()
+        {
+            Assert.IsTrue(File.Exists(Path.GetFullPath("Docs/Referencias/Logo_UnDF.png")), "Official Logo_UnDF.png copy missing in Docs/Referencias/");
+
+            string[] requiredSprites =
+            {
+                "Assets/UnDFight/Art/UI/Logo_UnDF.png",
+                "Assets/UnDFight/Art/UI/Logo_UnDF_Emblem.png",
+                "Assets/UnDFight/Art/UI/UI_ArchedCard.png",
+                "Assets/UnDFight/Art/UI/UI_HexBadge.png",
+                "Assets/UnDFight/Art/UI/UI_Diamond.png",
+                "Assets/UnDFight/Art/UI/UI_LockIcon.png",
+                "Assets/UnDFight/Art/UI/UI_SoftSweep.png",
+                "Assets/UnDFight/Art/UI/UI_BladeBarLeft.png",
+                "Assets/UnDFight/Art/UI/UI_BladeBarRight.png"
+            };
+
+            foreach (string path in requiredSprites)
+            {
+                Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                Assert.IsNotNull(sprite, $"Missing Sprite asset at {path}");
+                Assert.Greater(sprite.rect.width, 8f, $"Invalid sprite width for {path}");
+                Assert.Greater(sprite.rect.height, 8f, $"Invalid sprite height for {path}");
+
+                var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                Assert.IsNotNull(importer, $"Missing TextureImporter at {path}");
+                Assert.AreEqual(TextureImporterType.Sprite, importer.textureType, $"{path} must be imported as Sprite (2D and UI)");
+                Assert.IsTrue(importer.alphaIsTransparency, $"{path} must enable alphaIsTransparency");
+                Assert.IsFalse(importer.mipmapEnabled, $"{path} must disable mipmaps");
+            }
+
+            // ArchedCard must have 9-slice border configured
+            Sprite arched = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_ArchedCard.png");
+            Assert.Greater(arched.border.x, 0f, "UI_ArchedCard must have 9-slice left border");
+            Assert.Greater(arched.border.y, 0f, "UI_ArchedCard must have 9-slice bottom arch border");
+
+            // Emblem PNG must have transparent corner background (white background removed)
+            byte[] emblemBytes = File.ReadAllBytes(Path.GetFullPath("Assets/UnDFight/Art/UI/Logo_UnDF_Emblem.png"));
+            var emblemTex = Track(new Texture2D(2, 2, TextureFormat.RGBA32, false));
+            Assert.IsTrue(emblemTex.LoadImage(emblemBytes));
+            Assert.Less(emblemTex.GetPixel(0, 0).a, 0.05f, "Logo_UnDF_Emblem corner must be transparent over dark backgrounds");
+        }
+
+        [Test]
+        public void CharacterSelect_DataDrivenGridLayout_ScalesCleanlyForFutureFightersAndStages()
+        {
+            // Fighter roster scaling: 1 row up to 8 fighters, 2 centered rows for 9+
+            CharacterSelectController.ComputeRosterGridLayout(8, out int cols8, out int rows8, out Vector2 cell8, out _, out Vector2 panel8);
+            Assert.AreEqual(1, rows8);
+            Assert.AreEqual(8, cols8);
+            Assert.Less(panel8.y, 160f, "1-row fighter bar must keep top 65%+ completely open");
+            Assert.Less(panel8.x, 1860f);
+
+            CharacterSelectController.ComputeRosterGridLayout(10, out int cols10, out int rows10, out Vector2 cell10, out _, out Vector2 panel10);
+            Assert.AreEqual(2, rows10);
+            Assert.AreEqual(5, cols10);
+            Assert.LessOrEqual(panel10.y, 220f, "2-row fighter bar must remain compact without encroaching on 3D fighters");
+            Assert.Less(panel10.x, 1860f);
+            Assert.Greater(cell10.x, 100f);
+
+            // Stage bar scaling: 1 row up to 4 stages, 2 rows for 5+
+            CharacterSelectController.ComputeStageGridLayout(4, out int sCols4, out int sRows4, out _, out _, out Vector2 sPanel4);
+            Assert.AreEqual(1, sRows4);
+            Assert.AreEqual(4, sCols4);
+            Assert.Less(sPanel4.x, 1860f);
+
+            CharacterSelectController.ComputeStageGridLayout(6, out int sCols6, out int sRows6, out _, out _, out Vector2 sPanel6);
+            Assert.AreEqual(2, sRows6);
+            Assert.AreEqual(3, sCols6);
+            Assert.Less(sPanel6.x, 1860f);
+            Assert.LessOrEqual(sPanel6.y, 290f);
+
+            // Verify live runtime GridLayoutGroup adapts cleanly for a 10-fighter roster
+            var syntheticFighters = new List<FighterData>();
+            for (int i = 0; i < 10; i++)
+            {
+                var f = Track(ScriptableObject.CreateInstance<FighterData>());
+                f.fighterName = $"Fighter_{i + 1}";
+                syntheticFighters.Add(f);
+            }
+            var bigRoster = Track(ScriptableObject.CreateInstance<FighterRoster>());
+            var fightersField = typeof(FighterRoster).GetField("fighters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            fightersField.SetValue(bigRoster, syntheticFighters);
+
+            var canvasGo = Track(new GameObject("Test_ScalableGridCanvas", typeof(RectTransform), typeof(Canvas)));
+            var ctrl = canvasGo.AddComponent<CharacterSelectController>();
+            var tex = Track(new Texture2D(2, 2));
+            var spr = Track(Sprite.Create(tex, new Rect(0, 0, 2, 2), new Vector2(0.5f, 0.5f)));
+            ctrl.ConfigureReferences(bigRoster, null, spr, null, null);
+            ctrl.BuildUI(canvasGo.transform, spr);
+
+            Transform grid = canvasGo.transform.Find("RosterGridPanel/Grid");
+            Assert.IsNotNull(grid);
+            Assert.AreEqual(10, grid.childCount);
+            var glg = grid.GetComponent<UnityEngine.UI.GridLayoutGroup>();
+            Assert.IsNotNull(glg);
+            Assert.AreEqual(5, glg.constraintCount, "10 fighters must auto-wrap into 2 rows of 5 columns");
+        }
+
+        [Test]
+        public void CharacterSelect_TowerHeaderIsCleanAndPreservesLockedBossRules()
+        {
+            string tempProgress = Path.Combine(_tempDir, "tower_header_progress.json");
+            try
+            {
+                ProgressionManager.SetCustomFilePathForTesting(tempProgress);
+                ProgressionManager.ResetProgress(tempProgress, save: true);
+
+                var fighterRoster = AssetDatabase.LoadAssetAtPath<FighterRoster>("Assets/UnDFight/Data/FighterRoster.asset");
+                var stageRoster = AssetDatabase.LoadAssetAtPath<StageRoster>("Assets/UnDFight/Data/StageRoster.asset");
+                Assert.IsNotNull(fighterRoster);
+                Assert.IsNotNull(stageRoster);
+
+                var canvasGo = Track(new GameObject("Test_TowerHeaderCanvas", typeof(RectTransform), typeof(Canvas)));
+                var ctrl = canvasGo.AddComponent<CharacterSelectController>();
+                var tex = Track(new Texture2D(2, 2));
+                var spr = Track(Sprite.Create(tex, new Rect(0, 0, 2, 2), new Vector2(0.5f, 0.5f)));
+
+                GameSessionState.SelectMode(GameMode.ArcadeTower);
+                ctrl.ConfigureReferences(fighterRoster, stageRoster, spr, null, null);
+                ctrl.BuildUI(canvasGo.transform, spr);
+
+                // Locked boss stays blocked
+                ctrl.SetP1Index(7);
+                Assert.IsFalse(ctrl.TryConfirmP1());
+
+                // Pick unlocked Lucas and open TowerLadder
+                ctrl.SetP1Index(0);
+                Assert.IsTrue(ctrl.TryConfirmP1());
+                Assert.IsTrue(ctrl.IsTowerLadderOpen);
+
+                // Header must display ONLY "TORRE ARCADE" (never "7 LUTAS • CHEFE FINAL: IBANEIS")
+                var heading = ctrl.TowerLadderPanel.transform.Find("TowerHeader/TowerHeading")?.GetComponent<TextMeshProUGUI>();
+                Assert.IsNotNull(heading);
+                Assert.AreEqual("TORRE ARCADE", heading.text);
+                StringAssert.DoesNotContain("7 LUTAS", heading.text);
+                StringAssert.DoesNotContain("IBANEIS", heading.text);
+            }
+            finally
+            {
+                ProgressionManager.SetCustomFilePathForTesting(null);
+            }
         }
     }
 }

@@ -654,9 +654,9 @@ namespace UnDFight
             MenuUiFactory.AddBorder(statsBox, MenuUiFactory.BronzeBorder, sprite, 1.5f);
 
             string statsBody =
-                $"CAMPEÃO: <color=#FFB800>{champName}</color>\n" +
-                $"DIFICULDADE: <color=#FFB800>{diffLabel}</color>   •   CONTINUES USADOS: <color=#FFB800>{run.ContinuesUsed}</color>\n" +
-                $"TORRES CONCLUÍDAS: <color=#FFB800>{completions}</color>";
+                $"CAMPEÃO: <color=#8BC9EE>{champName}</color>\n" +
+                $"DIFICULDADE: <color=#8BC9EE>{diffLabel}</color>   •   CONTINUES USADOS: <color=#8BC9EE>{run.ContinuesUsed}</color>\n" +
+                $"TORRES CONCLUÍDAS: <color=#8BC9EE>{completions}</color>";
             TextMeshProUGUI statsTmp = MenuUiFactory.CreateText("StatsText", statsBox, statsBody, 20f, FontStyles.Bold, TextAlignmentOptions.Center, Color.white, characterSpacing: 2f);
             statsTmp.lineSpacing = 14f;
             MenuUiFactory.StretchFull(statsTmp.rectTransform, 18f, 12f, 18f, 12f);

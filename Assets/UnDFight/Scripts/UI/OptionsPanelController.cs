@@ -98,15 +98,15 @@ namespace UnDFight
             modal.anchorMax = new Vector2(0.5f, 0.5f);
             modal.pivot = new Vector2(0.5f, 0.5f);
             modal.sizeDelta = new Vector2(1480f, 900f);
-            MenuUiFactory.AddBorder(modal, MenuUiFactory.BronzeBorder, whiteSprite, 2f);
+            MenuUiFactory.AddBorder(modal, MenuUiFactory.SlateBorderDark, whiteSprite, 2f);
 
-            RectTransform topLine = MenuUiFactory.CreatePanel("TopGoldLine", modal, MenuUiFactory.AccentGold, whiteSprite);
+            RectTransform topLine = MenuUiFactory.CreatePanel("TopGoldLine", modal, MenuUiFactory.UnDFBlue, whiteSprite);
             topLine.anchorMin = new Vector2(0f, 1f);
             topLine.anchorMax = new Vector2(1f, 1f);
             topLine.pivot = new Vector2(0.5f, 1f);
             topLine.sizeDelta = new Vector2(0f, 4f);
 
-            TextMeshProUGUI title = MenuUiFactory.CreateText("Title", modal, "CONFIGURAÇÕES", 42f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentGold, characterSpacing: 7f);
+            TextMeshProUGUI title = MenuUiFactory.CreateText("Title", modal, "CONFIGURAÇÕES", 42f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.TextActive, characterSpacing: 7f);
             title.rectTransform.anchorMin = new Vector2(0f, 1f);
             title.rectTransform.anchorMax = new Vector2(1f, 1f);
             title.rectTransform.pivot = new Vector2(0.5f, 1f);
@@ -114,7 +114,7 @@ namespace UnDFight
             title.rectTransform.sizeDelta = new Vector2(-80f, 58f);
 
             // Top Left: Audio section
-            TextMeshProUGUI audioHdr = MenuUiFactory.CreateText("AudioHeader", modal, "ÁUDIO", 22f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentAmber, characterSpacing: 5f);
+            TextMeshProUGUI audioHdr = MenuUiFactory.CreateText("AudioHeader", modal, "ÁUDIO", 22f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.UnDFSky, characterSpacing: 5f);
             PlaceTopLeftRect(audioHdr.rectTransform, 44f, -86f, 670f, 34f);
 
             CreateSliderOptionRow(modal, whiteSprite, "Volume Geral (Master)", 44f, -126f, 670f, out _masterSlider, out _masterVal, v =>
@@ -137,7 +137,7 @@ namespace UnDFight
             });
 
             // Top Right: Video & Devices
-            TextMeshProUGUI videoHdr = MenuUiFactory.CreateText("VideoHeader", modal, "VÍDEO E DISPOSITIVOS", 22f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentAmber, characterSpacing: 5f);
+            TextMeshProUGUI videoHdr = MenuUiFactory.CreateText("VideoHeader", modal, "VÍDEO E DISPOSITIVOS", 22f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.UnDFSky, characterSpacing: 5f);
             PlaceTopLeftRect(videoHdr.rectTransform, 756f, -86f, 680f, 34f);
 
             CreateCyclerRow(modal, whiteSprite, "Resolução", 756f, -126f, 680f, out _resolutionVal, step =>
@@ -160,10 +160,10 @@ namespace UnDFight
             CreateCyclerRow(modal, whiteSprite, "Dispositivo P2", 756f, -300f, 680f, out _p2DeviceVal, step => CycleDevice(1, step));
 
             // Middle: Key bindings (P1 Left Column, P2 Right Column)
-            TextMeshProUGUI p1Hdr = MenuUiFactory.CreateText("P1ControlsHeader", modal, "CONTROLES P1 (WASD + GOLPES)", 23f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentGold);
+            TextMeshProUGUI p1Hdr = MenuUiFactory.CreateText("P1ControlsHeader", modal, "CONTROLES P1 (WASD + GOLPES)", 23f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.UnDFBlue);
             PlaceTopLeftRect(p1Hdr.rectTransform, 44f, -366f, 670f, 32f);
 
-            TextMeshProUGUI p2Hdr = MenuUiFactory.CreateText("P2ControlsHeader", modal, "CONTROLES P2 (SETAS + GOLPES)", 23f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.AccentGold);
+            TextMeshProUGUI p2Hdr = MenuUiFactory.CreateText("P2ControlsHeader", modal, "CONTROLES P2 (SETAS + GOLPES)", 23f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, MenuUiFactory.CrimsonActive);
             PlaceTopLeftRect(p2Hdr.rectTransform, 756f, -366f, 680f, 32f);
 
             CreateBindingColumn(modal, whiteSprite, 0, 44f, -404f, 670f);
@@ -187,7 +187,7 @@ namespace UnDFight
                 19f,
                 FontStyles.Normal,
                 TextAlignmentOptions.Center,
-                new Color(0.74f, 0.80f, 0.88f, 1f));
+                MenuUiFactory.TextInactive);
             PlaceTopLeftRect(_hintFooterText.rectTransform, 44f, -842f, 1392f, 38f);
 
             navigationGroup.OnCancel = () =>
@@ -217,7 +217,7 @@ namespace UnDFight
                 MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"Bind_P{playerIndex + 1}_{rows[i].btn}", modal, rows[i].label, whiteSprite, 21f, TextAlignmentOptions.MidlineLeft);
                 PlaceTopLeftRect(entry.Button.GetComponent<RectTransform>(), x, y, width, 48f);
 
-                TextMeshProUGUI valText = MenuUiFactory.CreateText("KeyValue", entry.Button.transform, "J", 22f, FontStyles.Bold, TextAlignmentOptions.MidlineRight, MenuUiFactory.AccentGold);
+                TextMeshProUGUI valText = MenuUiFactory.CreateText("KeyValue", entry.Button.transform, "J", 22f, FontStyles.Bold, TextAlignmentOptions.MidlineRight, MenuUiFactory.UnDFSky);
                 MenuUiFactory.StretchFull(valText.rectTransform, 24f, 4f, 22f, 4f);
 
                 var bindRow = new KeyBindRow
@@ -256,7 +256,7 @@ namespace UnDFight
             sliderRt.offsetMin = Vector2.zero;
             sliderRt.offsetMax = Vector2.zero;
 
-            valueText = MenuUiFactory.CreateText("Pct", entry.Button.transform, "100%", 21f, FontStyles.Bold, TextAlignmentOptions.MidlineRight, MenuUiFactory.AccentGold);
+            valueText = MenuUiFactory.CreateText("Pct", entry.Button.transform, "100%", 21f, FontStyles.Bold, TextAlignmentOptions.MidlineRight, MenuUiFactory.UnDFSky);
             valueText.rectTransform.anchorMin = new Vector2(0.84f, 0f);
             valueText.rectTransform.anchorMax = new Vector2(1f, 1f);
             valueText.rectTransform.offsetMin = Vector2.zero;
@@ -297,7 +297,7 @@ namespace UnDFight
             MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"Opt_{title}", parent, title, whiteSprite, 21f, TextAlignmentOptions.MidlineLeft);
             PlaceTopLeftRect(entry.Button.GetComponent<RectTransform>(), x, y, width, 50f);
 
-            valueText = MenuUiFactory.CreateText("Val", entry.Button.transform, "< ... >", 21f, FontStyles.Bold, TextAlignmentOptions.MidlineRight, MenuUiFactory.AccentGold);
+            valueText = MenuUiFactory.CreateText("Val", entry.Button.transform, "< ... >", 21f, FontStyles.Bold, TextAlignmentOptions.MidlineRight, MenuUiFactory.UnDFSky);
             MenuUiFactory.StretchFull(valueText.rectTransform, 20f, 4f, 20f, 4f);
 
             entry.OnHorizontalStep = dir => onStep?.Invoke(dir);
@@ -447,7 +447,7 @@ namespace UnDFight
 
                 Key k = _working.GetBindingsForPlayer(row.PlayerIndex).GetKey(row.ButtonType, row.PlayerIndex);
                 row.ValueText.text = $"[{k}]";
-                row.ValueText.color = MenuUiFactory.AccentGold;
+                row.ValueText.color = MenuUiFactory.UnDFSky;
             }
         }
 

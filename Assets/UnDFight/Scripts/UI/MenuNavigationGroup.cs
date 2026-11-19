@@ -2,51 +2,47 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace UnDFight
 {
-    public sealed class MenuItemPointerHook : MonoBehaviour, IPointerEnterHandler
-    {
-        private MenuNavigationGroup _group;
-        private int _index;
-
-        public void Bind(MenuNavigationGroup group, int index)
-        {
-            _group = group;
-            _index = index;
-        }
-
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            _group?.SetSelectedIndex(_index);
-        }
-    }
-
     public sealed class MenuItemEntry
     {
         public UnityEngine.UI.Button Button;
         public UnityEngine.UI.Image Background;
         public UnityEngine.UI.Image AccentBar;
         public UnityEngine.UI.Image AccentGlow;
+        public UnityEngine.UI.Image SweepImage;
+        public UnityEngine.UI.Image LeftDiamond;
+        public UnityEngine.UI.Image RightDiamond;
         public TextMeshProUGUI Label;
         public Action OnSubmit;
         public Action<int> OnHorizontalStep;
-        public Color NormalBg = new Color(0.086f, 0.098f, 0.133f, 0.88f);      // #161922
-        public Color SelectedBg = new Color(0.180f, 0.145f, 0.095f, 0.96f);    // Warm dark bronze-amber tint
-        public Color NormalAccent = new Color(0.290f, 0.247f, 0.208f, 0.75f);  // #4A3F35
-        public Color SelectedAccent = new Color(1.000f, 0.722f, 0.000f, 1.0f); // #FFB800
+
+        public bool UseMkxCleanStyle;
+        public Color NormalBg = MenuUiFactory.PanelDarkBg;
+        public Color SelectedBg = new Color(0.118f, 0.215f, 0.345f, 0.96f);
+        public Color NormalAccent = MenuUiFactory.SlateBorderMid;
+        public Color SelectedAccent = MenuUiFactory.UnDFBlue;
+        public Color SweepSelectedColor = new Color(0.118f, 0.337f, 0.600f, 0.52f); // #1E5699 soft sweep
+        public Color DiamondSelectedColor = MenuUiFactory.UnDFSky;                  // #8BC9EE diamonds
+        public Color NormalLabelColor = MenuUiFactory.TextInactive;                 // #8594A8
+        public Color SelectedLabelColor = MenuUiFactory.TextActive;                 // #F1F5F9
+
+        internal float VisualBlend;
+        internal bool VisualInitialized;
     }
 
     /// <summary>
     /// Unified Keyboard (WASD/Arrows + Enter/J/Esc/K), Gamepad (D-Pad/Stick + South/East),
-    /// and Mouse hover/click navigation handler for vertical menu lists.
+    /// and Mouse hover/click navigation handler for vertical or horizontal menu lists,
+    /// supporting smooth unscaledDeltaTime MKX clean sweep + diamond transitions.
     /// </summary>
     public class MenuNavigationGroup : MonoBehaviour
     {
         private const float InitialRepeatDelay = 0.28f;
         private const float RepeatInterval = 0.11f;
+        private const float TransitionSpeed = 14f;
 
         private readonly List<MenuItemEntry> _items = new List<MenuItemEntry>();
         private int _selectedIndex;
@@ -55,10 +51,17 @@ namespace UnDFight
         private int _lastVerticalDir;
         private int _lastHorizontalDir;
         private bool _inputLocked;
+        private bool _horizontalPrimary;
 
         public int SelectedIndex => _selectedIndex;
         public int ItemCount => _items.Count;
+        public bool HorizontalPrimary
+        {
+            get => _horizontalPrimary;
+            set => _horizontalPrimary = value;
+        }
         public Action OnCancel;
+        public Action<int> OnSelectionChanged;
 
         public static event Action OnAnySelectionMoved;
         public static event Action OnAnySubmitted;
@@ -96,7 +99,7 @@ namespace UnDFight
                 entry.OnSubmit?.Invoke();
             });
 
-            RefreshVisuals();
+            RefreshVisuals(immediate: true);
         }
 
         public void SetInputLocked(bool locked)
@@ -115,36 +118,106 @@ namespace UnDFight
             int next = ((index % _items.Count) + _items.Count) % _items.Count;
             bool changed = next != _selectedIndex;
             _selectedIndex = next;
-            RefreshVisuals();
+            RefreshVisuals(immediate: !Application.isPlaying);
+            OnSelectionChanged?.Invoke(_selectedIndex);
             if (changed && notifyAudio)
             {
                 OnAnySelectionMoved?.Invoke();
             }
         }
 
-        public void RefreshVisuals()
+        public void RefreshVisuals(bool immediate = true)
         {
+            float dt = Application.isPlaying ? Mathf.Min(Time.unscaledDeltaTime, 0.1f) : 1f;
+            float step = immediate ? 1f : Mathf.Clamp01(dt * TransitionSpeed);
+
             for (int i = 0; i < _items.Count; i++)
             {
                 MenuItemEntry item = _items[i];
                 bool selected = i == _selectedIndex;
+                float target = selected ? 1f : 0f;
+
+                if (immediate || !item.VisualInitialized)
+                {
+                    item.VisualBlend = target;
+                    item.VisualInitialized = true;
+                }
+                else
+                {
+                    item.VisualBlend = Mathf.MoveTowards(item.VisualBlend, target, step);
+                }
+
+                ApplyItemVisualBlend(item, item.VisualBlend, selected);
+            }
+        }
+
+        private static void ApplyItemVisualBlend(MenuItemEntry item, float t, bool selected)
+        {
+            if (item.UseMkxCleanStyle)
+            {
                 if (item.Background != null)
                 {
-                    item.Background.color = selected ? item.SelectedBg : item.NormalBg;
+                    item.Background.color = Color.Lerp(item.NormalBg, item.SelectedBg, t);
                 }
-                if (item.AccentBar != null)
+                if (item.SweepImage != null)
                 {
-                    item.AccentBar.color = selected ? item.SelectedAccent : item.NormalAccent;
+                    item.SweepImage.enabled = t > 0.005f;
+                    Color sw = item.SweepSelectedColor;
+                    sw.a *= t;
+                    item.SweepImage.color = sw;
+                    // Propagate alpha to thin sweep hairlines if present
+                    for (int c = 0; c < item.SweepImage.transform.childCount; c++)
+                    {
+                        var childImg = item.SweepImage.transform.GetChild(c).GetComponent<UnityEngine.UI.Image>();
+                        if (childImg != null)
+                        {
+                            Color hc = MenuUiFactory.UnDFBlue;
+                            hc.a = 0.55f * t;
+                            childImg.color = hc;
+                        }
+                    }
                 }
-                if (item.AccentGlow != null)
+                if (item.LeftDiamond != null)
                 {
-                    item.AccentGlow.enabled = selected;
-                    item.AccentGlow.color = new Color(item.SelectedAccent.r, item.SelectedAccent.g, item.SelectedAccent.b, 0.28f);
+                    item.LeftDiamond.enabled = t > 0.01f;
+                    Color dc = item.DiamondSelectedColor;
+                    dc.a = t;
+                    item.LeftDiamond.color = dc;
+                    float sc = Mathf.Lerp(0.65f, 1.0f, t);
+                    item.LeftDiamond.rectTransform.localScale = new Vector3(sc, sc, 1f);
+                }
+                if (item.RightDiamond != null)
+                {
+                    item.RightDiamond.enabled = t > 0.01f;
+                    Color dc = item.DiamondSelectedColor;
+                    dc.a = t;
+                    item.RightDiamond.color = dc;
+                    float sc = Mathf.Lerp(0.65f, 1.0f, t);
+                    item.RightDiamond.rectTransform.localScale = new Vector3(sc, sc, 1f);
                 }
                 if (item.Label != null)
                 {
-                    item.Label.color = selected ? new Color(1.0f, 0.86f, 0.38f, 1f) : new Color(0.84f, 0.84f, 0.82f, 1f);
+                    item.Label.color = Color.Lerp(item.NormalLabelColor, item.SelectedLabelColor, t);
                 }
+                return;
+            }
+
+            if (item.Background != null)
+            {
+                item.Background.color = Color.Lerp(item.NormalBg, item.SelectedBg, t);
+            }
+            if (item.AccentBar != null)
+            {
+                item.AccentBar.color = Color.Lerp(item.NormalAccent, item.SelectedAccent, t);
+            }
+            if (item.AccentGlow != null)
+            {
+                item.AccentGlow.enabled = t > 0.01f;
+                item.AccentGlow.color = new Color(item.SelectedAccent.r, item.SelectedAccent.g, item.SelectedAccent.b, 0.28f * t);
+            }
+            if (item.Label != null)
+            {
+                item.Label.color = Color.Lerp(item.NormalLabelColor, item.SelectedLabelColor, t);
             }
         }
 
@@ -154,11 +227,16 @@ namespace UnDFight
             _horizontalRepeatTimer = 0f;
             _lastVerticalDir = 0;
             _lastHorizontalDir = 0;
-            RefreshVisuals();
+            RefreshVisuals(immediate: true);
         }
 
         private void Update()
         {
+            if (_items.Count > 0)
+            {
+                RefreshVisuals(immediate: false);
+            }
+
             if (_inputLocked || _items.Count == 0)
             {
                 return;
@@ -166,41 +244,66 @@ namespace UnDFight
 
             ReadNavigationAxes(out int vertDir, out int horizDir, out bool submitPressed, out bool cancelPressed);
 
-            if (vertDir != 0)
+            if (_horizontalPrimary)
             {
-                if (vertDir != _lastVerticalDir || _verticalRepeatTimer <= 0f)
+                int primaryDir = horizDir != 0 ? horizDir : -vertDir;
+                if (primaryDir != 0)
                 {
-                    SetSelectedIndex(_selectedIndex - vertDir); // up (+1) moves to previous index
-                    _verticalRepeatTimer = vertDir != _lastVerticalDir ? InitialRepeatDelay : RepeatInterval;
+                    if (primaryDir != _lastHorizontalDir || _horizontalRepeatTimer <= 0f)
+                    {
+                        SetSelectedIndex(_selectedIndex + primaryDir);
+                        _horizontalRepeatTimer = primaryDir != _lastHorizontalDir ? InitialRepeatDelay : RepeatInterval;
+                    }
+                    else
+                    {
+                        _horizontalRepeatTimer -= Time.unscaledDeltaTime;
+                    }
                 }
                 else
                 {
-                    _verticalRepeatTimer -= Time.unscaledDeltaTime;
+                    _horizontalRepeatTimer = 0f;
                 }
+                _lastHorizontalDir = primaryDir;
+                _lastVerticalDir = 0;
             }
             else
             {
-                _verticalRepeatTimer = 0f;
-            }
-            _lastVerticalDir = vertDir;
+                if (vertDir != 0)
+                {
+                    if (vertDir != _lastVerticalDir || _verticalRepeatTimer <= 0f)
+                    {
+                        SetSelectedIndex(_selectedIndex - vertDir); // up (+1) moves to previous index
+                        _verticalRepeatTimer = vertDir != _lastVerticalDir ? InitialRepeatDelay : RepeatInterval;
+                    }
+                    else
+                    {
+                        _verticalRepeatTimer -= Time.unscaledDeltaTime;
+                    }
+                }
+                else
+                {
+                    _verticalRepeatTimer = 0f;
+                }
+                _lastVerticalDir = vertDir;
 
-            if (horizDir != 0)
-            {
-                if (horizDir != _lastHorizontalDir || _horizontalRepeatTimer <= 0f)
+                if (horizDir != 0)
                 {
-                    _items[_selectedIndex].OnHorizontalStep?.Invoke(horizDir);
-                    _horizontalRepeatTimer = horizDir != _lastHorizontalDir ? InitialRepeatDelay : RepeatInterval;
+                    if (horizDir != _lastHorizontalDir || _horizontalRepeatTimer <= 0f)
+                    {
+                        _items[_selectedIndex].OnHorizontalStep?.Invoke(horizDir);
+                        _horizontalRepeatTimer = horizDir != _lastHorizontalDir ? InitialRepeatDelay : RepeatInterval;
+                    }
+                    else
+                    {
+                        _horizontalRepeatTimer -= Time.unscaledDeltaTime;
+                    }
                 }
                 else
                 {
-                    _horizontalRepeatTimer -= Time.unscaledDeltaTime;
+                    _horizontalRepeatTimer = 0f;
                 }
+                _lastHorizontalDir = horizDir;
             }
-            else
-            {
-                _horizontalRepeatTimer = 0f;
-            }
-            _lastHorizontalDir = horizDir;
 
             if (submitPressed)
             {
