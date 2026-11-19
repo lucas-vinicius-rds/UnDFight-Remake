@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnDFight.Editor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -1176,6 +1177,119 @@ namespace UnDFight.Tests
                     if (dp.name.StartsWith("Dynamic_Cone_")) coneCount++;
                 }
                 Assert.GreaterOrEqual(coneCount, 2, "Arena_Favela must contain at least 2 Dynamic_Cone props.");
+            }
+            finally
+            {
+                if (favelaScene.IsValid() && favelaScene.isLoaded)
+                {
+                    EditorSceneManager.CloseScene(favelaScene, removeScene: true);
+                }
+                if (prevActive.IsValid())
+                {
+                    SceneManager.SetActiveScene(prevActive);
+                }
+            }
+        }
+
+        [Test]
+        public void Phase15_2_1_ArenaFavela_PassesMaxZoomOutFloorCoverage_AndHasRightHillsideFillAndWeatherClouds()
+        {
+            Scene prevActive = SceneManager.GetActiveScene();
+            Scene favelaScene = EditorSceneManager.OpenScene("Assets/UnDFight/Scenes/Arena_Favela.unity", OpenSceneMode.Additive);
+            try
+            {
+                Camera mainCam = null;
+                FightCameraController camCtrl = null;
+                StageWeatherController weather = null;
+                GameObject sandFront = null;
+                GameObject cobbleStreet = null;
+                GameObject sandBack = null;
+                GameObject sidewalkBack = null;
+                GameObject rightFill = null;
+
+                foreach (GameObject rootGo in favelaScene.GetRootGameObjects())
+                {
+                    foreach (Transform t in rootGo.GetComponentsInChildren<Transform>(true))
+                    {
+                        if (t.name == "Main Camera") mainCam = t.GetComponent<Camera>();
+                        if (t.name == "SandShoulder_Front") sandFront = t.gameObject;
+                        if (t.name == "CobblestoneStreet") cobbleStreet = t.gameObject;
+                        if (t.name == "SandShoulder_Back") sandBack = t.gameObject;
+                        if (t.name == "Sidewalk_Back") sidewalkBack = t.gameObject;
+                        if (t.name == ArenaFavelaUpgradeEditor.HillsideRightFillName) rightFill = t.gameObject;
+                    }
+                    if (camCtrl == null) camCtrl = rootGo.GetComponentInChildren<FightCameraController>(true);
+                    if (weather == null) weather = rootGo.GetComponentInChildren<StageWeatherController>(true);
+                }
+
+                Assert.IsNotNull(mainCam, "Arena_Favela must have Main Camera.");
+                Assert.IsNotNull(camCtrl, "Arena_Favela must have FightCameraController.");
+                Assert.IsNotNull(weather, "Arena_Favela must have StageWeatherController.");
+                Assert.IsNotNull(sandFront, "Arena_Favela must have SandShoulder_Front.");
+                Assert.IsNotNull(cobbleStreet, "Arena_Favela must have CobblestoneStreet.");
+
+                Renderer sandFrontR = sandFront.GetComponent<Renderer>();
+                Renderer cobbleR = cobbleStreet.GetComponent<Renderer>();
+                Assert.IsNotNull(sandFrontR);
+                Assert.IsNotNull(cobbleR);
+
+                // Foreground floor must cover z <= -20.0 (standard targets -22.5) and never overlap CobblestoneStreet seam at -2.60
+                Assert.LessOrEqual(sandFrontR.bounds.min.z, -20.0f, "SandShoulder_Front must extend past z <= -20.0 to prevent bottom black bar.");
+                Assert.GreaterOrEqual(sandFrontR.bounds.size.x, StageFramingStandards.MinFloorWidthX, "SandShoulder_Front width must meet MinFloorWidthX.");
+                Assert.GreaterOrEqual(cobbleR.bounds.size.x, StageFramingStandards.MinFloorWidthX, "CobblestoneStreet width must meet MinFloorWidthX.");
+                Assert.AreEqual(-2.60f, sandFrontR.bounds.max.z, 0.01f, "SandShoulder_Front must align cleanly to CobblestoneStreet seam (-2.60) with zero Z-fighting.");
+
+                Bounds combinedFloor = sandFrontR.bounds;
+                combinedFloor.Encapsulate(cobbleR.bounds);
+                if (sandBack != null && sandBack.GetComponent<Renderer>() != null) combinedFloor.Encapsulate(sandBack.GetComponent<Renderer>().bounds);
+                if (sidewalkBack != null && sidewalkBack.GetComponent<Renderer>() != null) combinedFloor.Encapsulate(sidewalkBack.GetComponent<Renderer>().bounds);
+
+                // Analytical max zoom-out validation (left, center, right bottom frustum rays across 16:9 and 21:9)
+                bool covered = StageFramingStandards.ValidateCameraBottomFloorCoverage(mainCam, camCtrl, combinedFloor, out string failureReason);
+                Assert.IsTrue(covered, $"Arena_Favela failed bottom floor coverage at max zoom-out: {failureReason}");
+
+                // Negative regression check: old short floor ending at z = -6.50 MUST fail validation!
+                Bounds legacyShortFloor = new Bounds(new Vector3(0f, -0.05f, -2.25f), new Vector3(56f, 0.1f, 8.5f)); // z in [-6.5, +2.0]
+                bool legacyPassed = StageFramingStandards.ValidateCameraBottomFloorCoverage(mainCam, camCtrl, legacyShortFloor, out _);
+                Assert.IsFalse(legacyPassed, "StageFramingStandards validator must detect short foreground floors (z = -6.50).");
+
+                // Right hillside fill exists with >= 12 terraced houses
+                Assert.IsNotNull(rightFill, "FavelaHillsideRightFill must exist to fill the upper-right ramp backdrop.");
+                Assert.GreaterOrEqual(rightFill.transform.childCount, 12, "FavelaHillsideRightFill must contain at least 12 terraced hillside houses.");
+
+                // Weather clouds & shoreline lights wired cleanly to StageWeatherController
+                bool hasDayClouds = false;
+                foreach (GameObject go in weather.DayOnlyObjects)
+                {
+                    if (go != null && go.name == $"{ArenaFavelaUpgradeEditor.WeatherCloudsPrefix}_DayClouds") hasDayClouds = true;
+                }
+                Assert.IsTrue(hasDayClouds, "DayOnlyObjects must include Day weather clouds.");
+
+                bool hasClearNightClouds = false;
+                foreach (GameObject go in weather.ClearNightOnlyObjects)
+                {
+                    if (go != null && go.name == $"{ArenaFavelaUpgradeEditor.WeatherCloudsPrefix}_ClearNightClouds") hasClearNightClouds = true;
+                }
+                Assert.IsTrue(hasClearNightClouds, "ClearNightOnlyObjects must include ClearNight weather clouds.");
+
+                bool hasRainClouds = false;
+                foreach (GameObject go in weather.RainOnlyObjects)
+                {
+                    if (go != null && go.name == $"{ArenaFavelaUpgradeEditor.WeatherCloudsPrefix}_RainClouds") hasRainClouds = true;
+                }
+                Assert.IsTrue(hasRainClouds, "RainOnlyObjects must include RainyNight storm clouds.");
+
+                bool hasShorelineLights = false;
+                GameObject hillsideWinGo = null;
+                foreach (GameObject go in weather.NightOnlyObjects)
+                {
+                    if (go == null) continue;
+                    if (go.name == ArenaFavelaUpgradeEditor.BayShorelineLightsName) hasShorelineLights = true;
+                    if (go.name == ArenaFavelaUpgradeEditor.HillsideNightWindowsName) hillsideWinGo = go;
+                }
+                Assert.IsTrue(hasShorelineLights, "NightOnlyObjects must include FavelaBayShorelineLights.");
+                Assert.IsNotNull(hillsideWinGo);
+                Assert.GreaterOrEqual(hillsideWinGo.transform.childCount, 30, "FavelaNightWindows_Hillside must include original + right-side lit windows (>= 30).");
             }
             finally
             {

@@ -25,6 +25,10 @@ namespace UnDFight.Editor
 
         public const string DetailsContainerName = "FavelaDetails_Phase15_2";
         public const string HillsideExtrasContainerName = "FavelaHillsideExtras_Phase15_2";
+        public const string HillsideRightFillName = "FavelaHillsideRightFill";
+        public const string BayHorizonDetailsName = "FavelaBayHorizon_Phase15_2_1";
+        public const string BayShorelineLightsName = "FavelaBayShorelineLights";
+        public const string WeatherCloudsPrefix = "FavelaWeatherClouds";
         public const string NightLightsAndWindowsName = "FavelaNightLightsAndWindows";
         public const string HillsideNightWindowsName = "FavelaNightWindows_Hillside";
         public const string ClearNightSkyName = "FavelaClearNightSky";
@@ -38,6 +42,7 @@ namespace UnDFight.Editor
             public Material StuccoCoral;
             public Material StuccoGreen;
             public Material StuccoWhite;
+            public Material StuccoLightBlue;
             public Material SidewalkConcrete;
             public Material PoleConcrete;
             public Material RoofMetal;
@@ -58,8 +63,11 @@ namespace UnDFight.Editor
             public Material StreetLampGlow;
             public Material SunGlow;
             public Material DarkInterior;
+            public Material WaterBay;
+            public Material DistantMountain;
+            public Material DistantMountainFar;
 
-            // Phase 15.2 dedicated URP assets
+            // Phase 15.2 / 15.2.1 dedicated URP assets
             public Material MetalDark;
             public Material NightWindowGlow;
             public Material NightWindowWarmAlt;
@@ -77,6 +85,8 @@ namespace UnDFight.Editor
             public Material ConeStripeWhite;
             public Material LanternBulbGlow;
             public Material TerracottaPot;
+            public Material ShorelineLightGlow;
+            public StageFramingStandards.CloudMaterials Clouds;
         }
 
         [MenuItem("UnDFight/Setup/Upgrade Arena Favela Visuals & Physics", false, 121)]
@@ -131,10 +141,19 @@ namespace UnDFight.Editor
             DestroyAllMatchingInScene(scene, NightLightsAndWindowsName);
             DestroyAllMatchingInScene(scene, DetailsContainerName);
             DestroyAllMatchingInScene(scene, HillsideExtrasContainerName);
+            DestroyAllMatchingInScene(scene, HillsideRightFillName);
+            DestroyAllMatchingInScene(scene, BayHorizonDetailsName);
+            DestroyAllMatchingInScene(scene, BayShorelineLightsName);
+            DestroyAllMatchingInScene(scene, $"{WeatherCloudsPrefix}_DayClouds");
+            DestroyAllMatchingInScene(scene, $"{WeatherCloudsPrefix}_ClearNightClouds");
+            DestroyAllMatchingInScene(scene, $"{WeatherCloudsPrefix}_RainClouds");
             DestroyAllMatchingInScene(scene, HillsideNightWindowsName);
             DestroyAllMatchingInScene(scene, ClearNightSkyName);
             DestroyAllMatchingInScene(scene, RainPuddlesName);
             DestroyAllMatchingInScene(scene, SunsetHaloName);
+
+            // 0. Phase 15.2.1: Enforce foreground floor coverage & width (eliminates bottom black bar on max zoom-out)
+            ApplyForegroundFloorFramingStandards(scene);
 
             // Clean up Phase 15.2 interactive prop instances inside InteractiveStageProps so re-runs never duplicate
             GameObject propsGroup = FindInSceneByName(scene, "InteractiveStageProps");
@@ -173,35 +192,59 @@ namespace UnDFight.Editor
             BuildBarDoJorgeDetails(detailsRoot.transform, pal);
             BuildUrbanStreetAndStairDetails(detailsRoot.transform, pal);
             BuildArenaCornerClosure(detailsRoot.transform, pal, extraWetRenderers);
+            BuildRightRampFoliagePoleAndCables(detailsRoot.transform, pal);
 
-            // 2. Build hillside antennas, satellite dishes, extra blue tanks & parapet walls inside parallax layer
+            // 2. Build hillside antennas, satellite dishes, extra blue tanks & right-side hillside fill inside parallax layer
             GameObject hillsideLayer = FindInSceneByName(scene, "LayerD_Parallax_HillsideFavela");
+            var rightFillLitWindowSpecs = new List<(string Name, Vector3 WorldPos, Vector3 Size, bool AltWarm)>();
             if (hillsideLayer != null)
             {
                 var hillsideExtras = new GameObject(HillsideExtrasContainerName);
                 hillsideExtras.transform.SetParent(hillsideLayer.transform, false);
                 BuildHillsideExtras(hillsideLayer.transform, hillsideExtras.transform, pal);
+
+                var rightFillRoot = new GameObject(HillsideRightFillName);
+                rightFillRoot.transform.SetParent(hillsideLayer.transform, false);
+                BuildHillsideRightFill(rightFillRoot.transform, pal, rightFillLitWindowSpecs);
             }
 
             // 3. Instantiate new Phase 15.2 PhysX v2 interactive props inside InteractiveStageProps
             InstantiatePhase15_2InteractiveProps(propsGroup.transform, pal);
 
-            // 4. Build weather-specific visual groups (Day Sunset, Clean Night Sky, Night Lights & Windows, Rain Puddles)
+            // 4. Build Bay/Sugarloaf horizon framing, weather-specific visual groups & clouds
             GameObject bayLayer = FindInSceneByName(scene, "LayerD_Parallax_BayAndSugarloaf");
+            GameObject shorelineLights = BuildBayAndSugarloafHorizon(scene, bayLayer, pal);
+
             GameObject sunDisc = FindInSceneByName(scene, "Sunset_SunDisc");
             GameObject sunsetHalo = BuildSunsetHalo(bayLayer, sunDisc, pal);
             GameObject clearNightSky = BuildClearNightSky(bayLayer, pal);
             GameObject nightLightsAndWindows = BuildNightLightsAndWindows(pal);
-            GameObject hillsideNightWindows = BuildHillsideNightWindows(hillsideLayer, pal);
+            GameObject hillsideNightWindows = BuildHillsideNightWindows(hillsideLayer, pal, rightFillLitWindowSpecs);
             GameObject rainPuddles = BuildRainPuddles(pal);
+
+            StageFramingStandards.WeatherCloudLayers cloudLayers = StageFramingStandards.BuildWeatherCloudLayer(
+                bayLayer != null ? bayLayer.transform : null,
+                WeatherCloudsPrefix,
+                regionCenter: new Vector3(16.0f, 15.0f, 47.5f),
+                regionSize: new Vector3(44.0f, 4.2f, 5.5f),
+                dayMat: pal.Clouds.DayCloud,
+                clearNightMat: pal.Clouds.ClearNightCloud,
+                stormMat: pal.Clouds.StormCloud,
+                dayCount: 7,
+                clearNightCount: 5,
+                stormCount: 10);
 
             // Set default editor/scene visibility to Day (Sunset)
             if (sunDisc != null) sunDisc.SetActive(true);
             if (sunsetHalo != null) sunsetHalo.SetActive(true);
+            if (cloudLayers.DayClouds != null) cloudLayers.DayClouds.SetActive(true);
             if (clearNightSky != null) clearNightSky.SetActive(false);
+            if (cloudLayers.ClearNightClouds != null) cloudLayers.ClearNightClouds.SetActive(false);
             if (nightLightsAndWindows != null) nightLightsAndWindows.SetActive(false);
             if (hillsideNightWindows != null) hillsideNightWindows.SetActive(false);
+            if (shorelineLights != null) shorelineLights.SetActive(false);
             if (rainPuddles != null) rainPuddles.SetActive(false);
+            if (cloudLayers.RainClouds != null) cloudLayers.RainClouds.SetActive(false);
 
             // 5. Wire StageWeatherController & refresh StageInteractableManager
             WireWeatherControllerAndManager(
@@ -211,8 +254,248 @@ namespace UnDFight.Editor
                 clearNightSky,
                 nightLightsAndWindows,
                 hillsideNightWindows,
+                shorelineLights,
                 rainPuddles,
+                cloudLayers,
                 extraWetRenderers);
+        }
+
+        private static void ApplyForegroundFloorFramingStandards(Scene scene)
+        {
+            // Keep exact seam at Z = -2.60 against CobblestoneStreet (zero overlap / zero Z-fighting),
+            // extending foreground floor continuously to Z = -22.50 and width X = 68.0m.
+            GameObject sandFront = FindInSceneByName(scene, "SandShoulder_Front");
+            if (sandFront != null)
+            {
+                StageFramingStandards.EnsureForegroundFloorCoverage(
+                    sandFront.transform,
+                    backEdgeZ: -2.60f,
+                    targetFrontZ: -22.5f,
+                    minWidthX: 68.0f);
+            }
+
+            // Widen street & back shoulder to 68.0m so ultrawide max zoom-out never clips laterally
+            string[] wideStreetParts = { "CobblestoneStreet", "SandShoulder_Back" };
+            foreach (string partName in wideStreetParts)
+            {
+                GameObject part = FindInSceneByName(scene, partName);
+                if (part != null)
+                {
+                    Vector3 s = part.transform.localScale;
+                    s.x = Mathf.Max(s.x, 68.0f);
+                    part.transform.localScale = s;
+                }
+            }
+        }
+
+        private static void BuildRightRampFoliagePoleAndCables(Transform parent, MaterialPalette pal)
+        {
+            var rampTopGroup = new GameObject("RightRamp_FoliagePoleAndCables");
+            rampTopGroup.transform.SetParent(parent, false);
+
+            // Extra tropical palms & lush foliage flanking the ramp top and behind RightSobrado
+            BuildTropicalPalm("PalmTree_RampTopLeft", rampTopGroup.transform, new Vector3(3.10f, 2.25f, 11.40f), 4.10f, pal);
+            BuildTropicalPalm("PalmTree_RampTopRight", rampTopGroup.transform, new Vector3(6.85f, 2.55f, 12.10f), 4.65f, pal);
+            BuildTropicalPalm("PalmTree_BehindRightSobrado", rampTopGroup.transform, new Vector3(9.55f, 1.35f, 8.90f), 5.10f, pal);
+            CreateSphere("TropicalBush_RampTopL", rampTopGroup.transform, new Vector3(3.30f, 2.45f, 10.60f), Vector3.zero, new Vector3(1.15f, 0.85f, 1.00f), pal.PalmLeaf);
+            CreateSphere("TropicalBush_RampTopR", rampTopGroup.transform, new Vector3(6.65f, 2.75f, 11.45f), Vector3.zero, new Vector3(1.30f, 0.92f, 1.10f), pal.PalmLeaf);
+
+            // High secondary utility pole at the top of the ramp with warm street lamp head
+            CreateCyl("UtilityPole_RampTop", rampTopGroup.transform, new Vector3(6.25f, 4.95f, 12.35f), Vector3.zero, new Vector3(0.15f, 2.55f, 0.15f), pal.PoleConcrete);
+            CreateBox("RampTopPole_Crossbar", rampTopGroup.transform, new Vector3(6.25f, 7.25f, 12.35f), Vector3.zero, new Vector3(0.95f, 0.08f, 0.09f), pal.PoleConcrete);
+            CreateBox("RampTopPole_LampArm", rampTopGroup.transform, new Vector3(5.72f, 6.75f, 12.35f), new Vector3(0f, 0f, -14f), new Vector3(1.05f, 0.06f, 0.06f), pal.MetalDark);
+            CreateBox("RampTopPole_LampHead", rampTopGroup.transform, new Vector3(5.26f, 6.64f, 12.35f), Vector3.zero, new Vector3(0.30f, 0.09f, 0.16f), pal.MetalDark);
+
+            // Overhead catenary electrical cables crossing the upper-right sky toward RightSobrado & ramp poles
+            BuildCatenaryCable("OverheadCable_RightTop_0", rampTopGroup.transform, new Vector3(-2.35f, 6.32f, 2.45f), new Vector3(9.80f, 5.85f, 3.60f), sag: 0.42f, segments: 9, thickness: 0.022f, pal.BlackCable);
+            BuildCatenaryCable("OverheadCable_RightTop_1", rampTopGroup.transform, new Vector3(-2.35f, 5.95f, 2.45f), new Vector3(6.25f, 5.30f, 6.80f), sag: 0.34f, segments: 8, thickness: 0.020f, pal.BlackCable);
+            BuildCatenaryCable("OverheadCable_RightTop_2", rampTopGroup.transform, new Vector3(6.25f, 5.30f, 6.80f), new Vector3(6.25f, 7.20f, 12.35f), sag: 0.28f, segments: 7, thickness: 0.018f, pal.BlackCable);
+            BuildCatenaryCable("OverheadCable_RightTop_3", rampTopGroup.transform, new Vector3(6.25f, 5.20f, 6.80f), new Vector3(12.75f, 6.18f, 2.45f), sag: 0.32f, segments: 7, thickness: 0.020f, pal.BlackCable);
+        }
+
+        private static void BuildCatenaryCable(
+            string name,
+            Transform parent,
+            Vector3 start,
+            Vector3 end,
+            float sag,
+            int segments,
+            float thickness,
+            Material cableMat)
+        {
+            var cableRoot = new GameObject(name);
+            cableRoot.transform.SetParent(parent, false);
+            for (int i = 0; i < segments; i++)
+            {
+                float t0 = i / (float)segments;
+                float t1 = (i + 1) / (float)segments;
+                Vector3 p0 = Vector3.Lerp(start, end, t0) - Vector3.up * (4f * sag * t0 * (1f - t0));
+                Vector3 p1 = Vector3.Lerp(start, end, t1) - Vector3.up * (4f * sag * t1 * (1f - t1));
+                Vector3 delta = p1 - p0;
+                float len = delta.magnitude;
+                if (len < 1e-4f) continue;
+
+                GameObject seg = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                seg.name = $"Seg_{i}";
+                seg.transform.SetParent(cableRoot.transform, false);
+                seg.transform.position = (p0 + p1) * 0.5f;
+                seg.transform.rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
+                seg.transform.localScale = new Vector3(thickness, thickness, len + 0.02f);
+
+                Collider col = seg.GetComponent<Collider>();
+                if (col != null) Object.DestroyImmediate(col);
+                MeshRenderer mr = seg.GetComponent<MeshRenderer>();
+                if (mr != null)
+                {
+                    mr.shadowCastingMode = ShadowCastingMode.Off;
+                    if (cableMat != null) mr.sharedMaterial = cableMat;
+                }
+            }
+        }
+
+        private static void BuildHillsideRightFill(
+            Transform rightFillRoot,
+            MaterialPalette pal,
+            List<(string Name, Vector3 WorldPos, Vector3 Size, bool AltWarm)> litWindowSpecs)
+        {
+            // 14 terraced hillside houses framing the ramp vista (x = 0.6..13.6, y = 2.9..10.4, z = 11.2..25.6)
+            // Leaves an intentional scenic opening above the ramp center for Sugarloaf, Bay, Sun/Moon & Clouds.
+            (Vector3 pos, Vector3 size, Material wallMat, bool hasTank, bool hasAntenna, bool hasParapet, bool hasLaundry, int litMask)[] specs =
+            {
+                // Left-of-ramp terraced slope (closing gap between MidBrickHouse and Sugarloaf)
+                (new Vector3(1.15f, 4.15f, 12.60f), new Vector3(2.70f, 2.50f, 2.40f), pal.StuccoCoral,     true,  false, true,  false, 3),
+                (new Vector3(3.35f, 3.45f, 13.80f), new Vector3(2.40f, 2.20f, 2.20f), pal.StuccoLightBlue, false, true,  true,  true,  2),
+                (new Vector3(2.05f, 6.25f, 16.40f), new Vector3(2.90f, 2.70f, 2.60f), pal.RedBrick,        true,  true,  false, false, 3),
+                (new Vector3(4.20f, 5.25f, 17.80f), new Vector3(2.55f, 2.35f, 2.40f), pal.StuccoOchre,     false, false, true,  false, 1),
+                (new Vector3(1.65f, 8.45f, 20.80f), new Vector3(3.10f, 2.85f, 2.70f), pal.StuccoWhite,     true,  true,  true,  false, 3),
+                (new Vector3(4.35f, 7.65f, 22.40f), new Vector3(2.85f, 2.55f, 2.60f), pal.StuccoGreen,     true,  false, false, false, 2),
+
+                // Lower ramp-base houses (keep skyline open above y ~ 4.6 for Bay + Sugarloaf!)
+                (new Vector3(5.85f, 3.15f, 15.60f), new Vector3(2.25f, 1.95f, 2.15f), pal.StuccoCoral,     false, true,  true,  false, 1),
+                (new Vector3(7.35f, 3.65f, 17.20f), new Vector3(2.45f, 2.20f, 2.30f), pal.StuccoWhite,     true,  false, false, false, 2),
+
+                // Right-of-ramp terraced slope behind palm trees & RightSobrado (closes empty sky above P2 Tiago)
+                (new Vector3(8.95f, 4.60f, 14.40f), new Vector3(2.75f, 2.60f, 2.50f), pal.StuccoOchre,     true,  false, true,  true,  3),
+                (new Vector3(11.45f, 4.95f, 15.20f), new Vector3(2.90f, 2.75f, 2.55f), pal.StuccoLightBlue, false, true,  true,  false, 2),
+                (new Vector3(9.45f, 6.95f, 18.80f), new Vector3(2.95f, 2.80f, 2.65f), pal.RedBrick,        true,  true,  false, false, 3),
+                (new Vector3(12.20f, 7.30f, 20.00f), new Vector3(3.10f, 2.85f, 2.70f), pal.StuccoGreen,     true,  false, true,  false, 1),
+                (new Vector3(9.90f, 9.35f, 23.80f), new Vector3(3.20f, 2.90f, 2.80f), pal.StuccoCoral,     false, true,  true,  false, 3),
+                (new Vector3(12.85f, 9.70f, 24.80f), new Vector3(3.30f, 2.95f, 2.85f), pal.StuccoWhite,     true,  false, false, false, 2)
+            };
+
+            for (int i = 0; i < specs.Length; i++)
+            {
+                var sp = specs[i];
+                var houseGo = new GameObject($"RightFillHouse_{i}");
+                houseGo.transform.SetParent(rightFillRoot, false);
+
+                CreateBox("Body", houseGo.transform, sp.pos, Vector3.zero, sp.size, sp.wallMat);
+
+                float roofY = sp.pos.y + sp.size.y * 0.5f + 0.07f;
+                float roofTilt = (i % 2 == 0) ? 5.5f : -4.5f;
+                CreateBox("Roof", houseGo.transform, new Vector3(sp.pos.x, roofY, sp.pos.z), new Vector3(roofTilt, 0f, 0f), new Vector3(sp.size.x * 1.07f, 0.12f, sp.size.z * 1.07f), pal.RoofMetal);
+
+                float frontZ = sp.pos.z - sp.size.z * 0.5f;
+                float winW = sp.size.x * 0.21f;
+                float winH = sp.size.y * 0.25f;
+                float winY = sp.pos.y + sp.size.y * 0.10f;
+                float dx = sp.size.x * 0.23f;
+
+                // Base dark window cutouts (offset -0.025m from house facade)
+                CreateBox("WinDark_L", houseGo.transform, new Vector3(sp.pos.x - dx, winY, frontZ - 0.025f), Vector3.zero, new Vector3(winW, winH, 0.03f), pal.DarkInterior);
+                CreateBox("WinDark_R", houseGo.transform, new Vector3(sp.pos.x + dx, winY, frontZ - 0.025f), Vector3.zero, new Vector3(winW, winH, 0.03f), pal.DarkInterior);
+
+                // Register warm lit window overlays (offset -0.065m from house facade, >= 0.035m ahead of dark panes -> zero Z-fighting)
+                if ((sp.litMask & 1) != 0)
+                {
+                    litWindowSpecs.Add(($"RightFillNightWin_{i}_L", new Vector3(sp.pos.x - dx, winY, frontZ - 0.065f), new Vector3(winW * 0.88f, winH * 0.88f, 0.022f), i % 2 == 0));
+                }
+                if ((sp.litMask & 2) != 0)
+                {
+                    litWindowSpecs.Add(($"RightFillNightWin_{i}_R", new Vector3(sp.pos.x + dx, winY, frontZ - 0.065f), new Vector3(winW * 0.88f, winH * 0.88f, 0.022f), i % 2 != 0));
+                }
+
+                if (sp.hasParapet)
+                {
+                    CreateBox("Parapet", houseGo.transform, new Vector3(sp.pos.x, roofY + 0.28f, frontZ + 0.09f), Vector3.zero, new Vector3(sp.size.x * 0.96f, 0.48f, 0.14f), pal.RedBrick);
+                }
+                if (sp.hasTank)
+                {
+                    BuildWaterTank($"Tank_{i}", houseGo.transform, new Vector3(sp.pos.x - sp.size.x * 0.22f, roofY + 0.05f, sp.pos.z - 0.10f), 0.78f, pal);
+                }
+                if (sp.hasAntenna)
+                {
+                    BuildTvAntenna($"Ant_{i}", houseGo.transform, new Vector3(sp.pos.x + sp.size.x * 0.30f, roofY + 0.05f, sp.pos.z - 0.15f), 1.15f, pal);
+                }
+                if (sp.hasLaundry)
+                {
+                    // Distant rooftop clothesline silhouette
+                    float ly = roofY + 0.72f;
+                    CreateBox("DistantClothesline", houseGo.transform, new Vector3(sp.pos.x, ly, frontZ + 0.12f), Vector3.zero, new Vector3(sp.size.x * 0.76f, 0.025f, 0.025f), pal.BlackCable);
+                    CreateBox("DistantCloth_0", houseGo.transform, new Vector3(sp.pos.x - 0.42f, ly - 0.22f, frontZ + 0.12f), Vector3.zero, new Vector3(0.32f, 0.38f, 0.04f), pal.ClothesWhite);
+                    CreateBox("DistantCloth_1", houseGo.transform, new Vector3(sp.pos.x + 0.02f, ly - 0.20f, frontZ + 0.12f), Vector3.zero, new Vector3(0.30f, 0.34f, 0.04f), pal.ClothesOrange);
+                    CreateBox("DistantCloth_2", houseGo.transform, new Vector3(sp.pos.x + 0.44f, ly - 0.24f, frontZ + 0.12f), Vector3.zero, new Vector3(0.28f, 0.40f, 0.04f), pal.ClothesBlue);
+                }
+            }
+        }
+
+        private static GameObject BuildBayAndSugarloafHorizon(Scene scene, GameObject bayLayer, MaterialPalette pal)
+        {
+            if (bayLayer == null)
+            {
+                return null;
+            }
+
+            // Reposition & scale iconic Sugarloaf + Morro da Urca + Coastal Ridge so Sugarloaf rises clearly
+            // in the scenic opening above the ramp, faithful to Docs/Referencias/mapa.jpg
+            GameObject paoDeAcucar = FindInSceneByName(scene, "Morro_PaoDeAcucar");
+            if (paoDeAcucar != null)
+            {
+                paoDeAcucar.transform.position = new Vector3(16.8f, 3.35f, 45.5f);
+                paoDeAcucar.transform.localScale = new Vector3(5.6f, 11.2f, 4.2f);
+            }
+
+            GameObject morroDaUrca = FindInSceneByName(scene, "Morro_DaUrca");
+            if (morroDaUrca != null)
+            {
+                morroDaUrca.transform.position = new Vector3(22.6f, 3.35f, 48.0f);
+                morroDaUrca.transform.localScale = new Vector3(6.2f, 7.6f, 4.6f);
+            }
+
+            GameObject coastalRight = FindInSceneByName(scene, "CoastalRidge_Right");
+            if (coastalRight != null)
+            {
+                coastalRight.transform.position = new Vector3(31.0f, 3.35f, 51.0f);
+                coastalRight.transform.localScale = new Vector3(11.0f, 6.6f, 5.0f);
+            }
+
+            var horizonRoot = new GameObject(BayHorizonDetailsName);
+            horizonRoot.transform.SetParent(bayLayer.transform, false);
+
+            // Visible Guanabara Bay waterline sitting cleanly at the foot of Sugarloaf as viewed from the hillside
+            GameObject waterSheet = CreateBox("BayHorizon_WaterSheet", horizonRoot.transform, new Vector3(17.5f, 3.48f, 38.5f), Vector3.zero, new Vector3(56.0f, 0.12f, 23.0f), pal.WaterBay);
+            DisableShadows(waterSheet);
+
+            // Two-tone coastal mountain ridges closing the distant horizon smoothly left & right
+            CreateSphere("CoastalRidge_MidLeft", horizonRoot.transform, new Vector3(8.8f, 3.30f, 49.0f), Vector3.zero, new Vector3(14.5f, 8.2f, 6.0f), pal.DistantMountain);
+            CreateSphere("CoastalRidge_FarBackdropA", horizonRoot.transform, new Vector3(19.5f, 3.20f, 53.5f), Vector3.zero, new Vector3(22.0f, 9.6f, 6.5f), pal.DistantMountainFar);
+            CreateSphere("CoastalRidge_FarBackdropB", horizonRoot.transform, new Vector3(33.0f, 3.20f, 54.0f), Vector3.zero, new Vector3(20.0f, 8.8f, 6.5f), pal.DistantMountainFar);
+
+            // Distant city/shoreline lights along the bay waterline (active in Night & RainyNight)
+            var shoreLights = new GameObject(BayShorelineLightsName);
+            shoreLights.transform.SetParent(bayLayer.transform, false);
+            for (int i = 0; i < 18; i++)
+            {
+                float t = i / 17f;
+                float lx = Mathf.Lerp(9.5f, 31.5f, t);
+                float ly = 3.74f + (i % 3) * 0.13f;
+                float lz = 43.2f + (i % 4) * 0.85f;
+                float sz = (i % 4 == 0) ? 0.34f : 0.24f;
+                GameObject dot = CreateSphere($"ShoreLight_{i}", shoreLights.transform, new Vector3(lx, ly, lz), Vector3.zero, new Vector3(sz * 1.4f, sz, 0.18f), pal.ShorelineLightGlow);
+                DisableShadows(dot);
+            }
+
+            return shoreLights;
         }
 
         private static void BuildBarDoJorgeDetails(Transform parent, MaterialPalette pal)
@@ -648,15 +931,15 @@ namespace UnDFight.Editor
                 halo.transform.SetParent(bayLayer.transform, false);
             }
 
-            // Frame the sunset sun disc cleanly in the open sky gap above the ramp & Sugarloaf
-            Vector3 sunPos = new Vector3(18.2f, 10.6f, 54.0f);
+            // Frame the sunset sun disc harmoniously beside Sugarloaf's right shoulder (faithful to mapa.jpg)
+            Vector3 sunPos = new Vector3(21.8f, 10.9f, 53.8f);
             if (sunDisc != null)
             {
                 sunDisc.transform.position = sunPos;
             }
             // Place a subtle warm glow ring behind the sun disc (offset +0.45m in Z -> zero Z-fighting)
             halo.transform.position = new Vector3(sunPos.x, sunPos.y, sunPos.z + 0.45f);
-            CreateSphere("Sun_OuterGlow", halo.transform, Vector3.zero, Vector3.zero, new Vector3(5.4f, 5.4f, 0.25f), pal.SunGlow);
+            CreateSphere("Sun_OuterGlow", halo.transform, Vector3.zero, Vector3.zero, new Vector3(5.8f, 5.8f, 0.25f), pal.SunGlow);
             return halo;
         }
 
@@ -668,8 +951,8 @@ namespace UnDFight.Editor
                 sky.transform.SetParent(bayLayer.transform, false);
             }
 
-            // Soft moon visible in the open sky gap above the ramp / Guanabara Bay
-            CreateSphere("Night_MoonDisc", sky.transform, new Vector3(17.8f, 11.8f, 53.8f), Vector3.zero, new Vector3(2.3f, 2.3f, 0.3f), pal.MoonGlow);
+            // Soft moon well-framed in the upper-right sky above Sugarloaf & Guanabara Bay
+            CreateSphere("Night_MoonDisc", sky.transform, new Vector3(21.4f, 12.6f, 53.2f), Vector3.zero, new Vector3(2.3f, 2.3f, 0.3f), pal.MoonGlow);
 
             // Subtle star field across the upper sky arc (deterministic pseudo-random layout)
             Vector3[] stars =
@@ -706,11 +989,13 @@ namespace UnDFight.Editor
             CreatePointLight("NightLight_BarEstufa", nightRoot.transform, new Vector3(-6.75f, 1.48f, 4.05f), new Color(1.0f, 0.72f, 0.30f, 1f), intensity: 4.2f, range: 4.5f);
             CreatePointLight("NightLight_RightSobrado", nightRoot.transform, new Vector3(7.35f, 2.55f, 2.05f), new Color(1.0f, 0.74f, 0.38f, 1f), intensity: 9.5f, range: 10.5f);
             CreatePointLight("NightLight_RampLamp", nightRoot.transform, new Vector3(5.36f, 4.65f, 6.70f), new Color(1.0f, 0.78f, 0.46f, 1f), intensity: 10.0f, range: 12.0f);
+            CreatePointLight("NightLight_RampTopLamp", nightRoot.transform, new Vector3(5.26f, 6.42f, 12.20f), new Color(1.0f, 0.76f, 0.42f, 1f), intensity: 11.0f, range: 14.0f);
             CreatePointLight("NightLight_LeftEdgeLamp", nightRoot.transform, new Vector3(-12.40f, 4.95f, 2.10f), new Color(1.0f, 0.76f, 0.42f, 1f), intensity: 9.0f, range: 11.5f);
 
             // Emissive street lamp lenses (offset slightly downward to avoid Z-fighting with metal lamp heads)
             CreateBox("LampGlow_MainPole", nightRoot.transform, new Vector3(-1.18f, 5.31f, 2.35f), Vector3.zero, new Vector3(0.28f, 0.045f, 0.14f), pal.StreetLampGlow);
             CreateBox("LampGlow_RampPole", nightRoot.transform, new Vector3(5.36f, 4.79f, 6.80f), Vector3.zero, new Vector3(0.24f, 0.045f, 0.13f), pal.StreetLampGlow);
+            CreateBox("LampGlow_RampTopPole", nightRoot.transform, new Vector3(5.26f, 6.57f, 12.35f), Vector3.zero, new Vector3(0.26f, 0.045f, 0.14f), pal.StreetLampGlow);
             CreateBox("LampGlow_LeftEdgePole", nightRoot.transform, new Vector3(-12.40f, 5.19f, 2.38f), Vector3.zero, new Vector3(0.24f, 0.045f, 0.13f), pal.StreetLampGlow);
 
             // Midground lit windows (strictly >= 0.03m in front of base dark window panes -> zero Z-fighting)
@@ -723,7 +1008,10 @@ namespace UnDFight.Editor
             return nightRoot;
         }
 
-        private static GameObject BuildHillsideNightWindows(GameObject hillsideLayer, MaterialPalette pal)
+        private static GameObject BuildHillsideNightWindows(
+            GameObject hillsideLayer,
+            MaterialPalette pal,
+            List<(string Name, Vector3 WorldPos, Vector3 Size, bool AltWarm)> rightFillLitWindowSpecs)
         {
             if (hillsideLayer == null)
             {
@@ -769,6 +1057,16 @@ namespace UnDFight.Editor
             CreateBox("HillNightWin_RampMidA_R", windowsRoot.transform, new Vector3(4.55f, 3.85f, 14.66f), Vector3.zero, new Vector3(0.48f, 0.56f, 0.025f), pal.NightWindowGlow);
             CreateBox("HillNightWin_RampMidB_L", windowsRoot.transform, new Vector3(6.00f, 4.95f, 17.96f), Vector3.zero, new Vector3(0.54f, 0.62f, 0.025f), pal.NightWindowGlow);
             CreateBox("HillNightWin_RampMidB_R", windowsRoot.transform, new Vector3(6.90f, 4.95f, 17.96f), Vector3.zero, new Vector3(0.54f, 0.62f, 0.025f), pal.NightWindowWarmAlt);
+
+            // Phase 15.2.1: 18+ warm lit windows across the new right-side hillside houses above the ramp
+            if (rightFillLitWindowSpecs != null)
+            {
+                for (int i = 0; i < rightFillLitWindowSpecs.Count; i++)
+                {
+                    var spec = rightFillLitWindowSpecs[i];
+                    CreateBox(spec.Name, windowsRoot.transform, spec.WorldPos, Vector3.zero, spec.Size, spec.AltWarm ? pal.NightWindowWarmAlt : pal.NightWindowGlow);
+                }
+            }
 
             return windowsRoot;
         }
@@ -822,7 +1120,9 @@ namespace UnDFight.Editor
             GameObject clearNightSky,
             GameObject nightLightsAndWindows,
             GameObject hillsideNightWindows,
+            GameObject shorelineLights,
             GameObject rainPuddles,
+            StageFramingStandards.WeatherCloudLayers cloudLayers,
             List<Renderer> extraWetRenderers)
         {
             GameObject managerGo = FindInSceneByName(scene, "StageInteractableManager");
@@ -837,16 +1137,20 @@ namespace UnDFight.Editor
                 var dayList = new List<GameObject>();
                 if (sunDisc != null) dayList.Add(sunDisc);
                 if (sunsetHalo != null) dayList.Add(sunsetHalo);
+                if (cloudLayers.DayClouds != null) dayList.Add(cloudLayers.DayClouds);
 
                 var nightList = new List<GameObject>();
                 if (nightLightsAndWindows != null) nightList.Add(nightLightsAndWindows);
                 if (hillsideNightWindows != null) nightList.Add(hillsideNightWindows);
+                if (shorelineLights != null) nightList.Add(shorelineLights);
 
                 var clearNightList = new List<GameObject>();
                 if (clearNightSky != null) clearNightList.Add(clearNightSky);
+                if (cloudLayers.ClearNightClouds != null) clearNightList.Add(cloudLayers.ClearNightClouds);
 
                 var rainList = new List<GameObject>();
                 if (rainPuddles != null) rainList.Add(rainPuddles);
+                if (cloudLayers.RainClouds != null) rainList.Add(cloudLayers.RainClouds);
 
                 var wetRenderers = new List<Renderer>();
                 string[] baseWetNames =
@@ -1223,6 +1527,7 @@ namespace UnDFight.Editor
                 StuccoCoral = LoadMat("Favela_StuccoCoral.mat"),
                 StuccoGreen = LoadMat("Favela_StuccoGreen.mat"),
                 StuccoWhite = LoadMat("Favela_StuccoWhite.mat"),
+                StuccoLightBlue = EnsureLitMaterial("Favela_StuccoLightBlue.mat", new Color(0.56f, 0.72f, 0.84f, 1f), metallic: 0f, smoothness: 0.16f),
                 SidewalkConcrete = LoadMat("Favela_SidewalkConcrete.mat"),
                 PoleConcrete = LoadMat("Favela_PoleConcrete.mat"),
                 RoofMetal = LoadMat("Favela_RoofMetal.mat"),
@@ -1243,6 +1548,9 @@ namespace UnDFight.Editor
                 StreetLampGlow = LoadMat("Favela_StreetLampGlow.mat"),
                 SunGlow = LoadMat("Favela_SunGlow.mat"),
                 DarkInterior = LoadMat("Favela_DarkInterior.mat"),
+                WaterBay = LoadMat("Favela_WaterBay.mat"),
+                DistantMountain = LoadMat("Favela_DistantMountain.mat"),
+                DistantMountainFar = LoadMat("Favela_DistantMountainFar.mat"),
 
                 MetalDark = EnsureLitMaterial("Favela_MetalDark.mat", new Color(0.14f, 0.15f, 0.17f, 1f), metallic: 0.65f, smoothness: 0.35f),
                 NightWindowGlow = EnsureEmissiveLitMaterial("Favela_NightWindowGlow.mat", new Color(1.0f, 0.78f, 0.36f, 1f), new Color(1.0f, 0.66f, 0.22f, 1f) * 1.65f, smoothness: 0.25f),
@@ -1260,7 +1568,9 @@ namespace UnDFight.Editor
                 ConeOrange = EnsureLitMaterial("Favela_ConeOrange.mat", new Color(0.96f, 0.36f, 0.06f, 1f), metallic: 0f, smoothness: 0.45f),
                 ConeStripeWhite = EnsureLitMaterial("Favela_ConeStripeWhite.mat", new Color(0.96f, 0.96f, 0.96f, 1f), metallic: 0f, smoothness: 0.65f),
                 LanternBulbGlow = EnsureEmissiveLitMaterial("Favela_LanternBulbGlow.mat", new Color(1.0f, 0.86f, 0.52f, 1f), new Color(1.0f, 0.72f, 0.28f, 1f) * 2.8f, smoothness: 0.40f),
-                TerracottaPot = EnsureLitMaterial("Favela_TerracottaPot.mat", new Color(0.68f, 0.32f, 0.18f, 1f), metallic: 0f, smoothness: 0.15f)
+                TerracottaPot = EnsureLitMaterial("Favela_TerracottaPot.mat", new Color(0.68f, 0.32f, 0.18f, 1f), metallic: 0f, smoothness: 0.15f),
+                ShorelineLightGlow = EnsureUnlitMaterial("Favela_ShorelineLightGlow.mat", new Color(1.0f, 0.84f, 0.46f, 1f)),
+                Clouds = StageFramingStandards.EnsureStandardCloudMaterials(MaterialsFolder)
             };
         }
 

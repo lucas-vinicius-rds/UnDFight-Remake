@@ -41,6 +41,11 @@ namespace UnDFight
 
         public float CurrentShakeOffsetMagnitude { get; private set; }
         public float CurrentDistance => _currentDistance;
+        public float MinDistance => minDistance;
+        public float MaxDistance => maxDistance;
+        public float HeightOffset => heightOffset;
+        public float StageMinX => stageMinX;
+        public float StageMaxX => stageMaxX;
         public bool IsSuperCameraActive => _superFocusRemaining > 0f && _superFocusTarget != null;
 
         public void TriggerSuperCameraFocus(Transform target, float durationSeconds)
