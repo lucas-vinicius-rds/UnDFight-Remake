@@ -497,18 +497,41 @@ namespace UnDFight.Editor
             }
             CreateBox("DoorTransomBar", entrance.transform, new Vector3(0f, 2.48f, 6.02f), Vector3.zero, new Vector3(9.45f, 0.08f, 0.14f), mats.DarkAluminum);
 
-            // Illuminated interior lobby + iconic red-orange staircase visible through open central door
+            // Illuminated interior lobby with modern Reception Desk + subtle back ramp (zero Lobby_RedStair)
             CreateBox("Lobby_Floor", entrance.transform, new Vector3(0f, 0.14f, 7.60f), Vector3.zero, new Vector3(9.60f, 0.06f, 3.20f), mats.ConcreteSidewalk);
             CreateBox("Lobby_BackWall", entrance.transform, new Vector3(0f, 1.66f, 9.10f), Vector3.zero, new Vector3(9.60f, 3.08f, 0.25f), mats.LobbyInterior);
-            for (int step = 0; step < 10; step++)
+
+            var receptionDesk = new GameObject("Lobby_ReceptionDesk");
+            receptionDesk.transform.SetParent(entrance.transform, false);
+            receptionDesk.transform.localPosition = new Vector3(0f, 0.17f, 7.15f);
+            CreateBox("Desk_BaseKick", receptionDesk.transform, new Vector3(0f, 0.05f, 0.03f), Vector3.zero, new Vector3(1.68f, 0.10f, 0.44f), mats.DarkAluminum);
+            CreateBox("Desk_Body", receptionDesk.transform, new Vector3(0f, 0.49f, 0f), Vector3.zero, new Vector3(1.74f, 0.80f, 0.52f), mats.AcUnitWhite);
+            CreateBox("Desk_TopCounter", receptionDesk.transform, new Vector3(0f, 0.93f, -0.02f), Vector3.zero, new Vector3(1.86f, 0.08f, 0.64f), mats.ConcreteSidewalk);
+            // Subtle institutional UnDF purple accent band on front of desk (0.03m clear -> zero Z-fighting)
+            CreateNoShadowBox("Desk_PurpleStripe", receptionDesk.transform, new Vector3(0f, 0.68f, -0.295f), Vector3.zero, new Vector3(1.64f, 0.14f, 0.016f), mats.BannerPurple);
+            // Reception monitor + keyboard on counter
+            CreateBox("Desk_MonitorBase", receptionDesk.transform, new Vector3(0.30f, 0.99f, 0.04f), Vector3.zero, new Vector3(0.18f, 0.03f, 0.14f), mats.DarkAluminum);
+            CreateBox("Desk_MonitorNeck", receptionDesk.transform, new Vector3(0.30f, 1.07f, 0.07f), Vector3.zero, new Vector3(0.05f, 0.14f, 0.04f), mats.DarkAluminum);
+            CreateBox("Desk_MonitorScreen", receptionDesk.transform, new Vector3(0.30f, 1.24f, 0.05f), new Vector3(0f, -12f, 0f), new Vector3(0.46f, 0.28f, 0.035f), mats.DarkAluminum);
+            CreateNoShadowBox("Desk_Keyboard", receptionDesk.transform, new Vector3(0.18f, 0.985f, -0.10f), Vector3.zero, new Vector3(0.34f, 0.02f, 0.12f), mats.DarkAluminum);
+            // Receptionist chair / stool behind desk
+            CreateCyl("Desk_ChairLeg", receptionDesk.transform, new Vector3(-0.18f, 0.28f, 0.55f), Vector3.zero, new Vector3(0.05f, 0.28f, 0.05f), mats.DarkAluminum);
+            CreateCyl("Desk_ChairBase", receptionDesk.transform, new Vector3(-0.18f, 0.03f, 0.55f), Vector3.zero, new Vector3(0.36f, 0.03f, 0.36f), mats.DarkAluminum);
+            CreateBox("Desk_ChairSeat", receptionDesk.transform, new Vector3(-0.18f, 0.56f, 0.55f), Vector3.zero, new Vector3(0.42f, 0.07f, 0.40f), mats.TrashBinGray);
+            CreateBox("Desk_ChairBack", receptionDesk.transform, new Vector3(-0.18f, 0.88f, 0.72f), Vector3.zero, new Vector3(0.40f, 0.54f, 0.06f), mats.TrashBinGray);
+
+            // Subtle internal accessibility ramp running laterally along the far back lobby wall (Z ~ 8.35..8.90)
+            var backRamp = new GameObject("Lobby_BackRamp");
+            backRamp.transform.SetParent(entrance.transform, false);
+            CreateBox("BackRamp_Deck", backRamp.transform, new Vector3(0.20f, 0.44f, 8.62f), new Vector3(0f, 0f, 7.5f), new Vector3(4.60f, 0.14f, 0.68f), mats.ConcreteSidewalk);
+            CreateBox("BackRamp_Landing", backRamp.transform, new Vector3(2.95f, 0.76f, 8.62f), Vector3.zero, new Vector3(1.10f, 0.14f, 0.72f), mats.ConcreteSidewalk);
+            CreateBox("BackRamp_Handrail", backRamp.transform, new Vector3(0.20f, 1.18f, 8.26f), new Vector3(0f, 0f, 7.5f), new Vector3(4.65f, 0.04f, 0.04f), mats.SteelSilver);
+            for (int p = 0; p < 4; p++)
             {
-                CreateBox(
-                    $"Lobby_RedStair_{step}",
-                    entrance.transform,
-                    new Vector3(0f, 0.26f + step * 0.20f, 7.05f + step * 0.20f),
-                    Vector3.zero,
-                    new Vector3(1.85f, 0.20f, 0.24f),
-                    mats.LobbyRedStair);
+                float t = p / 3f;
+                float px = Mathf.Lerp(-1.95f, 2.35f, t);
+                float py = Mathf.Lerp(0.52f, 1.08f, t);
+                CreateCyl($"BackRamp_Post_{p}", backRamp.transform, new Vector3(px, py, 8.26f), Vector3.zero, new Vector3(0.035f, 0.38f, 0.035f), mats.SteelSilver);
             }
 
             // Paper flyers / academic notices taped on right-side glass panels (Z = 5.99 vs Glass front 6.04 -> 0.05m clear)
@@ -758,7 +781,6 @@ namespace UnDFight.Editor
         private static void InstantiateUnDFInteractiveProps(Transform propsRoot, UnDFMaterials mats)
         {
             GameObject flagPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(HangingFlagPrefabPath);
-            GameObject bannerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(HangingBannerPrefabPath);
             GameObject barrierPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BreakableBarrierPrefabPath);
             GameObject easelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BreakableEaselPrefabPath);
             GameObject throwConePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ThrowableConePrefabPath);
@@ -774,13 +796,7 @@ namespace UnDFight.Editor
                 InstantiateFlagVariant(flagPrefab, "Hanging_Flag_UnDF", propsRoot, new Vector3(5.00f, 0.12f, 3.92f), poleHeight: 3.75f, mats.FlagUnDF);
             }
 
-            // 2. Hanging academic banner under the left side of the marquee (clear of fighter faces)
-            if (bannerPrefab != null)
-            {
-                InstantiateProp(bannerPrefab, "Hanging_AcademicBanner", propsRoot, new Vector3(-2.90f, 3.14f, 3.65f), 0f);
-            }
-
-            // 3. Two Breakable props with persistent StageDebris (metal containment barrier left + UnDF info easel right)
+            // 2. Two Breakable props with persistent StageDebris (metal containment barrier left + UnDF info easel right)
             if (barrierPrefab != null)
             {
                 InstantiateProp(barrierPrefab, "Breakable_Barrier_Left", propsRoot, new Vector3(-6.40f, 0f, 1.90f), 6f);

@@ -1364,6 +1364,8 @@ namespace UnDFight.Tests
                 GameObject asphaltMain = null;
                 GameObject asphaltFront = null;
                 GameObject sidewalk = null;
+                GameObject receptionDesk = null;
+                int redStairCount = 0;
 
                 var hangingProps = new List<StageHangingProp>();
                 var breakableProps = new List<StageBreakableProp>();
@@ -1378,6 +1380,8 @@ namespace UnDFight.Tests
                         if (t.name == "ParkingAsphalt_Main") asphaltMain = t.gameObject;
                         if (t.name == "ParkingAsphalt_Front") asphaltFront = t.gameObject;
                         if (t.name == "Sidewalk_Campus") sidewalk = t.gameObject;
+                        if (t.name == "Lobby_ReceptionDesk") receptionDesk = t.gameObject;
+                        if (t.name.StartsWith("Lobby_RedStair_")) redStairCount++;
                     }
                     if (camCtrl == null) camCtrl = rootGo.GetComponentInChildren<FightCameraController>(true);
                     if (weather == null) weather = rootGo.GetComponentInChildren<StageWeatherController>(true);
@@ -1410,7 +1414,11 @@ namespace UnDFight.Tests
                 bool covered = StageFramingStandards.ValidateCameraBottomFloorCoverage(mainCam, camCtrl, combinedFloor, out string reason);
                 Assert.IsTrue(covered, $"Arena_UnDF failed bottom floor coverage validation: {reason}");
 
-                // Physics v2 props check: 3 flags + 1 hanging banner, >= 2 breakables, >= 2 throwables, >= 4 dynamic props
+                // Lobby fidelity (Phase 15.3.1): Reception Desk present, legacy red stairs removed
+                Assert.IsNotNull(receptionDesk, "Arena_UnDF lobby must contain Lobby_ReceptionDesk.");
+                Assert.AreEqual(0, redStairCount, "Arena_UnDF must not contain legacy Lobby_RedStair_* steps.");
+
+                // Physics v2 props check: 3 flags (and NO Hanging_AcademicBanner), >= 2 breakables, >= 2 throwables, >= 4 dynamic props
                 int flagCount = 0;
                 bool hasBanner = false;
                 foreach (StageHangingProp hp in hangingProps)
@@ -1421,7 +1429,7 @@ namespace UnDFight.Tests
                     if (hp.name == "Hanging_AcademicBanner") hasBanner = true;
                 }
                 Assert.AreEqual(3, flagCount, "Arena_UnDF must have 3 physical HingeJoint flags (DF, Brazil, UnDF).");
-                Assert.IsTrue(hasBanner, "Arena_UnDF must have Hanging_AcademicBanner.");
+                Assert.IsFalse(hasBanner, "Arena_UnDF must NOT instantiate Hanging_AcademicBanner under the marquee.");
                 Assert.GreaterOrEqual(breakableProps.Count, 2, "Arena_UnDF must have at least 2 StageBreakableProp instances.");
                 Assert.GreaterOrEqual(throwableProps.Count, 2, "Arena_UnDF must have at least 2 StageThrowableProp instances.");
                 Assert.GreaterOrEqual(dynamicProps.Count, 4, "Arena_UnDF must have at least 4 loose StageDynamicProp instances.");
