@@ -19,12 +19,16 @@ namespace UnDFight
         [SerializeField] private CombatVfxController vfxController;
         [SerializeField] private Sprite whiteSprite;
         [SerializeField] private Sprite undfEmblemSprite;
+        [SerializeField] private Sprite diamondSprite;
 
         [Header("UI Panels")]
         [SerializeField] private GameObject pausePanel;
         [SerializeField] private MenuNavigationGroup pauseNavigation;
         [SerializeField] private GameObject matchOverPanel;
         [SerializeField] private MenuNavigationGroup matchOverNavigation;
+        [SerializeField] private TextMeshProUGUI matchOverTitleText;
+        [SerializeField] private TextMeshProUGUI matchOverSubtitleText;
+        [SerializeField] private UnityEngine.UI.Image matchOverTopAccent;
         [SerializeField] private OptionsPanelController optionsPanel;
 
         private readonly List<UnityEngine.UI.Button> _pauseButtons = new List<UnityEngine.UI.Button>();
@@ -47,10 +51,16 @@ namespace UnDFight
         private MenuNavigationGroup _towerMatchOverNavigation;
 
         public bool IsPaused => _isPaused;
+        public bool IsPauseOpen => pausePanel != null && pausePanel.activeSelf;
+        public bool IsOptionsOpen => optionsPanel != null && optionsPanel.IsOpen;
+        public bool IsStandardMatchOverOpen => matchOverPanel != null && matchOverPanel.activeSelf;
         public bool IsMatchOverMenuOpen =>
             (matchOverPanel != null && matchOverPanel.activeSelf) ||
             (_towerMatchOverPanel != null && _towerMatchOverPanel.activeSelf);
         public bool IsTowerMatchOverOpen => _towerMatchOverPanel != null && _towerMatchOverPanel.activeSelf;
+        public bool IsAnyModalOpen => IsPaused || IsPauseOpen || IsOptionsOpen || IsMatchOverMenuOpen || IsTowerMatchOverOpen;
+        public string StandardMatchOverTitle => matchOverTitleText != null ? matchOverTitleText.text : string.Empty;
+        public string StandardMatchOverSubtitle => matchOverSubtitleText != null ? matchOverSubtitleText.text : string.Empty;
         public string TowerMatchOverTitle => _towerTitleText != null ? _towerTitleText.text : string.Empty;
         public bool IsBossUnlockBannerVisible => _towerUnlockBanner != null && _towerUnlockBanner.activeSelf;
         public string TowerUnlockBannerText => _towerUnlockBannerText != null ? _towerUnlockBannerText.text : string.Empty;
@@ -103,9 +113,10 @@ namespace UnDFight
             whiteSprite = sprite;
         }
 
-        public void ConfigureThemeSprites(Sprite emblem)
+        public void ConfigureThemeSprites(Sprite emblem, Sprite diamond = null)
         {
             if (emblem != null) undfEmblemSprite = emblem;
+            if (diamond != null) diamondSprite = diamond;
         }
 
         public void BuildUI(Transform canvasRoot, Sprite sprite)
@@ -121,7 +132,7 @@ namespace UnDFight
             _towerMatchOverPanel = null;
 
             // Pause Panel (Matte Graphite + Official UnDF Palette + Logo_UnDF_Emblem)
-            RectTransform pauseOverlay = MenuUiFactory.CreatePanel("PausePanel", canvasRoot, new Color(0.02f, 0.025f, 0.038f, 0.80f), whiteSprite, raycastTarget: true);
+            RectTransform pauseOverlay = MenuUiFactory.CreatePanel("PausePanel", canvasRoot, new Color(0.027f, 0.039f, 0.059f, 0.76f), whiteSprite, raycastTarget: true);
             MenuUiFactory.StretchFull(pauseOverlay, 0f, 0f, 0f, 0f);
             pausePanel = pauseOverlay.gameObject;
 
@@ -185,38 +196,94 @@ namespace UnDFight
                 pauseNavigation.AddItem(entry);
             }
 
-            // MatchOver Post-Fight Menu Panel (positioned cleanly below the winner banner)
-            RectTransform moPanel = MenuUiFactory.CreatePanel("MatchOverPanel", canvasRoot, MenuUiFactory.ObsidianBg, whiteSprite, raycastTarget: true);
-            moPanel.anchorMin = new Vector2(0.5f, 0.37f);
-            moPanel.anchorMax = new Vector2(0.5f, 0.37f);
-            moPanel.pivot = new Vector2(0.5f, 0.5f);
-            moPanel.sizeDelta = new Vector2(510f, 344f);
-            matchOverPanel = moPanel.gameObject;
-            MenuUiFactory.AddBorder(moPanel, MenuUiFactory.SlateBorderDark, whiteSprite, 2f);
+            // MatchOver Post-Fight Modal (Fullscreen matte dimmer + centered box with internal winner header)
+            RectTransform moOverlay = MenuUiFactory.CreatePanel(
+                "MatchOverPanel",
+                canvasRoot,
+                new Color(0.027f, 0.039f, 0.059f, 0.70f),
+                whiteSprite,
+                raycastTarget: true);
+            MenuUiFactory.StretchFull(moOverlay, 0f, 0f, 0f, 0f);
+            matchOverPanel = moOverlay.gameObject;
 
-            RectTransform moLine = MenuUiFactory.CreatePanel("MOAccent", moPanel, MenuUiFactory.UnDFBlue, whiteSprite);
+            RectTransform moBox = MenuUiFactory.CreatePanel("MatchOverBox", moOverlay, MenuUiFactory.ObsidianBg, whiteSprite, raycastTarget: true);
+            moBox.anchorMin = new Vector2(0.5f, 0.5f);
+            moBox.anchorMax = new Vector2(0.5f, 0.5f);
+            moBox.pivot = new Vector2(0.5f, 0.5f);
+            moBox.anchoredPosition = Vector2.zero;
+            moBox.sizeDelta = new Vector2(560f, 474f);
+            MenuUiFactory.AddBorder(moBox, MenuUiFactory.SlateBorderDark, whiteSprite, 2f);
+
+            RectTransform moLine = MenuUiFactory.CreatePanel("MOAccent", moBox, MenuUiFactory.UnDFBlue, whiteSprite);
             moLine.anchorMin = new Vector2(0f, 1f);
             moLine.anchorMax = new Vector2(1f, 1f);
             moLine.pivot = new Vector2(0.5f, 1f);
             moLine.sizeDelta = new Vector2(0f, 3.5f);
+            matchOverTopAccent = moLine.GetComponent<UnityEngine.UI.Image>();
 
             if (undfEmblemSprite != null)
             {
                 var moEmb = new GameObject("MatchOverEmblem", typeof(RectTransform), typeof(UnityEngine.UI.Image));
-                moEmb.transform.SetParent(moPanel, false);
+                moEmb.transform.SetParent(moBox, false);
                 var moEmbRt = (RectTransform)moEmb.transform;
                 moEmbRt.anchorMin = new Vector2(0.5f, 1f);
                 moEmbRt.anchorMax = new Vector2(0.5f, 1f);
                 moEmbRt.pivot = new Vector2(0.5f, 1f);
-                moEmbRt.anchoredPosition = new Vector2(0f, -12f);
-                moEmbRt.sizeDelta = new Vector2(48f, 28f);
+                moEmbRt.anchoredPosition = new Vector2(0f, -16f);
+                moEmbRt.sizeDelta = new Vector2(54f, 32f);
                 var img = moEmb.GetComponent<UnityEngine.UI.Image>();
                 img.sprite = undfEmblemSprite;
                 img.preserveAspect = true;
                 img.raycastTarget = false;
             }
 
-            matchOverNavigation = moPanel.gameObject.AddComponent<MenuNavigationGroup>();
+            float titleTopY = undfEmblemSprite != null ? -54f : -26f;
+            matchOverTitleText = MenuUiFactory.CreateText(
+                "MatchOverTitle",
+                moBox,
+                "FIM DE LUTA",
+                32f,
+                FontStyles.Bold,
+                TextAlignmentOptions.Center,
+                MenuUiFactory.TextActive,
+                characterSpacing: 5f);
+            matchOverTitleText.enableAutoSizing = true;
+            matchOverTitleText.fontSizeMin = 20f;
+            matchOverTitleText.fontSizeMax = 32f;
+            matchOverTitleText.textWrappingMode = TextWrappingModes.NoWrap;
+            matchOverTitleText.rectTransform.anchorMin = new Vector2(0f, 1f);
+            matchOverTitleText.rectTransform.anchorMax = new Vector2(1f, 1f);
+            matchOverTitleText.rectTransform.pivot = new Vector2(0.5f, 1f);
+            matchOverTitleText.rectTransform.anchoredPosition = new Vector2(0f, titleTopY);
+            matchOverTitleText.rectTransform.sizeDelta = new Vector2(-48f, 44f);
+
+            matchOverSubtitleText = MenuUiFactory.CreateText(
+                "MatchOverSubtitle",
+                moBox,
+                "2 - 0  \u2022  VS CPU",
+                15f,
+                FontStyles.Bold,
+                TextAlignmentOptions.Center,
+                MenuUiFactory.TextSubtitle,
+                characterSpacing: 2.8f);
+            matchOverSubtitleText.enableAutoSizing = true;
+            matchOverSubtitleText.fontSizeMin = 11.5f;
+            matchOverSubtitleText.fontSizeMax = 15f;
+            matchOverSubtitleText.textWrappingMode = TextWrappingModes.NoWrap;
+            matchOverSubtitleText.rectTransform.anchorMin = new Vector2(0f, 1f);
+            matchOverSubtitleText.rectTransform.anchorMax = new Vector2(1f, 1f);
+            matchOverSubtitleText.rectTransform.pivot = new Vector2(0.5f, 1f);
+            matchOverSubtitleText.rectTransform.anchoredPosition = new Vector2(0f, titleTopY - 46f);
+            matchOverSubtitleText.rectTransform.sizeDelta = new Vector2(-48f, 26f);
+
+            RectTransform moDivider = MenuUiFactory.CreatePanel("MODivider", moBox, MenuUiFactory.SlateBorderDark, whiteSprite);
+            moDivider.anchorMin = new Vector2(0f, 1f);
+            moDivider.anchorMax = new Vector2(1f, 1f);
+            moDivider.pivot = new Vector2(0.5f, 1f);
+            moDivider.anchoredPosition = new Vector2(0f, titleTopY - 82f);
+            moDivider.sizeDelta = new Vector2(-72f, 1.5f);
+
+            matchOverNavigation = moBox.gameObject.AddComponent<MenuNavigationGroup>();
             string[] moLabels =
             {
                 "REVANCHE",
@@ -225,16 +292,16 @@ namespace UnDFight
                 "MENU PRINCIPAL"
             };
 
-            float moStartY = undfEmblemSprite != null ? -48f : -26f;
+            float moStartY = titleTopY - 106f;
             for (int i = 0; i < moLabels.Length; i++)
             {
-                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"MatchOverBtn_{i}", moPanel, moLabels[i], whiteSprite, 22f, TextAlignmentOptions.Center, characterSpacing: 5f);
+                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"MatchOverBtn_{i}", moBox, moLabels[i], whiteSprite, 21f, TextAlignmentOptions.Center, characterSpacing: 5f);
                 RectTransform rt = entry.Button.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.5f, 1f);
                 rt.anchorMax = new Vector2(0.5f, 1f);
                 rt.pivot = new Vector2(0.5f, 1f);
-                rt.anchoredPosition = new Vector2(0f, moStartY - i * 68f);
-                rt.sizeDelta = new Vector2(430f, 56f);
+                rt.anchoredPosition = new Vector2(0f, moStartY - i * 70f);
+                rt.sizeDelta = new Vector2(464f, 58f);
                 matchOverNavigation.AddItem(entry);
             }
 
@@ -261,6 +328,14 @@ namespace UnDFight
                     _pauseButtons.Add(btns[i]);
                 }
                 ConfigurePauseMenuForCurrentMode();
+            }
+
+            if (matchOverPanel != null)
+            {
+                Transform moBoxTr = matchOverPanel.transform.Find("MatchOverBox") ?? matchOverPanel.transform;
+                if (matchOverTitleText == null) matchOverTitleText = moBoxTr.Find("MatchOverTitle")?.GetComponent<TextMeshProUGUI>();
+                if (matchOverSubtitleText == null) matchOverSubtitleText = moBoxTr.Find("MatchOverSubtitle")?.GetComponent<TextMeshProUGUI>();
+                if (matchOverTopAccent == null) matchOverTopAccent = moBoxTr.Find("MOAccent")?.GetComponent<UnityEngine.UI.Image>();
             }
 
             if (matchOverNavigation != null)
@@ -422,9 +497,104 @@ namespace UnDFight
             else
             {
                 if (_towerMatchOverPanel != null) _towerMatchOverPanel.SetActive(false);
+                PopulateStandardMatchOverHeader(manager);
                 if (matchOverPanel != null) matchOverPanel.SetActive(true);
                 matchOverNavigation?.SetSelectedIndex(0);
             }
+        }
+
+        private void PopulateStandardMatchOverHeader(MatchManager manager)
+        {
+            if (manager == null)
+            {
+                return;
+            }
+
+            string winnerTitle;
+            Color accentColor = MenuUiFactory.UnDFBlue;
+            if (manager.WinnerPlayerIndex == 0)
+            {
+                string p1Name = ResolveFighterDisplayName(0);
+                winnerTitle = $"VITÓRIA DE {p1Name}";
+                accentColor = MenuUiFactory.UnDFBlue;
+            }
+            else if (manager.WinnerPlayerIndex == 1)
+            {
+                string p2Name = ResolveFighterDisplayName(1);
+                winnerTitle = $"VITÓRIA DE {p2Name}";
+                accentColor = MenuUiFactory.UnDFBlue;
+            }
+            else
+            {
+                winnerTitle = "EMPATE";
+                accentColor = MenuUiFactory.SlateBorderLight;
+            }
+
+            string modeLabel = GameSessionState.CurrentMode switch
+            {
+                GameMode.VersusCpu => "VS CPU",
+                GameMode.Training => "TREINO",
+                _ => "VS JOGADOR"
+            };
+
+            string stageLabel = ResolveCurrentStageDisplayLabel();
+            string subtitle = string.IsNullOrEmpty(stageLabel)
+                ? $"{manager.P1RoundsWon} - {manager.P2RoundsWon}  \u2022  {modeLabel}"
+                : $"{manager.P1RoundsWon} - {manager.P2RoundsWon}  \u2022  {modeLabel}  \u2022  {stageLabel}";
+
+            if (matchOverTitleText != null)
+            {
+                matchOverTitleText.text = winnerTitle;
+                matchOverTitleText.color = MenuUiFactory.TextActive;
+            }
+            if (matchOverSubtitleText != null)
+            {
+                matchOverSubtitleText.text = subtitle;
+                matchOverSubtitleText.color = MenuUiFactory.TextSubtitle;
+            }
+            if (matchOverTopAccent != null)
+            {
+                matchOverTopAccent.color = accentColor;
+            }
+        }
+
+        private string ResolveFighterDisplayName(int playerIndex)
+        {
+            FighterController fighter = simulation != null
+                ? (playerIndex == 0 ? simulation.Fighter1 : simulation.Fighter2)
+                : null;
+            if (fighter != null && fighter.Data != null && !string.IsNullOrWhiteSpace(fighter.Data.fighterName))
+            {
+                return fighter.Data.fighterName.ToUpperInvariant();
+            }
+
+            FighterData sessionFighter = playerIndex == 0
+                ? GameSessionState.SelectedFighterP1
+                : GameSessionState.SelectedFighterP2;
+            if (sessionFighter != null && !string.IsNullOrWhiteSpace(sessionFighter.fighterName))
+            {
+                return sessionFighter.fighterName.ToUpperInvariant();
+            }
+
+            return playerIndex == 0 ? "JOGADOR 1" : "JOGADOR 2";
+        }
+
+        private static string ResolveCurrentStageDisplayLabel()
+        {
+            string sceneName = SceneManager.GetActiveScene().name;
+            if (string.IsNullOrEmpty(sceneName))
+            {
+                sceneName = GameSessionState.SelectedStageSceneName;
+            }
+
+            return sceneName switch
+            {
+                "Arena_Favela" => "FAVELA CARIOCA",
+                "Arena_UnDF" => "FRENTE DA UnDF",
+                "Arena_Cadeia" => "BLOCO DE CELAS",
+                "Training" => "SALA DE TREINO",
+                _ => string.Empty
+            };
         }
 
         private void ShowTowerMatchOverPanel(MatchManager manager, ArcadeTowerRun run)
@@ -466,7 +636,12 @@ namespace UnDFight
             }
 
             Sprite sprite = ResolveWhiteSprite();
-            RectTransform overlay = MenuUiFactory.CreatePanel("TowerMatchOverPanel", transform, new Color(0.02f, 0.022f, 0.032f, 0.80f), sprite, raycastTarget: true);
+            RectTransform overlay = MenuUiFactory.CreatePanel(
+                "TowerMatchOverPanel",
+                transform,
+                new Color(0.027f, 0.039f, 0.059f, 0.76f),
+                sprite,
+                raycastTarget: true);
             MenuUiFactory.StretchFull(overlay, 0f, 0f, 0f, 0f);
             _towerMatchOverPanel = overlay.gameObject;
 
@@ -474,9 +649,9 @@ namespace UnDFight
             _towerMatchOverBox.anchorMin = new Vector2(0.5f, 0.5f);
             _towerMatchOverBox.anchorMax = new Vector2(0.5f, 0.5f);
             _towerMatchOverBox.pivot = new Vector2(0.5f, 0.5f);
-            _towerMatchOverBox.anchoredPosition = new Vector2(0f, -20f);
-            _towerMatchOverBox.sizeDelta = new Vector2(680f, 600f);
-            MenuUiFactory.AddBorder(_towerMatchOverBox, MenuUiFactory.BronzeBorder, sprite, 2f);
+            _towerMatchOverBox.anchoredPosition = Vector2.zero;
+            _towerMatchOverBox.sizeDelta = new Vector2(700f, 620f);
+            MenuUiFactory.AddBorder(_towerMatchOverBox, MenuUiFactory.SlateBorderDark, sprite, 2f);
 
             RectTransform topLine = MenuUiFactory.CreatePanel("TowerTopAccent", _towerMatchOverBox, MenuUiFactory.UnDFBlue, sprite);
             topLine.anchorMin = new Vector2(0f, 1f);
@@ -513,26 +688,34 @@ namespace UnDFight
             _towerTitleText.rectTransform.anchorMin = new Vector2(0f, 1f);
             _towerTitleText.rectTransform.anchorMax = new Vector2(1f, 1f);
             _towerTitleText.rectTransform.pivot = new Vector2(0.5f, 1f);
-            _towerTitleText.rectTransform.anchoredPosition = new Vector2(0f, -16f);
-            _towerTitleText.rectTransform.sizeDelta = new Vector2(-120f, 44f);
+            _towerTitleText.rectTransform.anchoredPosition = new Vector2(0f, -18f);
+            _towerTitleText.rectTransform.sizeDelta = new Vector2(-128f, 44f);
 
             _towerSubtitleText = MenuUiFactory.CreateText(
                 "TowerSubtitle",
                 _towerMatchOverBox,
                 string.Empty,
-                16f,
+                15f,
                 FontStyles.Bold,
                 TextAlignmentOptions.Center,
                 MenuUiFactory.TextSubtitle,
-                characterSpacing: 2.5f);
+                characterSpacing: 2.4f);
             _towerSubtitleText.enableAutoSizing = true;
-            _towerSubtitleText.fontSizeMin = 12f;
-            _towerSubtitleText.fontSizeMax = 16f;
+            _towerSubtitleText.fontSizeMin = 11.5f;
+            _towerSubtitleText.fontSizeMax = 15f;
+            _towerSubtitleText.textWrappingMode = TextWrappingModes.NoWrap;
             _towerSubtitleText.rectTransform.anchorMin = new Vector2(0f, 1f);
             _towerSubtitleText.rectTransform.anchorMax = new Vector2(1f, 1f);
             _towerSubtitleText.rectTransform.pivot = new Vector2(0.5f, 1f);
             _towerSubtitleText.rectTransform.anchoredPosition = new Vector2(0f, -66f);
-            _towerSubtitleText.rectTransform.sizeDelta = new Vector2(-44f, 30f);
+            _towerSubtitleText.rectTransform.sizeDelta = new Vector2(-56f, 28f);
+
+            RectTransform headerDivider = MenuUiFactory.CreatePanel("TowerHeaderDivider", _towerMatchOverBox, MenuUiFactory.SlateBorderDark, sprite);
+            headerDivider.anchorMin = new Vector2(0f, 1f);
+            headerDivider.anchorMax = new Vector2(1f, 1f);
+            headerDivider.pivot = new Vector2(0.5f, 1f);
+            headerDivider.anchoredPosition = new Vector2(0f, -104f);
+            headerDivider.sizeDelta = new Vector2(-76f, 1.5f);
 
             var bodyGo = new GameObject("TowerBody", typeof(RectTransform));
             bodyGo.transform.SetParent(_towerMatchOverBox, false);
@@ -540,8 +723,8 @@ namespace UnDFight
             bodyRt.anchorMin = new Vector2(0.5f, 1f);
             bodyRt.anchorMax = new Vector2(0.5f, 1f);
             bodyRt.pivot = new Vector2(0.5f, 1f);
-            bodyRt.anchoredPosition = new Vector2(0f, -106f);
-            bodyRt.sizeDelta = new Vector2(604f, 320f);
+            bodyRt.anchoredPosition = new Vector2(0f, -118f);
+            bodyRt.sizeDelta = new Vector2(624f, 330f);
             _towerBodyContainer = bodyRt;
 
             // Boss Unlock celebration banner (matte official UnDF blue-slate frame, zero neon)
@@ -549,8 +732,8 @@ namespace UnDFight
             unlockBanner.anchorMin = new Vector2(0.5f, 1f);
             unlockBanner.anchorMax = new Vector2(0.5f, 1f);
             unlockBanner.pivot = new Vector2(0.5f, 1f);
-            unlockBanner.anchoredPosition = new Vector2(0f, -264f);
-            unlockBanner.sizeDelta = new Vector2(604f, 84f);
+            unlockBanner.anchoredPosition = new Vector2(0f, -270f);
+            unlockBanner.sizeDelta = new Vector2(624f, 88f);
             MenuUiFactory.AddBorder(unlockBanner, MenuUiFactory.UnDFBlue, sprite, 2f);
             _towerUnlockBanner = unlockBanner.gameObject;
 
@@ -569,7 +752,7 @@ namespace UnDFight
             _towerUnlockBannerText.rectTransform.anchorMin = new Vector2(0f, 1f);
             _towerUnlockBannerText.rectTransform.anchorMax = new Vector2(1f, 1f);
             _towerUnlockBannerText.rectTransform.pivot = new Vector2(0.5f, 1f);
-            _towerUnlockBannerText.rectTransform.anchoredPosition = new Vector2(0f, -10f);
+            _towerUnlockBannerText.rectTransform.anchoredPosition = new Vector2(0f, -12f);
             _towerUnlockBannerText.rectTransform.sizeDelta = new Vector2(-24f, 36f);
 
             TextMeshProUGUI unlockSub = MenuUiFactory.CreateText(
@@ -584,7 +767,7 @@ namespace UnDFight
             unlockSub.rectTransform.anchorMin = new Vector2(0f, 0f);
             unlockSub.rectTransform.anchorMax = new Vector2(1f, 0f);
             unlockSub.rectTransform.pivot = new Vector2(0.5f, 0f);
-            unlockSub.rectTransform.anchoredPosition = new Vector2(0f, 10f);
+            unlockSub.rectTransform.anchoredPosition = new Vector2(0f, 12f);
             unlockSub.rectTransform.sizeDelta = new Vector2(-24f, 24f);
             _towerUnlockBanner.SetActive(false);
 
@@ -594,7 +777,7 @@ namespace UnDFight
             btnRt.anchorMin = new Vector2(0.5f, 0f);
             btnRt.anchorMax = new Vector2(0.5f, 0f);
             btnRt.pivot = new Vector2(0.5f, 0f);
-            btnRt.anchoredPosition = new Vector2(0f, 18f);
+            btnRt.anchoredPosition = new Vector2(0f, 24f);
             btnRt.sizeDelta = new Vector2(540f, 200f);
             _towerButtonsContainer = btnRt;
             _towerMatchOverNavigation = btnGo.AddComponent<MenuNavigationGroup>();
@@ -616,25 +799,25 @@ namespace UnDFight
         private void PopulateTowerIntermediateVictoryPanel(ArcadeTowerRun run)
         {
             Sprite sprite = ResolveWhiteSprite();
+            Sprite dia = diamondSprite != null ? diamondSprite : sprite;
             ClearContainer(_towerBodyContainer);
             ClearContainer(_towerButtonsContainer);
             _towerMatchOverNavigation.ClearItems();
             if (_towerUnlockBanner != null) _towerUnlockBanner.SetActive(false);
 
-            _towerMatchOverBox.sizeDelta = new Vector2(680f, 590f);
+            _towerMatchOverBox.sizeDelta = new Vector2(700f, 622f);
             if (_towerTopAccent != null) _towerTopAccent.color = MenuUiFactory.UnDFBlue;
             _towerTitleText.text = "VITÓRIA NA TORRE!";
             _towerTitleText.color = MenuUiFactory.TextActive;
 
-            ArcadeTowerStageEntry current = run.CurrentMatch;
             ArcadeTowerStageEntry next = run.NextMatch;
             string nextOpp = next != null && next.opponent != null ? next.opponent.fighterName.ToUpperInvariant() : "???";
             string nextStage = next != null ? next.stageDisplayName : string.Empty;
-            _towerSubtitleText.text = $"DEGRAU {run.CurrentMatchIndex + 1}/{run.TotalMatches} VENCIDO  •  PRÓXIMO: {nextOpp} ({nextStage})";
+            _towerSubtitleText.text = $"DEGRAU {run.CurrentMatchIndex + 1}/{run.TotalMatches} VENCIDO  \u2022  PRÓXIMO: {nextOpp} ({nextStage})";
 
-            // Render 7-step mini ladder (top = 7 Boss, bottom = 1)
-            float rowH = 38f;
-            float rowStep = 43f;
+            // Render clean 7-step mini ladder (top = 7 Boss, bottom = 1) with crisp vector status indicators
+            float rowH = 39f;
+            float rowStep = 45f;
             int total = run.TotalMatches;
             for (int visualRow = 0; visualRow < total; visualRow++)
             {
@@ -644,7 +827,7 @@ namespace UnDFight
                 bool isNext = matchIdx == run.CurrentMatchIndex + 1;
 
                 Color rowBg = isNext
-                    ? new Color(0.118f, 0.337f, 0.600f, 0.92f)
+                    ? new Color(0.118f, 0.337f, 0.600f, 0.94f)
                     : (step.isBossMatch
                         ? MenuUiFactory.CrimsonSurface
                         : (defeated ? MenuUiFactory.VictoryMutedBg : MenuUiFactory.PanelDarkBg));
@@ -661,12 +844,49 @@ namespace UnDFight
                 rowRt.sizeDelta = new Vector2(0f, rowH);
                 MenuUiFactory.AddBorder(rowRt, rowBorder, sprite, isNext ? 2f : 1f);
 
-                string prefix = defeated ? "[OK] " : (isNext ? "► " : "  ");
+                // Clean left status indicator (zero missing TMP unicode glyphs)
+                if (defeated)
+                {
+                    RectTransform okPill = MenuUiFactory.CreatePanel("StatusBadge", rowRt, new Color(0.10f, 0.25f, 0.17f, 0.95f), sprite);
+                    okPill.anchorMin = new Vector2(0f, 0.5f);
+                    okPill.anchorMax = new Vector2(0f, 0.5f);
+                    okPill.pivot = new Vector2(0f, 0.5f);
+                    okPill.anchoredPosition = new Vector2(12f, 0f);
+                    okPill.sizeDelta = new Vector2(30f, 20f);
+                    MenuUiFactory.AddBorder(okPill, MenuUiFactory.VictoryMutedBorder, sprite, 1f);
+
+                    TextMeshProUGUI okTxt = MenuUiFactory.CreateText("OkText", okPill, "OK", 10.5f, FontStyles.Bold, TextAlignmentOptions.Center, MenuUiFactory.VictoryMutedText, characterSpacing: 1f);
+                    MenuUiFactory.StretchFull(okTxt.rectTransform, 1f, 1f, 1f, 1f);
+                }
+                else
+                {
+                    Color markerCol = isNext
+                        ? MenuUiFactory.UnDFSky
+                        : (step.isBossMatch ? MenuUiFactory.CrimsonActive : MenuUiFactory.SlateBorderMid);
+                    RectTransform marker = MenuUiFactory.CreatePanel("StatusMarker", rowRt, markerCol, dia);
+                    marker.anchorMin = new Vector2(0f, 0.5f);
+                    marker.anchorMax = new Vector2(0f, 0.5f);
+                    marker.pivot = new Vector2(0.5f, 0.5f);
+                    marker.anchoredPosition = new Vector2(27f, 0f);
+                    marker.sizeDelta = isNext ? new Vector2(11f, 11f) : new Vector2(8f, 8f);
+                    if (diamondSprite == null) marker.localRotation = Quaternion.Euler(0f, 0f, 45f);
+                }
+
                 string oppName = step.opponent != null ? step.opponent.fighterName.ToUpperInvariant() : "???";
                 string weather = step.GetWeatherDisplayLabel();
-                string rowLabel = step.isBossMatch
-                    ? $"{prefix}{matchIdx + 1} • CHEFE FINAL: {oppName} • {step.stageDisplayName}"
-                    : $"{prefix}{matchIdx + 1} • {step.ladderLabel}: {oppName} • {step.stageDisplayName} ({weather})";
+                string rowLabel;
+                if (step.isBossMatch)
+                {
+                    rowLabel = $"{matchIdx + 1}  \u2022  CHEFE FINAL: {oppName}  \u2014  {step.stageDisplayName}";
+                }
+                else if (defeated)
+                {
+                    rowLabel = $"{matchIdx + 1}  \u2022  {oppName}  \u2014  {step.stageDisplayName}";
+                }
+                else
+                {
+                    rowLabel = $"{matchIdx + 1}  \u2022  {oppName}  \u2014  {step.stageDisplayName} ({weather})";
+                }
 
                 Color textColor = isNext
                     ? MenuUiFactory.TextActive
@@ -679,7 +899,7 @@ namespace UnDFight
                 txt.fontSizeMin = 11f;
                 txt.fontSizeMax = 15f;
                 txt.textWrappingMode = TextWrappingModes.NoWrap;
-                MenuUiFactory.StretchFull(txt.rectTransform, 14f, 2f, 14f, 2f);
+                MenuUiFactory.StretchFull(txt.rectTransform, 52f, 2f, 16f, 2f);
             }
 
             AddTowerActionButtons(new (string label, System.Action action)[]
@@ -697,7 +917,7 @@ namespace UnDFight
             _towerMatchOverNavigation.ClearItems();
 
             bool unlockedNow = run.UnlockedBossThisRun;
-            _towerMatchOverBox.sizeDelta = new Vector2(680f, unlockedNow ? 600f : 520f);
+            _towerMatchOverBox.sizeDelta = new Vector2(700f, unlockedNow ? 616f : 508f);
             if (_towerTopAccent != null) _towerTopAccent.color = MenuUiFactory.UnDFBlue;
 
             string champName = run.PlayerFighter != null ? run.PlayerFighter.fighterName.ToUpperInvariant() : "CAMPEÃO";
@@ -713,12 +933,12 @@ namespace UnDFight
             statsBox.anchorMax = new Vector2(1f, 1f);
             statsBox.pivot = new Vector2(0.5f, 1f);
             statsBox.anchoredPosition = Vector2.zero;
-            statsBox.sizeDelta = new Vector2(0f, 138f);
-            MenuUiFactory.AddBorder(statsBox, MenuUiFactory.BronzeBorder, sprite, 1.5f);
+            statsBox.sizeDelta = new Vector2(0f, 134f);
+            MenuUiFactory.AddBorder(statsBox, MenuUiFactory.SlateBorderDark, sprite, 1.5f);
 
             string statsBody =
                 $"CAMPEÃO: <color=#8BC9EE>{champName}</color>\n" +
-                $"DIFICULDADE: <color=#8BC9EE>{diffLabel}</color>   •   CONTINUES USADOS: <color=#8BC9EE>{run.ContinuesUsed}</color>\n" +
+                $"DIFICULDADE: <color=#8BC9EE>{diffLabel}</color>   \u2022   CONTINUES USADOS: <color=#8BC9EE>{run.ContinuesUsed}</color>\n" +
                 $"TORRES CONCLUÍDAS: <color=#8BC9EE>{completions}</color>";
             TextMeshProUGUI statsTmp = MenuUiFactory.CreateText("StatsText", statsBox, statsBody, 20f, FontStyles.Bold, TextAlignmentOptions.Center, Color.white, characterSpacing: 2f);
             statsTmp.lineSpacing = 14f;
@@ -762,7 +982,7 @@ namespace UnDFight
             _towerMatchOverNavigation.ClearItems();
             if (_towerUnlockBanner != null) _towerUnlockBanner.SetActive(false);
 
-            _towerMatchOverBox.sizeDelta = new Vector2(640f, 440f);
+            _towerMatchOverBox.sizeDelta = new Vector2(660f, 446f);
             if (_towerTopAccent != null) _towerTopAccent.color = MenuUiFactory.AccentCrimson;
 
             ArcadeTowerStageEntry current = run.CurrentMatch;
@@ -771,29 +991,29 @@ namespace UnDFight
 
             _towerTitleText.text = "DERROTA NA TORRE";
             _towerTitleText.color = MenuUiFactory.AccentCrimson;
-            _towerSubtitleText.text = $"DEGRAU {run.CurrentMatchIndex + 1}/{run.TotalMatches}  •  {oppName} VENCEU EM {stageName}";
+            _towerSubtitleText.text = $"DEGRAU {run.CurrentMatchIndex + 1}/{run.TotalMatches}  \u2022  {oppName} VENCEU EM {stageName}";
 
-            RectTransform infoCard = MenuUiFactory.CreatePanel("DefeatCard", _towerBodyContainer, new Color(0.12f, 0.055f, 0.06f, 0.92f), sprite);
+            RectTransform infoCard = MenuUiFactory.CreatePanel("DefeatCard", _towerBodyContainer, MenuUiFactory.CrimsonSurface, sprite);
             infoCard.anchorMin = new Vector2(0f, 1f);
             infoCard.anchorMax = new Vector2(1f, 1f);
             infoCard.pivot = new Vector2(0.5f, 1f);
             infoCard.anchoredPosition = Vector2.zero;
-            infoCard.sizeDelta = new Vector2(0f, 76f);
-            MenuUiFactory.AddBorder(infoCard, MenuUiFactory.AccentCrimson, sprite, 1.5f);
+            infoCard.sizeDelta = new Vector2(0f, 78f);
+            MenuUiFactory.AddBorder(infoCard, MenuUiFactory.CrimsonActive, sprite, 1.5f);
 
             TextMeshProUGUI infoTmp = MenuUiFactory.CreateText(
                 "DefeatSummary",
                 infoCard,
-                $"CONTINUES USADOS ATÉ AGORA: {run.ContinuesUsed}   •   USE CONTINUE PARA TENTAR ESTE DEGRAU NOVAMENTE",
+                $"CONTINUES USADOS ATÉ AGORA: {run.ContinuesUsed}   \u2022   USE CONTINUE PARA TENTAR ESTE DEGRAU NOVAMENTE",
                 15f,
                 FontStyles.Bold,
                 TextAlignmentOptions.Center,
-                new Color(0.95f, 0.86f, 0.80f, 1f),
+                MenuUiFactory.TextActive,
                 characterSpacing: 1.5f);
             infoTmp.enableAutoSizing = true;
             infoTmp.fontSizeMin = 12f;
             infoTmp.fontSizeMax = 15f;
-            MenuUiFactory.StretchFull(infoTmp.rectTransform, 14f, 8f, 14f, 8f);
+            MenuUiFactory.StretchFull(infoTmp.rectTransform, 16f, 8f, 16f, 8f);
 
             AddTowerActionButtons(new (string label, System.Action action)[]
             {

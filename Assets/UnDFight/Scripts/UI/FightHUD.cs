@@ -39,6 +39,7 @@ namespace UnDFight
         [SerializeField] private FightSimulation simulation;
         [SerializeField] private MatchManager matchManager;
         [SerializeField] private StageInteractableManager stageInteractableManager;
+        [SerializeField] private FightMenuController fightMenuController;
 
         [Header("Theme Sprites")]
         [SerializeField] private Sprite whiteSprite;
@@ -47,6 +48,7 @@ namespace UnDFight
         [SerializeField] private Sprite diamondSprite;
         [SerializeField] private Sprite circleBadgeSprite;
         [SerializeField] private Sprite undfEmblemSprite;
+        [SerializeField] private Sprite softSweepSprite;
 
         [Header("P1 Widgets (Top Left)")]
         [SerializeField] private UnityEngine.UI.Image p1HealthFill;
@@ -76,8 +78,10 @@ namespace UnDFight
         [SerializeField] private RectTransform p2EnergyMeterRoot;
         [SerializeField] private UnityEngine.UI.Image p1SuperFill;
         [SerializeField] private TextMeshProUGUI p1SuperText;
+        [SerializeField] private TextMeshProUGUI p1SuperTextShadow;
         [SerializeField] private UnityEngine.UI.Image p2SuperFill;
         [SerializeField] private TextMeshProUGUI p2SuperText;
+        [SerializeField] private TextMeshProUGUI p2SuperTextShadow;
 
         [Header("Combo / String Counter")]
         [SerializeField] private GameObject p1ComboContainer;
@@ -95,7 +99,9 @@ namespace UnDFight
         [SerializeField] private UnityEngine.UI.Image centerEmblemImage;
         [SerializeField] private GameObject bannerContainer;
         [SerializeField] private TextMeshProUGUI bannerText;
+        [SerializeField] private TextMeshProUGUI bannerTextShadow;
         [SerializeField] private TextMeshProUGUI subtitleText;
+        [SerializeField] private TextMeshProUGUI subtitleTextShadow;
 
         [Header("Visual Styling (MKX Matte + Official UnDF)")]
         [SerializeField] private Color healthyColor = new Color(0.929f, 0.949f, 0.969f, 1.0f);       // #EDF2F7 silver-white matte
@@ -137,6 +143,7 @@ namespace UnDFight
         private UnityEngine.UI.Image _towerBadgeBg;
         private TextMeshProUGUI _towerBadgeLabel;
 
+        private bool _searchedFightMenu;
         private readonly List<MeterMedallionView> _p1Medallions = new List<MeterMedallionView>();
         private readonly List<MeterMedallionView> _p2Medallions = new List<MeterMedallionView>();
 
@@ -145,6 +152,14 @@ namespace UnDFight
         public RectTransform P1EnergyMeterRoot => p1EnergyMeterRoot;
         public RectTransform P2EnergyMeterRoot => p2EnergyMeterRoot;
         public UnityEngine.UI.Image CenterEmblemImage => centerEmblemImage;
+        public GameObject BannerContainer => bannerContainer;
+        public bool IsBannerVisible => bannerContainer != null && bannerContainer.activeSelf;
+
+        public void SetFightMenuController(FightMenuController controller)
+        {
+            fightMenuController = controller;
+            _searchedFightMenu = true;
+        }
 
         public int MeterSegmentCount
         {
@@ -200,7 +215,8 @@ namespace UnDFight
             Sprite bladeRight,
             Sprite diamond,
             Sprite circleBadge,
-            Sprite emblem)
+            Sprite emblem,
+            Sprite softSweep = null)
         {
             if (white != null) whiteSprite = white;
             if (bladeLeft != null) bladeBarLeftSprite = bladeLeft;
@@ -208,6 +224,7 @@ namespace UnDFight
             if (diamond != null) diamondSprite = diamond;
             if (circleBadge != null) circleBadgeSprite = circleBadge;
             if (emblem != null) undfEmblemSprite = emblem;
+            if (softSweep != null) softSweepSprite = softSweep;
         }
 
         public void Configure(FightSimulation sim, MatchManager manager = null)
@@ -417,29 +434,47 @@ namespace UnDFight
             // 2. BOTTOM-CORNER EX / SUPER ENERGY METERS (Data-Driven)
             RebuildBottomEnergyMeters();
 
-            // 3. CENTRAL ROUND / KO / VICTORY BANNER (Matte UnDF)
+            // 3. CENTRAL ROUND / KO / TIME OVER BANNER (Clean MKX cinematic soft sweep, zero full-width hard box)
+            Sprite sweepSprite = softSweepSprite != null ? softSweepSprite : solid;
             RectTransform bannerRt = MenuUiFactory.CreatePanel(
                 "BannerPanel",
                 canvasRoot,
-                new Color(0.043f, 0.055f, 0.078f, 0.86f),
-                solid);
-            bannerRt.anchorMin = new Vector2(0f, 0.54f);
-            bannerRt.anchorMax = new Vector2(1f, 0.54f);
+                new Color(0.031f, 0.043f, 0.067f, softSweepSprite != null ? 0.90f : 0.78f),
+                sweepSprite);
+            bannerRt.anchorMin = new Vector2(0.16f, 0.52f);
+            bannerRt.anchorMax = new Vector2(0.84f, 0.52f);
             bannerRt.pivot = new Vector2(0.5f, 0.5f);
-            bannerRt.sizeDelta = new Vector2(0f, 124f);
+            bannerRt.sizeDelta = new Vector2(0f, 130f);
             bannerContainer = bannerRt.gameObject;
 
-            RectTransform bTop = MenuUiFactory.CreatePanel("BannerTopLine", bannerRt, MenuUiFactory.UnDFBlue, solid);
-            bTop.anchorMin = new Vector2(0f, 1f);
-            bTop.anchorMax = new Vector2(1f, 1f);
+            // Subtle short centered UnDF blue hairlines fading cleanly to transparent at both ends
+            RectTransform bTop = MenuUiFactory.CreatePanel("BannerTopAccent", bannerRt, MenuUiFactory.UnDFBlue, sweepSprite);
+            bTop.anchorMin = new Vector2(0.5f, 1f);
+            bTop.anchorMax = new Vector2(0.5f, 1f);
             bTop.pivot = new Vector2(0.5f, 1f);
-            bTop.sizeDelta = new Vector2(0f, 2.5f);
+            bTop.anchoredPosition = new Vector2(0f, -12f);
+            bTop.sizeDelta = new Vector2(340f, 2.5f);
 
-            RectTransform bBot = MenuUiFactory.CreatePanel("BannerBottomLine", bannerRt, MenuUiFactory.UnDFBlue, solid);
-            bBot.anchorMin = new Vector2(0f, 0f);
-            bBot.anchorMax = new Vector2(1f, 0f);
+            RectTransform bBot = MenuUiFactory.CreatePanel("BannerBottomAccent", bannerRt, MenuUiFactory.UnDFBlue, sweepSprite);
+            bBot.anchorMin = new Vector2(0.5f, 0f);
+            bBot.anchorMax = new Vector2(0.5f, 0f);
             bBot.pivot = new Vector2(0.5f, 0f);
-            bBot.sizeDelta = new Vector2(0f, 2.5f);
+            bBot.anchoredPosition = new Vector2(0f, 12f);
+            bBot.sizeDelta = new Vector2(340f, 2.5f);
+
+            bannerTextShadow = MenuUiFactory.CreateText(
+                "BannerText_Shadow",
+                bannerRt,
+                "ROUND 1",
+                58f,
+                FontStyles.Bold,
+                TextAlignmentOptions.Center,
+                new Color(0.015f, 0.022f, 0.035f, 0.92f),
+                characterSpacing: 9f);
+            bannerTextShadow.rectTransform.anchorMin = new Vector2(0f, 0.28f);
+            bannerTextShadow.rectTransform.anchorMax = new Vector2(1f, 0.94f);
+            bannerTextShadow.rectTransform.offsetMin = new Vector2(3f, -3f);
+            bannerTextShadow.rectTransform.offsetMax = new Vector2(3f, -3f);
 
             bannerText = MenuUiFactory.CreateText(
                 "BannerText",
@@ -450,10 +485,25 @@ namespace UnDFight
                 TextAlignmentOptions.Center,
                 MenuUiFactory.TextActive,
                 characterSpacing: 9f);
-            bannerText.rectTransform.anchorMin = new Vector2(0f, 0.30f);
-            bannerText.rectTransform.anchorMax = new Vector2(1f, 0.96f);
+            bannerText.rectTransform.anchorMin = new Vector2(0f, 0.28f);
+            bannerText.rectTransform.anchorMax = new Vector2(1f, 0.94f);
             bannerText.rectTransform.offsetMin = Vector2.zero;
             bannerText.rectTransform.offsetMax = Vector2.zero;
+
+            subtitleTextShadow = MenuUiFactory.CreateText(
+                "SubtitleText_Shadow",
+                bannerRt,
+                string.Empty,
+                21f,
+                FontStyles.Bold,
+                TextAlignmentOptions.Center,
+                new Color(0.015f, 0.022f, 0.035f, 0.88f),
+                characterSpacing: 5f);
+            subtitleTextShadow.rectTransform.anchorMin = new Vector2(0f, 0.08f);
+            subtitleTextShadow.rectTransform.anchorMax = new Vector2(1f, 0.34f);
+            subtitleTextShadow.rectTransform.offsetMin = new Vector2(2f, -2f);
+            subtitleTextShadow.rectTransform.offsetMax = new Vector2(2f, -2f);
+            subtitleTextShadow.gameObject.SetActive(false);
 
             subtitleText = MenuUiFactory.CreateText(
                 "SubtitleText",
@@ -464,7 +514,7 @@ namespace UnDFight
                 TextAlignmentOptions.Center,
                 MenuUiFactory.UnDFSky,
                 characterSpacing: 5f);
-            subtitleText.rectTransform.anchorMin = new Vector2(0f, 0.06f);
+            subtitleText.rectTransform.anchorMin = new Vector2(0f, 0.08f);
             subtitleText.rectTransform.anchorMax = new Vector2(1f, 0.34f);
             subtitleText.rectTransform.offsetMin = Vector2.zero;
             subtitleText.rectTransform.offsetMax = Vector2.zero;
@@ -547,6 +597,21 @@ namespace UnDFight
             healthFill.fillMethod = UnityEngine.UI.Image.FillMethod.Horizontal;
             healthFill.fillOrigin = isLeft ? (int)UnityEngine.UI.Image.OriginHorizontal.Right : (int)UnityEngine.UI.Image.OriginHorizontal.Left;
             healthFill.fillAmount = 1f;
+
+            // Subtle feathered dark scrim behind archetype/name for legibility over bright sky (zero hard box)
+            if (softSweepSprite != null)
+            {
+                RectTransform sideScrim = MenuUiFactory.CreatePanel(
+                    $"{prefix}_NameLegibilityScrim",
+                    groupRt,
+                    new Color(0.024f, 0.033f, 0.052f, 0.56f),
+                    softSweepSprite);
+                sideScrim.anchorMin = new Vector2(isLeft ? 0f : 1f, 1f);
+                sideScrim.anchorMax = new Vector2(isLeft ? 0f : 1f, 1f);
+                sideScrim.pivot = new Vector2(isLeft ? 0f : 1f, 1f);
+                sideScrim.anchoredPosition = new Vector2(isLeft ? -36f : 36f, -44f);
+                sideScrim.sizeDelta = new Vector2(440f, 68f);
+            }
 
             // Outer Edge Below Bar: Mini Diamond + Discreet Uppercase Archetype (with soft shadow)
             Color sideAccent = isLeft ? MenuUiFactory.UnDFSky : MenuUiFactory.CrimsonActive;
@@ -716,6 +781,7 @@ namespace UnDFight
                 ref p1EnergyMeterRoot,
                 ref p1SuperFill,
                 ref p1SuperText,
+                ref p1SuperTextShadow,
                 _p1Medallions);
 
             BuildSingleBottomEnergyMeter(
@@ -726,6 +792,7 @@ namespace UnDFight
                 ref p2EnergyMeterRoot,
                 ref p2SuperFill,
                 ref p2SuperText,
+                ref p2SuperTextShadow,
                 _p2Medallions);
         }
 
@@ -737,6 +804,7 @@ namespace UnDFight
             ref RectTransform meterRoot,
             ref UnityEngine.UI.Image superFill,
             ref TextMeshProUGUI superText,
+            ref TextMeshProUGUI superTextShadow,
             List<MeterMedallionView> medallions)
         {
             string rootName = isLeft ? "P1_EnergyMeter" : "P2_EnergyMeter";
@@ -758,7 +826,22 @@ namespace UnDFight
             meterRoot.anchoredPosition = new Vector2(isLeft ? 48f : -48f, 30f);
             meterRoot.sizeDelta = new Vector2(436f, 62f);
 
-            // Top row: Data-driven circular medallions (EX, S, [ULT]) + compact status label
+            // Subtle feathered dark scrim behind bottom-corner energy meter for legibility over bright sand/floor
+            if (softSweepSprite != null)
+            {
+                RectTransform meterScrim = MenuUiFactory.CreatePanel(
+                    "MeterLegibilityScrim",
+                    meterRoot,
+                    new Color(0.020f, 0.028f, 0.044f, 0.68f),
+                    softSweepSprite);
+                meterScrim.anchorMin = new Vector2(0.5f, 0.5f);
+                meterScrim.anchorMax = new Vector2(0.5f, 0.5f);
+                meterScrim.pivot = new Vector2(0.5f, 0.5f);
+                meterScrim.anchoredPosition = new Vector2(0f, 4f);
+                meterScrim.sizeDelta = new Vector2(580f, 108f);
+            }
+
+            // Top row: Data-driven circular medallions (EX, S, [ULT]) + compact shadowed status label
             var medRowGo = new GameObject("MedallionsRow", typeof(RectTransform));
             medRowGo.transform.SetParent(meterRoot, false);
             var medRowRt = (RectTransform)medRowGo.transform;
@@ -799,6 +882,20 @@ namespace UnDFight
             }
 
             float statusOffset = 18f + segments * medStep;
+            superTextShadow = MenuUiFactory.CreateText(
+                isLeft ? "P1_SuperText_Shadow" : "P2_SuperText_Shadow",
+                medRowRt,
+                "ESPECIAL 0%",
+                13f,
+                FontStyles.Bold,
+                isLeft ? TextAlignmentOptions.MidlineLeft : TextAlignmentOptions.MidlineRight,
+                new Color(0.015f, 0.022f, 0.035f, 0.92f),
+                characterSpacing: 2.5f);
+            superTextShadow.rectTransform.anchorMin = new Vector2(0f, 0f);
+            superTextShadow.rectTransform.anchorMax = new Vector2(1f, 1f);
+            superTextShadow.rectTransform.offsetMin = new Vector2((isLeft ? statusOffset : 4f) + 1.5f, -1.5f);
+            superTextShadow.rectTransform.offsetMax = new Vector2((isLeft ? -4f : -statusOffset) + 1.5f, -1.5f);
+
             superText = MenuUiFactory.CreateText(
                 isLeft ? "P1_SuperText" : "P2_SuperText",
                 medRowRt,
@@ -904,7 +1001,7 @@ namespace UnDFight
                 fontSize,
                 FontStyles.Bold,
                 alignment,
-                new Color(0.02f, 0.03f, 0.05f, 0.82f),
+                new Color(0.015f, 0.022f, 0.035f, 0.90f),
                 characterSpacing);
             shadow.rectTransform.anchorMin = anchorMin;
             shadow.rectTransform.anchorMax = anchorMax;
@@ -935,6 +1032,11 @@ namespace UnDFight
             if (simulation == null) simulation = FindAnyObjectByType<FightSimulation>();
             if (matchManager == null) matchManager = FindAnyObjectByType<MatchManager>();
             if (stageInteractableManager == null) stageInteractableManager = FindAnyObjectByType<StageInteractableManager>();
+            if (fightMenuController == null)
+            {
+                fightMenuController = FindAnyObjectByType<FightMenuController>();
+                _searchedFightMenu = true;
+            }
             EnsureSuperAndComboWidgets();
             EnsureStagePromptWidgets();
             EnsureTowerBadgeWidget();
@@ -1006,8 +1108,8 @@ namespace UnDFight
             UpdateFighterIdentity();
             ApplyHealthWidgets(p1HealthFill, p1DamageTrailFill, _p1PrevRatio, _p1TrailRatio);
             ApplyHealthWidgets(p2HealthFill, p2DamageTrailFill, _p2PrevRatio, _p2TrailRatio);
-            UpdateSingleSuperBar(simulation != null ? simulation.Fighter1 : null, p1SuperFill, p1SuperText, _p1Medallions);
-            UpdateSingleSuperBar(simulation != null ? simulation.Fighter2 : null, p2SuperFill, p2SuperText, _p2Medallions);
+            UpdateSingleSuperBar(simulation != null ? simulation.Fighter1 : null, p1SuperFill, p1SuperText, p1SuperTextShadow, _p1Medallions);
+            UpdateSingleSuperBar(simulation != null ? simulation.Fighter2 : null, p2SuperFill, p2SuperText, p2SuperTextShadow, _p2Medallions);
             UpdateRoundAndTimerUI();
 
             if (p1CalloutText != null) p1CalloutText.text = string.Empty;
@@ -1171,8 +1273,8 @@ namespace UnDFight
 
             UpdateSingleHealthBar(p1, p1HealthFill, p1DamageTrailFill, ref _p1PrevRatio, ref _p1TrailRatio, ref _p1TrailHoldTimer, dt);
             UpdateSingleHealthBar(p2, p2HealthFill, p2DamageTrailFill, ref _p2PrevRatio, ref _p2TrailRatio, ref _p2TrailHoldTimer, dt);
-            UpdateSingleSuperBar(p1, p1SuperFill, p1SuperText, _p1Medallions);
-            UpdateSingleSuperBar(p2, p2SuperFill, p2SuperText, _p2Medallions);
+            UpdateSingleSuperBar(p1, p1SuperFill, p1SuperText, p1SuperTextShadow, _p1Medallions);
+            UpdateSingleSuperBar(p2, p2SuperFill, p2SuperText, p2SuperTextShadow, _p2Medallions);
             UpdateFighterIdentity();
         }
 
@@ -1290,7 +1392,8 @@ namespace UnDFight
             UpdatePips(p1RoundPips, matchManager.P1RoundsWon);
             UpdatePips(p2RoundPips, matchManager.P2RoundsWon);
 
-            bool hasBanner = !string.IsNullOrEmpty(matchManager.BannerText);
+            bool suppressBanner = ShouldSuppressBanner();
+            bool hasBanner = !suppressBanner && !string.IsNullOrEmpty(matchManager.BannerText);
             if (bannerContainer != null && bannerContainer.activeSelf != hasBanner)
             {
                 bannerContainer.SetActive(hasBanner);
@@ -1299,13 +1402,40 @@ namespace UnDFight
             {
                 bannerText.text = matchManager.BannerText;
             }
+            if (bannerTextShadow != null)
+            {
+                bannerTextShadow.text = matchManager.BannerText;
+            }
+
+            bool hasSubtitle = !string.IsNullOrEmpty(matchManager.SubtitleText);
             if (subtitleText != null)
             {
-                subtitleText.gameObject.SetActive(!string.IsNullOrEmpty(matchManager.SubtitleText));
+                subtitleText.gameObject.SetActive(hasSubtitle);
                 subtitleText.text = matchManager.SubtitleText;
+            }
+            if (subtitleTextShadow != null)
+            {
+                subtitleTextShadow.gameObject.SetActive(hasSubtitle);
+                subtitleTextShadow.text = matchManager.SubtitleText;
             }
 
             UpdateTowerBadgeUI();
+        }
+
+        private bool ShouldSuppressBanner()
+        {
+            if (matchManager != null && matchManager.Phase == MatchPhase.MatchOver)
+            {
+                return true;
+            }
+
+            if (fightMenuController == null && !_searchedFightMenu)
+            {
+                fightMenuController = FindAnyObjectByType<FightMenuController>();
+                _searchedFightMenu = true;
+            }
+
+            return fightMenuController != null && fightMenuController.IsAnyModalOpen;
         }
 
         private void UpdatePips(UnityEngine.UI.Image[] pips, int roundsWon)
@@ -1396,6 +1526,7 @@ namespace UnDFight
             FighterController fighter,
             UnityEngine.UI.Image superFill,
             TextMeshProUGUI superText,
+            TextMeshProUGUI superTextShadow,
             List<MeterMedallionView> medallions)
         {
             float ratio = fighter != null ? fighter.SuperNormalized : 0f;
@@ -1433,22 +1564,31 @@ namespace UnDFight
 
             if (superText != null)
             {
+                string label;
+                Color labelColor;
                 if (isSuperReady)
                 {
-                    superText.text = "SUPER PRONTO";
-                    superText.color = MenuUiFactory.UnDFSky;
+                    label = "SUPER PRONTO";
+                    labelColor = MenuUiFactory.UnDFSky;
                 }
                 else if (isExReady)
                 {
                     int pct = fighter != null ? fighter.SuperGauge : 50;
-                    superText.text = $"EX PRONTO \u2022 {pct}%";
-                    superText.color = MenuUiFactory.UnDFBlue;
+                    label = $"EX PRONTO \u2022 {pct}%";
+                    labelColor = MenuUiFactory.UnDFBlue;
                 }
                 else
                 {
                     int pct = fighter != null ? fighter.SuperGauge : 0;
-                    superText.text = $"ESPECIAL {pct}%";
-                    superText.color = MenuUiFactory.TextInactive;
+                    label = $"ESPECIAL {pct}%";
+                    labelColor = MenuUiFactory.TextSubtitle;
+                }
+
+                superText.text = label;
+                superText.color = labelColor;
+                if (superTextShadow != null && superTextShadow.text != label)
+                {
+                    superTextShadow.text = label;
                 }
             }
         }
@@ -1476,13 +1616,13 @@ namespace UnDFight
                 return;
             }
 
-            if (_p1Medallions.Count == 0 || p1SuperFill == null || p1SuperText == null)
+            if (_p1Medallions.Count == 0 || p1SuperFill == null || p1SuperText == null || p1SuperTextShadow == null)
             {
-                RebindMeterReferences(p1EnergyMeterRoot, isLeft: true, ref p1SuperFill, ref p1SuperText, _p1Medallions);
+                RebindMeterReferences(p1EnergyMeterRoot, isLeft: true, ref p1SuperFill, ref p1SuperText, ref p1SuperTextShadow, _p1Medallions);
             }
-            if (_p2Medallions.Count == 0 || p2SuperFill == null || p2SuperText == null)
+            if (_p2Medallions.Count == 0 || p2SuperFill == null || p2SuperText == null || p2SuperTextShadow == null)
             {
-                RebindMeterReferences(p2EnergyMeterRoot, isLeft: false, ref p2SuperFill, ref p2SuperText, _p2Medallions);
+                RebindMeterReferences(p2EnergyMeterRoot, isLeft: false, ref p2SuperFill, ref p2SuperText, ref p2SuperTextShadow, _p2Medallions);
             }
         }
 
@@ -1491,16 +1631,20 @@ namespace UnDFight
             bool isLeft,
             ref UnityEngine.UI.Image superFill,
             ref TextMeshProUGUI superText,
+            ref TextMeshProUGUI superTextShadow,
             List<MeterMedallionView> medallions)
         {
             if (root == null) return;
             string fillName = isLeft ? "P1_SuperFill" : "P2_SuperFill";
             string textName = isLeft ? "P1_SuperText" : "P2_SuperText";
+            string shadowName = isLeft ? "P1_SuperText_Shadow" : "P2_SuperText_Shadow";
 
             Transform fillTr = FindDescendant(root, fillName);
             if (fillTr != null) superFill = fillTr.GetComponent<UnityEngine.UI.Image>();
             Transform textTr = FindDescendant(root, textName);
             if (textTr != null) superText = textTr.GetComponent<TextMeshProUGUI>();
+            Transform shadowTr = FindDescendant(root, shadowName);
+            if (shadowTr != null) superTextShadow = shadowTr.GetComponent<TextMeshProUGUI>();
 
             medallions.Clear();
             Transform row = root.Find("MedallionsRow");

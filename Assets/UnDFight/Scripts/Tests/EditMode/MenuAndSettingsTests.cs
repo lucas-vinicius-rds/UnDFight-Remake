@@ -631,5 +631,200 @@ namespace UnDFight.Tests
             Assert.IsTrue(hud.IsStagePromptVisible(0), "StagePrompt_P1 must activate when P1 is near a ready StageThrowableProp");
             StringAssert.Contains("DEF + LP", hud.GetStagePromptText(0));
         }
+
+        [Test]
+        public void MainMenuController_ModeDescription_HasExactSymmetricCenterAnchorsAtHalf()
+        {
+            Sprite white = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/Textures/UI_White.png");
+            Sprite emblem = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/Logo_UnDF_Emblem.png");
+            Sprite arched = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_ArchedCard.png");
+            Sprite diamond = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_Diamond.png");
+            Sprite sweep = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_SoftSweep.png");
+            Sprite vignette = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_VignetteVertical.png");
+            Sprite circle = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_CircleBadge.png");
+
+            var canvasGo = Track(new GameObject("Test_MainMenuFooterSymmetryCanvas", typeof(RectTransform), typeof(Canvas)));
+            var menu = canvasGo.AddComponent<MainMenuController>();
+            menu.ConfigureThemeSprites(white, emblem, arched, diamond, sweep, vignette, circle);
+            menu.BuildUI(canvasGo.transform, white);
+
+            Assert.IsNotNull(menu.ModeDescriptionText);
+            RectTransform descRt = menu.ModeDescriptionText.rectTransform;
+            float centerAnchorX = (descRt.anchorMin.x + descRt.anchorMax.x) * 0.5f;
+            Assert.IsTrue(
+                Mathf.Approximately(centerAnchorX, 0.5f),
+                $"ModeDescription anchors must be symmetric around 0.5f (got {descRt.anchorMin.x}..{descRt.anchorMax.x}, center {centerAnchorX})");
+            Assert.AreEqual(0.24f, descRt.anchorMin.x, 0.001f);
+            Assert.AreEqual(0.76f, descRt.anchorMax.x, 0.001f);
+
+            Transform mainFooterTr = canvasGo.transform.Find("FooterBar/MainFooter");
+            Assert.IsNotNull(mainFooterTr);
+            var mainFooterRt = (RectTransform)mainFooterTr;
+            Assert.LessOrEqual(mainFooterRt.anchorMax.x, descRt.anchorMin.x + 0.001f, "MainFooter must not overlap ModeDescription");
+        }
+
+        [Test]
+        public void FightHUD_BannerPanel_VisibleDuringRoundOverKO_AndHiddenDuringMatchOver()
+        {
+            Sprite white = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/Textures/UI_White.png");
+            Sprite bladeLeft = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_BladeBarLeft.png");
+            Sprite bladeRight = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_BladeBarRight.png");
+            Sprite diamond = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_Diamond.png");
+            Sprite circle = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_CircleBadge.png");
+            Sprite emblem = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/Logo_UnDF_Emblem.png");
+            Sprite sweep = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_SoftSweep.png");
+
+            var lucas = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Lucas.asset");
+            var tiago = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Tiago.asset");
+
+            var oneShotMove = Track(ScriptableObject.CreateInstance<MoveData>());
+            oneShotMove.Configure("OneShot", AttackType.HeavyPunch, 4, 4, 10, 2000, 18, 12, 6, 2.0f, HitHeight.Mid, true, new Vector2(0.75f, 1.15f), new Vector2(1.0f, 0.55f));
+            var testP1Data = Track(Object.Instantiate(lucas));
+            testP1Data.heavyPunch = oneShotMove;
+
+            var simGo = Track(new GameObject("Test_BannerVisSim"));
+            var sim = simGo.AddComponent<FightSimulation>();
+            var match = simGo.AddComponent<MatchManager>();
+
+            var p1Go = Track(new GameObject("P1"));
+            p1Go.transform.position = new Vector3(-0.52f, 0f, 0f);
+            p1Go.AddComponent<PlayerInputHandler>();
+            var p1 = p1Go.AddComponent<FighterController>();
+            p1.SetFighterData(testP1Data);
+
+            var p2Go = Track(new GameObject("P2"));
+            p2Go.transform.position = new Vector3(0.52f, 0f, 0f);
+            p2Go.AddComponent<PlayerInputHandler>();
+            var p2 = p2Go.AddComponent<FighterController>();
+            p2.SetFighterData(tiago);
+
+            sim.SetParticipants(p1, p2);
+            GameSessionState.SelectMode(GameMode.LocalVersus);
+            match.InitializeMatch(sim, trainingModeOverride: false);
+
+            var hudCanvasGo = Track(new GameObject("Test_BannerHUDCanvas", typeof(RectTransform), typeof(Canvas)));
+            var hud = hudCanvasGo.AddComponent<FightHUD>();
+            hud.ConfigureThemeSprites(white, bladeLeft, bladeRight, diamond, circle, emblem, sweep);
+            hud.BuildMkxUI(hudCanvasGo.transform);
+            hud.Configure(sim, match);
+
+            // BannerPanel must be centered without full-width hard edges (0..1)
+            Assert.IsNotNull(hud.BannerContainer);
+            var bannerRt = (RectTransform)hud.BannerContainer.transform;
+            Assert.Greater(bannerRt.anchorMin.x, 0.10f);
+            Assert.Less(bannerRt.anchorMax.x, 0.90f);
+
+            // Win 2 rounds via lethal KO
+            for (int round = 0; round < match.RoundsToWin; round++)
+            {
+                match.SkipIntroToFighting();
+                p1.SetSimPositionX(-0.52f);
+                p2.SetSimPositionX(0.52f);
+                sim.ForceUpdateFacing();
+                p1.InputHandler.SetSimulatedInput(default, true);
+                p1.InputHandler.BufferButton(FighterInputButton.HeavyPunch);
+
+                for (int t = 0; t < 25 && match.Phase == MatchPhase.Fighting; t++)
+                {
+                    sim.StepSimulationTicks(1);
+                }
+                Assert.AreEqual(MatchPhase.RoundOver, match.Phase);
+                Assert.AreEqual("K.O.!", match.BannerText);
+
+                hud.RefreshImmediate();
+                Assert.IsTrue(hud.IsBannerVisible, "BannerPanel must remain visible during RoundOver K.O.!");
+
+                for (int t = 0; t < 200 && match.Phase == MatchPhase.RoundOver; t++)
+                {
+                    sim.StepSimulationTicks(1);
+                }
+            }
+
+            Assert.AreEqual(MatchPhase.MatchOver, match.Phase);
+            Assert.AreEqual("LUCAS WINS!", match.BannerText, "MatchManager.BannerText contract must remain intact");
+            hud.RefreshImmediate();
+            Assert.IsFalse(hud.IsBannerVisible, "FightHUD BannerContainer must automatically hide during MatchOver");
+        }
+
+        [Test]
+        public void FightMenuController_StandardMatchOverPanel_DisplaysInternalWinnerHeaderInVersusModes()
+        {
+            Sprite white = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/Textures/UI_White.png");
+            Sprite emblem = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/Logo_UnDF_Emblem.png");
+            Sprite diamond = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_Diamond.png");
+            var lucas = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Lucas.asset");
+            var tiago = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Tiago.asset");
+
+            var oneShotMove = Track(ScriptableObject.CreateInstance<MoveData>());
+            oneShotMove.Configure("OneShot", AttackType.HeavyPunch, 4, 4, 10, 2000, 18, 12, 6, 2.0f, HitHeight.Mid, true, new Vector2(0.75f, 1.15f), new Vector2(1.0f, 0.55f));
+            var testP1Data = Track(Object.Instantiate(lucas));
+            testP1Data.heavyPunch = oneShotMove;
+
+            var simGo = Track(new GameObject("Test_StandardMatchOverSim"));
+            var sim = simGo.AddComponent<FightSimulation>();
+            var match = simGo.AddComponent<MatchManager>();
+
+            var p1Go = Track(new GameObject("P1"));
+            p1Go.transform.position = new Vector3(-0.52f, 0f, 0f);
+            p1Go.AddComponent<PlayerInputHandler>();
+            var p1 = p1Go.AddComponent<FighterController>();
+            p1.SetFighterData(testP1Data);
+
+            var p2Go = Track(new GameObject("P2"));
+            p2Go.transform.position = new Vector3(0.52f, 0f, 0f);
+            p2Go.AddComponent<PlayerInputHandler>();
+            var p2 = p2Go.AddComponent<FighterController>();
+            p2.SetFighterData(tiago);
+
+            sim.SetParticipants(p1, p2);
+            GameSessionState.SelectMode(GameMode.VersusCpu);
+            match.InitializeMatch(sim, trainingModeOverride: false);
+            if (sim.CpuAi != null) sim.CpuAi.SetGuardProbabilityOverride(0f);
+
+            var menuCanvasGo = Track(new GameObject("Test_StandardMatchOverCanvas", typeof(RectTransform), typeof(Canvas)));
+            var fightMenu = menuCanvasGo.AddComponent<FightMenuController>();
+            fightMenu.Configure(sim, match, null, white);
+            fightMenu.ConfigureThemeSprites(emblem, diamond);
+            fightMenu.BuildUI(menuCanvasGo.transform, white);
+
+            for (int round = 0; round < match.RoundsToWin; round++)
+            {
+                match.SkipIntroToFighting();
+                p1.SetSimPositionX(-0.52f);
+                p2.SetSimPositionX(0.52f);
+                sim.ForceUpdateFacing();
+                p1.InputHandler.SetSimulatedInput(default, true);
+                p1.InputHandler.BufferButton(FighterInputButton.HeavyPunch);
+
+                for (int t = 0; t < 25 && match.Phase == MatchPhase.Fighting; t++)
+                {
+                    sim.StepSimulationTicks(1);
+                }
+                for (int t = 0; t < 200 && match.Phase == MatchPhase.RoundOver; t++)
+                {
+                    sim.StepSimulationTicks(1);
+                }
+            }
+
+            Assert.AreEqual(MatchPhase.MatchOver, match.Phase);
+            fightMenu.HandleMatchStateChanged(match);
+
+            Assert.IsTrue(fightMenu.IsStandardMatchOverOpen);
+            Assert.AreEqual("VITÓRIA DE LUCAS", fightMenu.StandardMatchOverTitle);
+            StringAssert.Contains("2 - 0", fightMenu.StandardMatchOverSubtitle);
+            StringAssert.Contains("VS CPU", fightMenu.StandardMatchOverSubtitle);
+
+            Transform overlayTr = menuCanvasGo.transform.Find("MatchOverPanel");
+            Assert.IsNotNull(overlayTr);
+            var overlayRt = (RectTransform)overlayTr;
+            Assert.AreEqual(Vector2.zero, overlayRt.anchorMin);
+            Assert.AreEqual(Vector2.one, overlayRt.anchorMax);
+
+            Transform boxTr = overlayTr.Find("MatchOverBox");
+            Assert.IsNotNull(boxTr);
+            var boxRt = (RectTransform)boxTr;
+            Assert.AreEqual(new Vector2(0.5f, 0.5f), boxRt.anchorMin);
+            Assert.AreEqual(new Vector2(0.5f, 0.5f), boxRt.anchorMax);
+        }
     }
 }

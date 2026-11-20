@@ -336,6 +336,21 @@ namespace UnDFight
             menuRt.anchoredPosition = new Vector2(0f, 92f);
             menuRt.sizeDelta = new Vector2(620f, 384f);
 
+            // Subtle feathered dark scrim behind vertical menu list for crisp legibility over glass lobby
+            if (softSweepSprite != null)
+            {
+                RectTransform listScrim = MenuUiFactory.CreatePanel(
+                    "MenuListScrim",
+                    menuRt,
+                    new Color(0.024f, 0.033f, 0.052f, 0.72f),
+                    softSweepSprite);
+                listScrim.anchorMin = new Vector2(0.5f, 0.5f);
+                listScrim.anchorMax = new Vector2(0.5f, 0.5f);
+                listScrim.pivot = new Vector2(0.5f, 0.5f);
+                listScrim.anchoredPosition = Vector2.zero;
+                listScrim.sizeDelta = new Vector2(920f, 440f);
+            }
+
             var rootGroupGo = new GameObject("RootMenuGroup", typeof(RectTransform));
             rootGroupGo.transform.SetParent(menuRt, false);
             MenuUiFactory.StretchFull(rootGroupGo.GetComponent<RectTransform>(), 0f, 0f, 0f, 0f);
@@ -352,7 +367,7 @@ namespace UnDFight
             fightSubmenuNavigation = fightGroupGo.AddComponent<MenuNavigationGroup>();
             fightGroupGo.SetActive(false);
 
-            // 5. Clean Matte Footer Bar (Left controls, Center dynamic description, Right UnDF seal)
+            // 5. Clean Matte Footer Bar (Left controls, Center symmetric description at X=0.50, Right UnDF seal)
             RectTransform footerBar = MenuUiFactory.CreatePanel(
                 "FooterBar",
                 canvasRoot,
@@ -378,11 +393,15 @@ namespace UnDFight
                 FontStyles.Bold,
                 TextAlignmentOptions.MidlineLeft,
                 MenuUiFactory.TextInactive,
-                characterSpacing: 2.5f);
+                characterSpacing: 1.8f);
+            controlsLegend.enableAutoSizing = true;
+            controlsLegend.fontSizeMin = 10f;
+            controlsLegend.fontSizeMax = 13.5f;
+            controlsLegend.textWrappingMode = TextWrappingModes.NoWrap;
             controlsLegend.rectTransform.anchorMin = new Vector2(0f, 0f);
-            controlsLegend.rectTransform.anchorMax = new Vector2(0.32f, 1f);
-            controlsLegend.rectTransform.offsetMin = new Vector2(44f, 4f);
-            controlsLegend.rectTransform.offsetMax = new Vector2(-12f, -4f);
+            controlsLegend.rectTransform.anchorMax = new Vector2(0.24f, 1f);
+            controlsLegend.rectTransform.offsetMin = new Vector2(28f, 4f);
+            controlsLegend.rectTransform.offsetMax = new Vector2(-8f, -4f);
 
             modeDescriptionText = MenuUiFactory.CreateText(
                 "ModeDescription",
@@ -397,8 +416,8 @@ namespace UnDFight
             modeDescriptionText.fontSizeMin = 11f;
             modeDescriptionText.fontSizeMax = 14.5f;
             modeDescriptionText.textWrappingMode = TextWrappingModes.NoWrap;
-            modeDescriptionText.rectTransform.anchorMin = new Vector2(0.28f, 0f);
-            modeDescriptionText.rectTransform.anchorMax = new Vector2(0.84f, 1f);
+            modeDescriptionText.rectTransform.anchorMin = new Vector2(0.24f, 0f);
+            modeDescriptionText.rectTransform.anchorMax = new Vector2(0.76f, 1f);
             modeDescriptionText.rectTransform.offsetMin = new Vector2(8f, 4f);
             modeDescriptionText.rectTransform.offsetMax = new Vector2(-8f, -4f);
 

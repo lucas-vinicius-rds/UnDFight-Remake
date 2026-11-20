@@ -849,6 +849,7 @@ namespace UnDFight.Editor
             Sprite diamond = AssetDatabase.LoadAssetAtPath<Sprite>(DiamondPath);
             Sprite circleBadge = AssetDatabase.LoadAssetAtPath<Sprite>(CircleBadgePath);
             Sprite emblem = AssetDatabase.LoadAssetAtPath<Sprite>(LogoEmblemPath);
+            Sprite softSweep = AssetDatabase.LoadAssetAtPath<Sprite>(SoftSweepPath);
 
             string previousScenePath = SceneManager.GetActiveScene().path;
             int updatedCount = 0;
@@ -867,7 +868,7 @@ namespace UnDFight.Editor
                 CombatVfxController vfx = Object.FindAnyObjectByType<CombatVfxController>();
                 StageInteractableManager stageMgr = Object.FindAnyObjectByType<StageInteractableManager>();
 
-                // 1) Rebuild FightHUDCanvas with MKX tapered blade bars + bottom-corner EX/SUPER meters
+                // 1) Rebuild FightHUDCanvas with MKX tapered blade bars + soft-sweep banner + bottom-corner EX/SUPER meters
                 FightHUD hud = Object.FindAnyObjectByType<FightHUD>();
                 GameObject hudCanvasGo = hud != null ? hud.gameObject : FindRootByName(scene, "FightHUDCanvas");
                 if (hudCanvasGo == null)
@@ -877,7 +878,7 @@ namespace UnDFight.Editor
                 ConfigureCanvasScaler(hudCanvasGo);
                 if (hud == null) hud = hudCanvasGo.AddComponent<FightHUD>();
 
-                hud.ConfigureThemeSprites(white, bladeLeft, bladeRight, diamond, circleBadge, emblem);
+                hud.ConfigureThemeSprites(white, bladeLeft, bladeRight, diamond, circleBadge, emblem, softSweep);
                 hud.BuildMkxUI(hudCanvasGo.transform);
                 hud.Configure(sim, mm);
                 if (stageMgr != null)
@@ -933,8 +934,12 @@ namespace UnDFight.Editor
                 if (menuCtrl == null) menuCtrl = menuCanvasGo.AddComponent<FightMenuController>();
 
                 menuCtrl.Configure(sim, mm, vfx, white);
-                menuCtrl.ConfigureThemeSprites(emblem);
+                menuCtrl.ConfigureThemeSprites(emblem, diamond);
                 menuCtrl.BuildUI(menuCanvasGo.transform, white);
+
+                // Wire FightMenuController reference on FightHUD so banners auto-suppress when any modal is open
+                AssignSerializedField(hud, "fightMenuController", menuCtrl);
+                EditorUtility.SetDirty(hud);
 
                 Transform pauseTr = menuCanvasGo.transform.Find("PausePanel");
                 if (pauseTr != null) pauseTr.gameObject.SetActive(false);
