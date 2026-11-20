@@ -18,6 +18,7 @@ namespace UnDFight
         [SerializeField] private MatchManager matchManager;
         [SerializeField] private CombatVfxController vfxController;
         [SerializeField] private Sprite whiteSprite;
+        [SerializeField] private Sprite undfEmblemSprite;
 
         [Header("UI Panels")]
         [SerializeField] private GameObject pausePanel;
@@ -102,12 +103,25 @@ namespace UnDFight
             whiteSprite = sprite;
         }
 
+        public void ConfigureThemeSprites(Sprite emblem)
+        {
+            if (emblem != null) undfEmblemSprite = emblem;
+        }
+
         public void BuildUI(Transform canvasRoot, Sprite sprite)
         {
             whiteSprite = sprite;
 
-            // Pause Panel (MKX obsidian/bronze/amber)
-            RectTransform pauseOverlay = MenuUiFactory.CreatePanel("PausePanel", canvasRoot, new Color(0.02f, 0.022f, 0.03f, 0.78f), whiteSprite, raycastTarget: true);
+            for (int i = canvasRoot.childCount - 1; i >= 0; i--)
+            {
+                Transform child = canvasRoot.GetChild(i);
+                if (Application.isPlaying) Destroy(child.gameObject);
+                else DestroyImmediate(child.gameObject);
+            }
+            _towerMatchOverPanel = null;
+
+            // Pause Panel (Matte Graphite + Official UnDF Palette + Logo_UnDF_Emblem)
+            RectTransform pauseOverlay = MenuUiFactory.CreatePanel("PausePanel", canvasRoot, new Color(0.02f, 0.025f, 0.038f, 0.80f), whiteSprite, raycastTarget: true);
             MenuUiFactory.StretchFull(pauseOverlay, 0f, 0f, 0f, 0f);
             pausePanel = pauseOverlay.gameObject;
 
@@ -115,21 +129,37 @@ namespace UnDFight
             pauseBox.anchorMin = new Vector2(0.5f, 0.5f);
             pauseBox.anchorMax = new Vector2(0.5f, 0.5f);
             pauseBox.pivot = new Vector2(0.5f, 0.5f);
-            pauseBox.sizeDelta = new Vector2(580f, 640f);
-            MenuUiFactory.AddBorder(pauseBox, MenuUiFactory.BronzeBorder, whiteSprite, 2f);
+            pauseBox.sizeDelta = new Vector2(580f, 650f);
+            MenuUiFactory.AddBorder(pauseBox, MenuUiFactory.SlateBorderDark, whiteSprite, 2f);
 
-            RectTransform pauseTop = MenuUiFactory.CreatePanel("PauseAccent", pauseBox, MenuUiFactory.AccentGold, whiteSprite);
+            RectTransform pauseTop = MenuUiFactory.CreatePanel("PauseAccent", pauseBox, MenuUiFactory.UnDFBlue, whiteSprite);
             pauseTop.anchorMin = new Vector2(0f, 1f);
             pauseTop.anchorMax = new Vector2(1f, 1f);
             pauseTop.pivot = new Vector2(0.5f, 1f);
-            pauseTop.sizeDelta = new Vector2(0f, 4f);
+            pauseTop.sizeDelta = new Vector2(0f, 3.5f);
 
-            TextMeshProUGUI pauseTitle = MenuUiFactory.CreateText("PauseTitle", pauseBox, "PAUSADO", 42f, FontStyles.Bold, TextAlignmentOptions.Center, MenuUiFactory.AccentGold, characterSpacing: 8f);
+            if (undfEmblemSprite != null)
+            {
+                var pEmb = new GameObject("PauseEmblem", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                pEmb.transform.SetParent(pauseBox, false);
+                var pEmbRt = (RectTransform)pEmb.transform;
+                pEmbRt.anchorMin = new Vector2(0.5f, 1f);
+                pEmbRt.anchorMax = new Vector2(0.5f, 1f);
+                pEmbRt.pivot = new Vector2(0.5f, 1f);
+                pEmbRt.anchoredPosition = new Vector2(-132f, -24f);
+                pEmbRt.sizeDelta = new Vector2(58f, 34f);
+                var img = pEmb.GetComponent<UnityEngine.UI.Image>();
+                img.sprite = undfEmblemSprite;
+                img.preserveAspect = true;
+                img.raycastTarget = false;
+            }
+
+            TextMeshProUGUI pauseTitle = MenuUiFactory.CreateText("PauseTitle", pauseBox, "PAUSADO", 38f, FontStyles.Bold, TextAlignmentOptions.Center, MenuUiFactory.TextActive, characterSpacing: 8f);
             pauseTitle.rectTransform.anchorMin = new Vector2(0f, 1f);
             pauseTitle.rectTransform.anchorMax = new Vector2(1f, 1f);
             pauseTitle.rectTransform.pivot = new Vector2(0.5f, 1f);
-            pauseTitle.rectTransform.anchoredPosition = new Vector2(0f, -20f);
-            pauseTitle.rectTransform.sizeDelta = new Vector2(-40f, 58f);
+            pauseTitle.rectTransform.anchoredPosition = new Vector2(undfEmblemSprite != null ? 24f : 0f, -18f);
+            pauseTitle.rectTransform.sizeDelta = new Vector2(-40f, 52f);
 
             pauseNavigation = pauseBox.gameObject.AddComponent<MenuNavigationGroup>();
             string[] pauseLabels =
@@ -145,7 +175,7 @@ namespace UnDFight
 
             for (int i = 0; i < pauseLabels.Length; i++)
             {
-                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"PauseBtn_{i}", pauseBox, pauseLabels[i], whiteSprite, 23f, TextAlignmentOptions.Center, characterSpacing: 5f);
+                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"PauseBtn_{i}", pauseBox, pauseLabels[i], whiteSprite, 22f, TextAlignmentOptions.Center, characterSpacing: 5f);
                 RectTransform rt = entry.Button.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.5f, 1f);
                 rt.anchorMax = new Vector2(0.5f, 1f);
@@ -157,18 +187,34 @@ namespace UnDFight
 
             // MatchOver Post-Fight Menu Panel (positioned cleanly below the winner banner)
             RectTransform moPanel = MenuUiFactory.CreatePanel("MatchOverPanel", canvasRoot, MenuUiFactory.ObsidianBg, whiteSprite, raycastTarget: true);
-            moPanel.anchorMin = new Vector2(0.5f, 0.39f);
-            moPanel.anchorMax = new Vector2(0.5f, 0.39f);
+            moPanel.anchorMin = new Vector2(0.5f, 0.37f);
+            moPanel.anchorMax = new Vector2(0.5f, 0.37f);
             moPanel.pivot = new Vector2(0.5f, 0.5f);
-            moPanel.sizeDelta = new Vector2(500f, 318f);
+            moPanel.sizeDelta = new Vector2(510f, 344f);
             matchOverPanel = moPanel.gameObject;
-            MenuUiFactory.AddBorder(moPanel, MenuUiFactory.BronzeBorder, whiteSprite, 2f);
+            MenuUiFactory.AddBorder(moPanel, MenuUiFactory.SlateBorderDark, whiteSprite, 2f);
 
-            RectTransform moLine = MenuUiFactory.CreatePanel("MOAccent", moPanel, MenuUiFactory.AccentGold, whiteSprite);
+            RectTransform moLine = MenuUiFactory.CreatePanel("MOAccent", moPanel, MenuUiFactory.UnDFBlue, whiteSprite);
             moLine.anchorMin = new Vector2(0f, 1f);
             moLine.anchorMax = new Vector2(1f, 1f);
             moLine.pivot = new Vector2(0.5f, 1f);
-            moLine.sizeDelta = new Vector2(0f, 4f);
+            moLine.sizeDelta = new Vector2(0f, 3.5f);
+
+            if (undfEmblemSprite != null)
+            {
+                var moEmb = new GameObject("MatchOverEmblem", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                moEmb.transform.SetParent(moPanel, false);
+                var moEmbRt = (RectTransform)moEmb.transform;
+                moEmbRt.anchorMin = new Vector2(0.5f, 1f);
+                moEmbRt.anchorMax = new Vector2(0.5f, 1f);
+                moEmbRt.pivot = new Vector2(0.5f, 1f);
+                moEmbRt.anchoredPosition = new Vector2(0f, -12f);
+                moEmbRt.sizeDelta = new Vector2(48f, 28f);
+                var img = moEmb.GetComponent<UnityEngine.UI.Image>();
+                img.sprite = undfEmblemSprite;
+                img.preserveAspect = true;
+                img.raycastTarget = false;
+            }
 
             matchOverNavigation = moPanel.gameObject.AddComponent<MenuNavigationGroup>();
             string[] moLabels =
@@ -179,19 +225,20 @@ namespace UnDFight
                 "MENU PRINCIPAL"
             };
 
+            float moStartY = undfEmblemSprite != null ? -48f : -26f;
             for (int i = 0; i < moLabels.Length; i++)
             {
-                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"MatchOverBtn_{i}", moPanel, moLabels[i], whiteSprite, 23f, TextAlignmentOptions.Center, characterSpacing: 5f);
+                MenuItemEntry entry = MenuUiFactory.CreateMenuButton($"MatchOverBtn_{i}", moPanel, moLabels[i], whiteSprite, 22f, TextAlignmentOptions.Center, characterSpacing: 5f);
                 RectTransform rt = entry.Button.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.5f, 1f);
                 rt.anchorMax = new Vector2(0.5f, 1f);
                 rt.pivot = new Vector2(0.5f, 1f);
-                rt.anchoredPosition = new Vector2(0f, -22f - i * 70f);
-                rt.sizeDelta = new Vector2(424f, 56f);
+                rt.anchoredPosition = new Vector2(0f, moStartY - i * 68f);
+                rt.sizeDelta = new Vector2(430f, 56f);
                 matchOverNavigation.AddItem(entry);
             }
 
-            // Shared Options Modal
+            // Shared Options Modal (Matte UnDF)
             var optGo = new GameObject("OptionsPanel", typeof(RectTransform));
             optGo.transform.SetParent(canvasRoot, false);
             optionsPanel = optGo.AddComponent<OptionsPanelController>();
@@ -431,44 +478,60 @@ namespace UnDFight
             _towerMatchOverBox.sizeDelta = new Vector2(680f, 600f);
             MenuUiFactory.AddBorder(_towerMatchOverBox, MenuUiFactory.BronzeBorder, sprite, 2f);
 
-            RectTransform topLine = MenuUiFactory.CreatePanel("TowerTopAccent", _towerMatchOverBox, MenuUiFactory.AccentGold, sprite);
+            RectTransform topLine = MenuUiFactory.CreatePanel("TowerTopAccent", _towerMatchOverBox, MenuUiFactory.UnDFBlue, sprite);
             topLine.anchorMin = new Vector2(0f, 1f);
             topLine.anchorMax = new Vector2(1f, 1f);
             topLine.pivot = new Vector2(0.5f, 1f);
-            topLine.sizeDelta = new Vector2(0f, 4f);
+            topLine.sizeDelta = new Vector2(0f, 3.5f);
             _towerTopAccent = topLine.GetComponent<UnityEngine.UI.Image>();
+
+            if (undfEmblemSprite != null)
+            {
+                var embGo = new GameObject("TowerModalEmblem", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                embGo.transform.SetParent(_towerMatchOverBox, false);
+                var embRt = (RectTransform)embGo.transform;
+                embRt.anchorMin = new Vector2(0f, 1f);
+                embRt.anchorMax = new Vector2(0f, 1f);
+                embRt.pivot = new Vector2(0f, 1f);
+                embRt.anchoredPosition = new Vector2(30f, -20f);
+                embRt.sizeDelta = new Vector2(56f, 34f);
+                var embImg = embGo.GetComponent<UnityEngine.UI.Image>();
+                embImg.sprite = undfEmblemSprite;
+                embImg.preserveAspect = true;
+                embImg.raycastTarget = false;
+            }
 
             _towerTitleText = MenuUiFactory.CreateText(
                 "TowerTitle",
                 _towerMatchOverBox,
                 "VITÓRIA NA TORRE!",
-                36f,
+                34f,
                 FontStyles.Bold,
                 TextAlignmentOptions.Center,
-                MenuUiFactory.AccentGold,
+                MenuUiFactory.TextActive,
                 characterSpacing: 6f);
             _towerTitleText.rectTransform.anchorMin = new Vector2(0f, 1f);
             _towerTitleText.rectTransform.anchorMax = new Vector2(1f, 1f);
             _towerTitleText.rectTransform.pivot = new Vector2(0.5f, 1f);
-            _towerTitleText.rectTransform.anchoredPosition = new Vector2(0f, -18f);
-            _towerTitleText.rectTransform.sizeDelta = new Vector2(-40f, 46f);
+            _towerTitleText.rectTransform.anchoredPosition = new Vector2(0f, -16f);
+            _towerTitleText.rectTransform.sizeDelta = new Vector2(-120f, 44f);
 
             _towerSubtitleText = MenuUiFactory.CreateText(
                 "TowerSubtitle",
                 _towerMatchOverBox,
                 string.Empty,
-                17f,
+                16f,
                 FontStyles.Bold,
                 TextAlignmentOptions.Center,
-                new Color(0.84f, 0.80f, 0.72f, 1f),
+                MenuUiFactory.TextSubtitle,
                 characterSpacing: 2.5f);
             _towerSubtitleText.enableAutoSizing = true;
             _towerSubtitleText.fontSizeMin = 12f;
-            _towerSubtitleText.fontSizeMax = 17f;
+            _towerSubtitleText.fontSizeMax = 16f;
             _towerSubtitleText.rectTransform.anchorMin = new Vector2(0f, 1f);
             _towerSubtitleText.rectTransform.anchorMax = new Vector2(1f, 1f);
             _towerSubtitleText.rectTransform.pivot = new Vector2(0.5f, 1f);
-            _towerSubtitleText.rectTransform.anchoredPosition = new Vector2(0f, -68f);
+            _towerSubtitleText.rectTransform.anchoredPosition = new Vector2(0f, -66f);
             _towerSubtitleText.rectTransform.sizeDelta = new Vector2(-44f, 30f);
 
             var bodyGo = new GameObject("TowerBody", typeof(RectTransform));
@@ -477,32 +540,32 @@ namespace UnDFight
             bodyRt.anchorMin = new Vector2(0.5f, 1f);
             bodyRt.anchorMax = new Vector2(0.5f, 1f);
             bodyRt.pivot = new Vector2(0.5f, 1f);
-            bodyRt.anchoredPosition = new Vector2(0f, -108f);
+            bodyRt.anchoredPosition = new Vector2(0f, -106f);
             bodyRt.sizeDelta = new Vector2(604f, 320f);
             _towerBodyContainer = bodyRt;
 
-            // Boss Unlock celebration banner (toggled only when boss is unlocked for the first time)
-            RectTransform unlockBanner = MenuUiFactory.CreatePanel("BossUnlockBanner", _towerMatchOverBox, new Color(0.24f, 0.08f, 0.05f, 0.96f), sprite);
+            // Boss Unlock celebration banner (matte official UnDF blue-slate frame, zero neon)
+            RectTransform unlockBanner = MenuUiFactory.CreatePanel("BossUnlockBanner", _towerMatchOverBox, new Color(0.094f, 0.145f, 0.235f, 0.96f), sprite);
             unlockBanner.anchorMin = new Vector2(0.5f, 1f);
             unlockBanner.anchorMax = new Vector2(0.5f, 1f);
             unlockBanner.pivot = new Vector2(0.5f, 1f);
             unlockBanner.anchoredPosition = new Vector2(0f, -264f);
             unlockBanner.sizeDelta = new Vector2(604f, 84f);
-            MenuUiFactory.AddBorder(unlockBanner, MenuUiFactory.AccentGold, sprite, 2.5f);
+            MenuUiFactory.AddBorder(unlockBanner, MenuUiFactory.UnDFBlue, sprite, 2f);
             _towerUnlockBanner = unlockBanner.gameObject;
 
             _towerUnlockBannerText = MenuUiFactory.CreateText(
                 "UnlockText",
                 unlockBanner,
                 "NOVO LUTADOR DESBLOQUEADO: IBANEIS!",
-                22f,
+                21f,
                 FontStyles.Bold,
                 TextAlignmentOptions.Center,
-                MenuUiFactory.AccentGold,
+                MenuUiFactory.UnDFSky,
                 characterSpacing: 3.5f);
             _towerUnlockBannerText.enableAutoSizing = true;
             _towerUnlockBannerText.fontSizeMin = 14f;
-            _towerUnlockBannerText.fontSizeMax = 22f;
+            _towerUnlockBannerText.fontSizeMax = 21f;
             _towerUnlockBannerText.rectTransform.anchorMin = new Vector2(0f, 1f);
             _towerUnlockBannerText.rectTransform.anchorMax = new Vector2(1f, 1f);
             _towerUnlockBannerText.rectTransform.pivot = new Vector2(0.5f, 1f);
@@ -513,10 +576,10 @@ namespace UnDFight
                 "UnlockSub",
                 unlockBanner,
                 "CHEFE FINAL LIBERADO EM TODOS OS MODOS DE JOGO",
-                14f,
+                13.5f,
                 FontStyles.Bold,
                 TextAlignmentOptions.Center,
-                new Color(1.0f, 0.92f, 0.72f, 1f),
+                MenuUiFactory.TextActive,
                 characterSpacing: 2.5f);
             unlockSub.rectTransform.anchorMin = new Vector2(0f, 0f);
             unlockSub.rectTransform.anchorMax = new Vector2(1f, 0f);
@@ -559,9 +622,9 @@ namespace UnDFight
             if (_towerUnlockBanner != null) _towerUnlockBanner.SetActive(false);
 
             _towerMatchOverBox.sizeDelta = new Vector2(680f, 590f);
-            if (_towerTopAccent != null) _towerTopAccent.color = MenuUiFactory.AccentGold;
+            if (_towerTopAccent != null) _towerTopAccent.color = MenuUiFactory.UnDFBlue;
             _towerTitleText.text = "VITÓRIA NA TORRE!";
-            _towerTitleText.color = MenuUiFactory.AccentGold;
+            _towerTitleText.color = MenuUiFactory.TextActive;
 
             ArcadeTowerStageEntry current = run.CurrentMatch;
             ArcadeTowerStageEntry next = run.NextMatch;
@@ -581,14 +644,14 @@ namespace UnDFight
                 bool isNext = matchIdx == run.CurrentMatchIndex + 1;
 
                 Color rowBg = isNext
-                    ? new Color(0.24f, 0.16f, 0.06f, 0.96f)
+                    ? new Color(0.118f, 0.337f, 0.600f, 0.92f)
                     : (step.isBossMatch
-                        ? new Color(0.18f, 0.06f, 0.06f, 0.94f)
-                        : (defeated ? new Color(0.06f, 0.10f, 0.08f, 0.85f) : MenuUiFactory.PanelDarkBg));
+                        ? MenuUiFactory.CrimsonSurface
+                        : (defeated ? MenuUiFactory.VictoryMutedBg : MenuUiFactory.PanelDarkBg));
 
                 Color rowBorder = isNext
-                    ? MenuUiFactory.AccentGold
-                    : (step.isBossMatch ? MenuUiFactory.AccentCrimson : MenuUiFactory.BronzeBorder);
+                    ? MenuUiFactory.UnDFSky
+                    : (step.isBossMatch ? MenuUiFactory.CrimsonDark : (defeated ? MenuUiFactory.VictoryMutedBorder : MenuUiFactory.SlateBorderDark));
 
                 RectTransform rowRt = MenuUiFactory.CreatePanel($"LadderRow_{matchIdx}", _towerBodyContainer, rowBg, sprite);
                 rowRt.anchorMin = new Vector2(0f, 1f);
@@ -606,10 +669,10 @@ namespace UnDFight
                     : $"{prefix}{matchIdx + 1} • {step.ladderLabel}: {oppName} • {step.stageDisplayName} ({weather})";
 
                 Color textColor = isNext
-                    ? MenuUiFactory.AccentGold
+                    ? MenuUiFactory.TextActive
                     : (defeated
-                        ? new Color(0.52f, 0.78f, 0.56f, 0.92f)
-                        : (step.isBossMatch ? new Color(1.0f, 0.78f, 0.58f, 1f) : new Color(0.80f, 0.80f, 0.78f, 1f)));
+                        ? MenuUiFactory.VictoryMutedText
+                        : (step.isBossMatch ? MenuUiFactory.TextActive : MenuUiFactory.TextSubtitle));
 
                 TextMeshProUGUI txt = MenuUiFactory.CreateText("RowText", rowRt, rowLabel, 15f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, textColor, characterSpacing: 1.5f);
                 txt.enableAutoSizing = true;
@@ -635,14 +698,14 @@ namespace UnDFight
 
             bool unlockedNow = run.UnlockedBossThisRun;
             _towerMatchOverBox.sizeDelta = new Vector2(680f, unlockedNow ? 600f : 520f);
-            if (_towerTopAccent != null) _towerTopAccent.color = MenuUiFactory.AccentGold;
+            if (_towerTopAccent != null) _towerTopAccent.color = MenuUiFactory.UnDFBlue;
 
             string champName = run.PlayerFighter != null ? run.PlayerFighter.fighterName.ToUpperInvariant() : "CAMPEÃO";
             string diffLabel = GameSessionState.GetCpuDifficultyLabel(run.BaseDifficulty);
             int completions = ProgressionManager.Current.towerCompletionsCount;
 
             _towerTitleText.text = "CAMPEÃO DA TORRE!";
-            _towerTitleText.color = MenuUiFactory.AccentGold;
+            _towerTitleText.color = MenuUiFactory.UnDFSky;
             _towerSubtitleText.text = $"{champName} DERROTOU O CHEFE FINAL IBANEIS!";
 
             RectTransform statsBox = MenuUiFactory.CreatePanel("ChampionStats", _towerBodyContainer, MenuUiFactory.PanelDarkBg, sprite);

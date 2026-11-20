@@ -39,6 +39,14 @@ namespace UnDFight.Editor
         public const string FighterRosterPath = "Assets/UnDFight/Data/FighterRoster.asset";
         public const string StageRosterPath = "Assets/UnDFight/Data/StageRoster.asset";
 
+        public static readonly string[] CombatArenaScenePaths =
+        {
+            "Assets/UnDFight/Scenes/Arena_Favela.unity",
+            "Assets/UnDFight/Scenes/Arena_UnDF.unity",
+            "Assets/UnDFight/Scenes/Arena_Cadeia.unity",
+            "Assets/UnDFight/Scenes/Training.unity"
+        };
+
         [MenuItem("UnDFight/UI/Rebuild MKX UnDF UI Theme & Menus", false, 130)]
         public static void RebuildAllUiThemeAndMenus()
         {
@@ -820,6 +828,140 @@ namespace UnDFight.Editor
             if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.10f);
             EditorUtility.SetDirty(mat);
             return mat;
+        }
+
+        // ==================== 4. APPLY MKX FIGHT HUD & UNIFIED MODALS TO ALL 4 ARENAS ====================
+
+        [MenuItem("UnDFight/UI/Apply MKX Fight HUD To All Arenas", false, 131)]
+        public static void ApplyMkxFightHudToAllArenas()
+        {
+            // Ensure all required sprites exist on disk before wiring scenes
+            if (AssetDatabase.LoadAssetAtPath<Sprite>(BladeBarLeftPath) == null ||
+                AssetDatabase.LoadAssetAtPath<Sprite>(LogoEmblemPath) == null ||
+                AssetDatabase.LoadAssetAtPath<Sprite>(CircleBadgePath) == null)
+            {
+                GenerateAndPersistAllUiSprites();
+            }
+
+            Sprite white = AssetDatabase.LoadAssetAtPath<Sprite>(WhiteSpritePath);
+            Sprite bladeLeft = AssetDatabase.LoadAssetAtPath<Sprite>(BladeBarLeftPath);
+            Sprite bladeRight = AssetDatabase.LoadAssetAtPath<Sprite>(BladeBarRightPath);
+            Sprite diamond = AssetDatabase.LoadAssetAtPath<Sprite>(DiamondPath);
+            Sprite circleBadge = AssetDatabase.LoadAssetAtPath<Sprite>(CircleBadgePath);
+            Sprite emblem = AssetDatabase.LoadAssetAtPath<Sprite>(LogoEmblemPath);
+
+            string previousScenePath = SceneManager.GetActiveScene().path;
+            int updatedCount = 0;
+
+            foreach (string scenePath in CombatArenaScenePaths)
+            {
+                if (!File.Exists(Path.GetFullPath(scenePath)))
+                {
+                    Debug.LogWarning($"[UiThemeSetupEditor] Combat arena scene not found: {scenePath}");
+                    continue;
+                }
+
+                Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                FightSimulation sim = Object.FindAnyObjectByType<FightSimulation>();
+                MatchManager mm = Object.FindAnyObjectByType<MatchManager>();
+                CombatVfxController vfx = Object.FindAnyObjectByType<CombatVfxController>();
+                StageInteractableManager stageMgr = Object.FindAnyObjectByType<StageInteractableManager>();
+
+                // 1) Rebuild FightHUDCanvas with MKX tapered blade bars + bottom-corner EX/SUPER meters
+                FightHUD hud = Object.FindAnyObjectByType<FightHUD>();
+                GameObject hudCanvasGo = hud != null ? hud.gameObject : FindRootByName(scene, "FightHUDCanvas");
+                if (hudCanvasGo == null)
+                {
+                    hudCanvasGo = CreateStandardCanvas(scene, "FightHUDCanvas");
+                }
+                ConfigureCanvasScaler(hudCanvasGo);
+                if (hud == null) hud = hudCanvasGo.AddComponent<FightHUD>();
+
+                hud.ConfigureThemeSprites(white, bladeLeft, bladeRight, diamond, circleBadge, emblem);
+                hud.BuildMkxUI(hudCanvasGo.transform);
+                hud.Configure(sim, mm);
+                if (stageMgr != null)
+                {
+                    AssignSerializedField(hud, "stageInteractableManager", stageMgr);
+                }
+                EditorUtility.SetDirty(hud);
+
+                // 2) Update TrainingDebugHUD (clean matte footer panel, hidden by default outside Training mode)
+                TrainingDebugHUD debugHud = Object.FindAnyObjectByType<TrainingDebugHUD>();
+                if (debugHud != null)
+                {
+                    ConfigureCanvasScaler(debugHud.gameObject);
+                    Transform debugPanelTr = debugHud.transform.Find("DebugPanel");
+                    GameObject debugPanelGo = debugPanelTr != null ? debugPanelTr.gameObject : null;
+                    TMPro.TextMeshProUGUI debugText = debugHud.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+
+                    if (debugPanelGo != null)
+                    {
+                        var panelImg = debugPanelGo.GetComponent<UnityEngine.UI.Image>();
+                        if (panelImg != null)
+                        {
+                            panelImg.color = new Color(0.043f, 0.055f, 0.078f, 0.84f);
+                        }
+                        // Default serialized active state: active only in Training scene; runtime RefreshVisibility enforces GameMode
+                        bool isTrainingScene = scenePath.EndsWith("Training.unity", System.StringComparison.OrdinalIgnoreCase);
+                        debugPanelGo.SetActive(isTrainingScene);
+                    }
+
+                    debugHud.Configure(sim, debugText, debugPanelGo);
+                    if (debugPanelGo != null)
+                    {
+                        bool isTrainingScene = scenePath.EndsWith("Training.unity", System.StringComparison.OrdinalIgnoreCase);
+                        debugPanelGo.SetActive(isTrainingScene);
+                    }
+                    EditorUtility.SetDirty(debugHud);
+
+                    if (vfx != null)
+                    {
+                        AssignSerializedField(vfx, "debugHud", debugHud);
+                        EditorUtility.SetDirty(vfx);
+                    }
+                }
+
+                // 3) Rebuild FightMenuCanvas (Pause, Options, MatchOver, Tower modals in unified matte UnDF theme)
+                FightMenuController menuCtrl = Object.FindAnyObjectByType<FightMenuController>();
+                GameObject menuCanvasGo = menuCtrl != null ? menuCtrl.gameObject : FindRootByName(scene, "FightMenuCanvas");
+                if (menuCanvasGo == null)
+                {
+                    menuCanvasGo = CreateStandardCanvas(scene, "FightMenuCanvas");
+                }
+                ConfigureCanvasScaler(menuCanvasGo);
+                if (menuCtrl == null) menuCtrl = menuCanvasGo.AddComponent<FightMenuController>();
+
+                menuCtrl.Configure(sim, mm, vfx, white);
+                menuCtrl.ConfigureThemeSprites(emblem);
+                menuCtrl.BuildUI(menuCanvasGo.transform, white);
+
+                Transform pauseTr = menuCanvasGo.transform.Find("PausePanel");
+                if (pauseTr != null) pauseTr.gameObject.SetActive(false);
+                Transform moTr = menuCanvasGo.transform.Find("MatchOverPanel");
+                if (moTr != null) moTr.gameObject.SetActive(false);
+                Transform optTr = menuCanvasGo.transform.Find("OptionsPanel");
+                if (optTr != null) optTr.gameObject.SetActive(false);
+                EditorUtility.SetDirty(menuCtrl);
+
+                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.SaveScene(scene, scenePath);
+                updatedCount++;
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            if (!string.IsNullOrEmpty(previousScenePath) && File.Exists(previousScenePath))
+            {
+                EditorSceneManager.OpenScene(previousScenePath, OpenSceneMode.Single);
+            }
+            else
+            {
+                EditorSceneManager.OpenScene(MainMenuScenePath, OpenSceneMode.Single);
+            }
+
+            Debug.Log($"[UnDFight] Fase 17.2 complete: Applied MKX Fight HUD, clean TrainingDebugHUD visibility, and unified UnDF modals to {updatedCount} combat arenas.");
         }
 
         // ==================== HELPERS ====================

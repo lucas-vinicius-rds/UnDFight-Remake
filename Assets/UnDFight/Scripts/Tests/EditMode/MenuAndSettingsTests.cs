@@ -452,5 +452,184 @@ namespace UnDFight.Tests
                 ProgressionManager.SetCustomFilePathForTesting(null);
             }
         }
+
+        [Test]
+        public void FightHUD_BottomEnergyMeters_AreAnchoredInBottomCorners_AndSupportConfigurableSegments2And3()
+        {
+            Sprite white = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/Textures/UI_White.png");
+            Sprite bladeLeft = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_BladeBarLeft.png");
+            Sprite bladeRight = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_BladeBarRight.png");
+            Sprite diamond = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_Diamond.png");
+            Sprite circle = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_CircleBadge.png");
+            Sprite emblem = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/Logo_UnDF_Emblem.png");
+
+            var canvasGo = Track(new GameObject("Test_MkxFightHUDCanvas", typeof(RectTransform), typeof(Canvas)));
+            var hud = canvasGo.AddComponent<FightHUD>();
+            hud.ConfigureThemeSprites(white, bladeLeft, bladeRight, diamond, circle, emblem);
+            hud.BuildMkxUI(canvasGo.transform);
+
+            // Bottom-left P1 & bottom-right P2 anchors
+            Assert.IsNotNull(hud.P1EnergyMeterRoot);
+            Assert.IsNotNull(hud.P2EnergyMeterRoot);
+            Assert.AreEqual(new Vector2(0f, 0f), hud.P1EnergyMeterRoot.anchorMin);
+            Assert.AreEqual(new Vector2(0f, 0f), hud.P1EnergyMeterRoot.anchorMax);
+            Assert.AreEqual(new Vector2(1f, 0f), hud.P2EnergyMeterRoot.anchorMin);
+            Assert.AreEqual(new Vector2(1f, 0f), hud.P2EnergyMeterRoot.anchorMax);
+
+            // Default 2-bar EX/SUPER layout: 1 divider + 2 medallions + UnDF blue signature base
+            Assert.AreEqual(2, hud.MeterSegmentCount);
+            Assert.AreEqual(1, hud.GetMeterDividerCount(0));
+            Assert.AreEqual(1, hud.GetMeterDividerCount(1));
+            Assert.AreEqual(2, hud.GetMeterMedallionCount(0));
+            Assert.AreEqual(2, hud.GetMeterMedallionCount(1));
+            Assert.IsNotNull(hud.P1EnergyMeterRoot.Find("UnDFSignatureBase"));
+            Assert.IsNotNull(hud.P2EnergyMeterRoot.Find("UnDFSignatureBase"));
+
+            // Future-proof 3-bar Ultimate layout: setting MeterSegmentCount = 3 auto-rebuilds dividers & medallions
+            hud.MeterSegmentCount = 3;
+            Assert.AreEqual(3, hud.MeterSegmentCount);
+            Assert.AreEqual(2, hud.GetMeterDividerCount(0));
+            Assert.AreEqual(2, hud.GetMeterDividerCount(1));
+            Assert.AreEqual(3, hud.GetMeterMedallionCount(0));
+            Assert.AreEqual(3, hud.GetMeterMedallionCount(1));
+        }
+
+        [Test]
+        public void TrainingDebugHUD_HiddenByDefaultOutsideTraining_VisibleInTrainingOrWhenF1Toggled()
+        {
+            var simGo = Track(new GameObject("Test_DebugVisSim"));
+            var sim = simGo.AddComponent<FightSimulation>();
+            var match = simGo.AddComponent<MatchManager>();
+
+            var lucas = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Lucas.asset");
+            var tiago = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Tiago.asset");
+
+            var p1Go = Track(new GameObject("P1"));
+            p1Go.AddComponent<PlayerInputHandler>();
+            var p1 = p1Go.AddComponent<FighterController>();
+            p1.SetFighterData(lucas);
+
+            var p2Go = Track(new GameObject("P2"));
+            p2Go.AddComponent<PlayerInputHandler>();
+            var p2 = p2Go.AddComponent<FighterController>();
+            p2.SetFighterData(tiago);
+
+            sim.SetParticipants(p1, p2);
+
+            var canvasGo = Track(new GameObject("Test_DebugCanvas", typeof(RectTransform), typeof(Canvas)));
+            var debugHud = canvasGo.AddComponent<TrainingDebugHUD>();
+            var panelGo = Track(new GameObject("DebugPanel", typeof(RectTransform), typeof(UnityEngine.UI.Image)));
+            panelGo.transform.SetParent(canvasGo.transform, false);
+            var textGo = Track(new GameObject("DebugText", typeof(RectTransform), typeof(TextMeshProUGUI)));
+            textGo.transform.SetParent(panelGo.transform, false);
+            var debugText = textGo.GetComponent<TextMeshProUGUI>();
+
+            // Normal combat modes must hide DebugPanel by default
+            foreach (GameMode normalMode in new[] { GameMode.LocalVersus, GameMode.VersusCpu, GameMode.ArcadeTower })
+            {
+                GameSessionState.SelectMode(normalMode);
+                match.InitializeMatch(sim, trainingModeOverride: false);
+                debugHud.Configure(sim, debugText, panelGo);
+                Assert.IsFalse(debugHud.IsPanelVisible, $"TrainingDebugHUD must be hidden by default in {normalMode}");
+            }
+
+            // Explicit [F1] hitbox toggle temporarily reveals DebugPanel, then hides again when turned off
+            debugHud.SetDebugBoxesIndicator(true);
+            Assert.IsTrue(debugHud.IsPanelVisible, "TrainingDebugHUD must show when [F1] hitboxes are toggled on");
+            debugHud.SetDebugBoxesIndicator(false);
+            Assert.IsFalse(debugHud.IsPanelVisible, "TrainingDebugHUD must hide again when [F1] hitboxes are turned off outside Training");
+
+            // Training mode automatically displays DebugPanel
+            GameSessionState.SelectMode(GameMode.Training);
+            match.InitializeMatch(sim, trainingModeOverride: true);
+            debugHud.RefreshVisibility();
+            Assert.IsTrue(debugHud.IsPanelVisible, "TrainingDebugHUD must be automatically visible in Training mode");
+        }
+
+        [Test]
+        public void FightHUD_DisplaysCentralUnDFEmblem_AndPreservesStagePromptAndTowerBadge()
+        {
+            Sprite white = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/Textures/UI_White.png");
+            Sprite bladeLeft = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_BladeBarLeft.png");
+            Sprite bladeRight = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_BladeBarRight.png");
+            Sprite diamond = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_Diamond.png");
+            Sprite circle = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/UI_CircleBadge.png");
+            Sprite emblem = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UnDFight/Art/UI/Logo_UnDF_Emblem.png");
+
+            var fighterRoster = AssetDatabase.LoadAssetAtPath<FighterRoster>("Assets/UnDFight/Data/FighterRoster.asset");
+            var stageRoster = AssetDatabase.LoadAssetAtPath<StageRoster>("Assets/UnDFight/Data/StageRoster.asset");
+            var lucas = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Lucas.asset");
+            var tiago = AssetDatabase.LoadAssetAtPath<FighterData>("Assets/UnDFight/Data/FighterData_Tiago.asset");
+
+            var simGo = Track(new GameObject("Test_HudSim"));
+            var sim = simGo.AddComponent<FightSimulation>();
+            var match = simGo.AddComponent<MatchManager>();
+
+            var p1Go = Track(new GameObject("P1"));
+            p1Go.transform.position = new Vector3(-0.5f, 0f, 0f);
+            p1Go.AddComponent<PlayerInputHandler>();
+            var p1 = p1Go.AddComponent<FighterController>();
+            p1.SetFighterData(lucas);
+
+            var p2Go = Track(new GameObject("P2"));
+            p2Go.transform.position = new Vector3(1.5f, 0f, 0f);
+            p2Go.AddComponent<PlayerInputHandler>();
+            var p2 = p2Go.AddComponent<FighterController>();
+            p2.SetFighterData(tiago);
+
+            sim.SetParticipants(p1, p2);
+            GameSessionState.SelectMode(GameMode.LocalVersus);
+            match.InitializeMatch(sim, trainingModeOverride: false);
+            match.SkipIntroToFighting();
+
+            var canvasGo = Track(new GameObject("Test_FightHUD_EmblemCanvas", typeof(RectTransform), typeof(Canvas)));
+            var hud = canvasGo.AddComponent<FightHUD>();
+            hud.ConfigureThemeSprites(white, bladeLeft, bladeRight, diamond, circle, emblem);
+            hud.BuildMkxUI(canvasGo.transform);
+            hud.Configure(sim, match);
+
+            // Central official UnDF emblem present & visible
+            Assert.IsNotNull(hud.CenterEmblemImage);
+            Assert.AreSame(emblem, hud.CenterEmblemImage.sprite);
+            Assert.IsTrue(hud.CenterEmblemImage.gameObject.activeInHierarchy);
+
+            // Tower badge hidden in LocalVersus, shown in ArcadeTower (1/7 and 7/7 Boss)
+            Assert.IsFalse(hud.IsTowerBadgeVisible);
+
+            ArcadeTowerRun run = ArcadeTowerRun.BuildRun(lucas, fighterRoster, stageRoster, CpuDifficulty.Medium, randomSeed: 12);
+            run.ApplyCurrentMatchToSession();
+            hud.RefreshImmediate();
+            Assert.IsTrue(hud.IsTowerBadgeVisible);
+            Assert.AreEqual("TORRE 1/7", hud.TowerBadgeText);
+
+            while (run.HasNextMatch) run.AdvanceToNextMatch();
+            hud.RefreshImmediate();
+            Assert.IsTrue(hud.IsTowerBadgeVisible);
+            StringAssert.Contains("CHEFE FINAL", hud.TowerBadgeText);
+            StringAssert.Contains("7/7", hud.TowerBadgeText);
+
+            // StagePromptWidget structure (LeftAccent + KeyTag) and live prompt refresh
+            Transform promptP1 = canvasGo.transform.Find("StagePrompt_P1");
+            Assert.IsNotNull(promptP1);
+            Assert.IsNotNull(promptP1.Find("Bg/LeftAccent"));
+            Assert.IsNotNull(promptP1.Find("Bg/KeyTag"));
+
+            var propGo = Track(GameObject.CreatePrimitive(PrimitiveType.Cube));
+            propGo.name = "Test_ThrowableProp";
+            propGo.transform.position = new Vector3(-0.35f, 0f, 1.0f);
+            var prop = propGo.AddComponent<StageThrowableProp>();
+            prop.ConfigureForRuntime(85, true, true, false, StagePropMaterialType.Plastic);
+
+            var stageMgr = simGo.AddComponent<StageInteractableManager>();
+            stageMgr.Configure(sim, match);
+            stageMgr.RefreshDiscoveredProps();
+
+            p1.SetSimPositionX(-0.5f);
+            p2.SetSimPositionX(1.5f);
+            sim.ForceUpdateFacing();
+            hud.RefreshStagePromptsNow();
+            Assert.IsTrue(hud.IsStagePromptVisible(0), "StagePrompt_P1 must activate when P1 is near a ready StageThrowableProp");
+            StringAssert.Contains("DEF + LP", hud.GetStagePromptText(0));
+        }
     }
 }
